@@ -1,24 +1,12 @@
 #ifndef RPTOGETHER_SERVER_CONFIG_HPP
 #define RPTOGETHER_SERVER_CONFIG_HPP
 
-#include <string_view>
+#define RPT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define RPT_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define RPT_VERSION_PATCH @PROJECT_VERSION_PATCH@
 
-namespace RpT {
-namespace Config {
+#define RPT_VERSION "@PROJECT_VERSION@"
 
-enum struct Platform {
-    Win32, Unix
-};
-
-constexpr std::size_t VERION_MAJOR { @PROJECT_VERSION_MAJOR@ };
-constexpr std::size_t VERSION_MINOR { @PROJECT_VERSION_MINOR@ };
-constexpr std::size_t VERSION_PATCH { @PROJECT_VERSION_PATCH@ };
-
-constexpr std::string_view VERSION { "@PROJECT_VERSION@" };
-
-constexpr Platform platform { Platform::@RPT_TARGET_PLATFORM@ };
-
-}
-}
+#define RPT_RUNTIME_PLATFORM @RPT_TARGET_PLATFORM@
 
 #endif // RPTOGETHER_SERVER_CONFIG_HPP
