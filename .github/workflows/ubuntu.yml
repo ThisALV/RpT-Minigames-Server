@@ -1,0 +1,94 @@
+name: Ubuntu Build
+
+on:
+  push:
+  pull_request:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  gcc-build:
+    strategy:
+      matrix:
+        version: [16.04, 18.04, 20.04]
+        toolchain:
+          - gcc:
+              name: "GCC"
+              install: "g++"
+              cc: gcc
+              cxx: g++
+              ar: ar
+              ranlib: ranlib
+              ldflags: ""
+          - llvm:
+              name: "LLVM"
+              install: "clang++ lld"
+              cc: clang
+              cxx: clang++
+              ar: llvm-ar
+              ranlib: llvm-ranlib
+              ldflags: "-fuse-ld=lld"
+
+    runs-on: ubuntu-${{matrix.version}}
+    name: Ubuntu ${{matrix.version}} GCC build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup ${{matrix.toolchain.name}}
+        run: sudo apt-get install $TOOLCHAIN
+
+        env:
+          TOOLCHAIN: ${{matrix.toolchain.install}}
+
+      - name: Setup apt-get deps
+        run: sudo apt-get install libboost-all-dev liblua5.3-dev
+
+      - name: Setup sol2 deps
+        run: >
+          git clone https://github.com/ThePhD/sol2 &&
+          cd sol2 &&
+          cmake . &&
+          sudo cmake --install .
+
+      - name: Setup spdlog deps
+        run: >
+          git clone https://github.com/gabime/spdlog &&
+          mkdir spdlog/build &&
+          cd spdlog/build &&
+          cmake -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) .. &&
+          cmake --build . -- -j2 &&
+          sudo cmake --install .
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
+      - name: Generate project
+        run: >
+          mkdir build &&
+          cd build &&
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) ..
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
+      - name: Build project
+        working-directory: ${{github.workspace}}/build
+        run: cmake --build . -- -j2
+
+      - name: Run tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest
+
+      - name: Install project
+        working-directory: ${{github.workspace}}/build
+        run: sudo cmake --install .
