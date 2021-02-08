@@ -6,7 +6,7 @@ set(RPT_CORE_HEADERS
 set(RPT_CORE_SOURCES
         "src/NetworkProtocol.cpp")
 
-find_package(Boost 1.71 REQUIRED)
+find_package(Boost REQUIRED)
 find_package(spdlog 1.8.1 REQUIRED CONFIG)
 
 add_library(rpt-core STATIC ${RPT_CORE_HEADERS} ${RPT_CORE_SOURCES})
