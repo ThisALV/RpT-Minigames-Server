@@ -3,10 +3,16 @@
 
 #include <string_view>
 
-#define RPT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
-#define RPT_VERSION_MINOR @PROJECT_VERSION_MINOR@
-#define RPT_VERSION_PATCH @PROJECT_VERSION_PATCH@
+namespace RpT {
+namespace Config {
 
-constexpr std::string_view RPT_VERSION { "@PROJECT_VERSION@" };
+constexpr std::size_t VERION_MAJOR { @PROJECT_VERSION_MAJOR@ };
+constexpr std::size_t VERSION_MINOR { @PROJECT_VERSION_MINOR@ };
+constexpr std::size_t VERSION_PATCH { @PROJECT_VERSION_PATCH@ };
+
+constexpr std::string_view VERSION { "@PROJECT_VERSION@" };
+
+}
+}
 
 #endif // RPTOGETHER_SERVER_CONFIG_HPP
