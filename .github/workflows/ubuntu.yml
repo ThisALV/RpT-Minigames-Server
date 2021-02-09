@@ -13,22 +13,21 @@ jobs:
       matrix:
         version: [16.04, 18.04, 20.04]
         toolchain:
-          - gcc:
-              name: "GCC"
-              install: "g++"
-              cc: gcc
-              cxx: g++
-              ar: ar
-              ranlib: ranlib
-              ldflags: ""
-          # - llvm:
-          #     name: "LLVM"
-          #     install: "clang++ lld"
-          #     cc: clang
-          #     cxx: clang++
-          #     ar: llvm-ar
-          #     ranlib: llvm-ranlib
-          #     ldflags: "-fuse-ld=lld"
+          - name: "GCC"
+            install: "g++"
+            cc: gcc
+            cxx: g++
+            ar: ar
+            ranlib: ranlib
+            ldflags: ""
+
+          - name: "LLVM"
+            install: "clang++ lld"
+            cc: clang
+            cxx: clang++
+            ar: llvm-ar
+            ranlib: llvm-ranlib
+            ldflags: "-fuse-ld=lld"
 
     runs-on: ubuntu-${{matrix.version}}
     name: Ubuntu ${{matrix.version}} GCC build
