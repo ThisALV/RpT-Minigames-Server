@@ -44,6 +44,10 @@ jobs:
         run: echo "TOOLCHAIN_INSTALL=$(echo $TOOLCHAIN_INSTALL | sed -E "s/(\s|^)(lld)(\s|$)/\1\2\-4\.0/")" >> $GITHUB_ENV
         if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
 
+      - name: Patching toolchain... install alternative lld
+        run: sudo update-alternatives --install /usr/bin/ld.lld lld /usr/bin/ld.lld-4.0 99
+        if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
+
       - name: Setup ${{matrix.toolchain.name}}
         run: sudo apt-get install $TOOLCHAIN_INSTALL
 
