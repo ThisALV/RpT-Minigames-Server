@@ -45,7 +45,7 @@ jobs:
         if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
 
       - name: Patching toolchain... install alternative lld
-        run: sudo update-alternatives --install /usr/bin/ld.lld lld /usr/bin/ld.lld-4.0 99
+        run: sudo update-alternatives --install "$(dirname "$(which ld.lld-4)")" lld "$(which ld.lld-4)" 99
         if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
 
       - name: Setup ${{matrix.toolchain.name}}
