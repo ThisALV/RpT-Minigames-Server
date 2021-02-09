@@ -1,12 +1,33 @@
 #ifndef RPTOGETHER_SERVER_CONFIG_HPP
 #define RPTOGETHER_SERVER_CONFIG_HPP
 
-#define RPT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
-#define RPT_VERSION_MINOR @PROJECT_VERSION_MINOR@
-#define RPT_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#include <string_view>
+#import "../../../../usr/include/c++/10/string_view"
 
-#define RPT_VERSION "@PROJECT_VERSION@"
+#define RPT_RUNTIME_PLATFORM @RPT_TARGET_PLATFORM@ // Necessary for condition includes
 
-#define RPT_RUNTIME_PLATFORM @RPT_TARGET_PLATFORM@
+namespace RpT::Config {
+
+enum struct Platform {
+    Unix, Win32
+};
+
+constexpr std::size_t VERSION_MAJOR { @PROJECT_VERSION_MAJOR@ };
+constexpr std::size_t VERSION_MINOR { @PROJECT_VERSION_MINOR@ };
+constexpr std::size_t VERSION_PATCH { @PROJECT_VERSION_PATCH@ };
+
+constexpr std::string_view VERSION { "@PROJECT_VERSION@" };
+
+constexpr Platform RUNTIME_PLATFORM { Platform::RPT_RUNTIME_PLATFORM };
+
+constexpr std::string_view runtimePlatformName() {
+    if constexpr (RUNTIME_PLATFORM == Platform::Unix) {
+        return "Unix";
+    } else if (RUNTIME_PLATFORM == Platform::Win32) {
+        return "Win32";
+    }
+}
+
+}
 
 #endif // RPTOGETHER_SERVER_CONFIG_HPP
