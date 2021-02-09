@@ -1,0 +1,116 @@
+name: Ubuntu Build
+
+on:
+  push:
+  pull_request:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [16.04, 18.04, 20.04]
+        toolchain:
+          - name: "GCC"
+            install: "g++"
+            cc: gcc
+            cxx: g++
+            ar: ar
+            ranlib: ranlib
+            ldflags: ""
+
+          - name: "LLVM"
+            install: "llvm clang lld"
+            cc: clang
+            cxx: clang++
+            ar: llvm-ar
+            ranlib: llvm-ranlib
+            ldflags: "-fuse-ld=lld"
+
+        exclude:
+          - version: 16.04
+            toolchain:
+              name: "LLVM"
+
+    runs-on: ubuntu-${{matrix.version}}
+    name: Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}} build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup ${{matrix.toolchain.name}}
+        run: sudo apt-get install $TOOLCHAIN
+
+        env:
+          TOOLCHAIN: ${{matrix.toolchain.install}}
+
+      - name: Toolchain summary
+        run: echo "Archiver=$(which $AR) ; Ranlib=$(which $RANLIB) ; CC=$CC ; CXX=$CXX ; LDflags=$LDFLAGS"
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
+      - name: Setup apt-get deps
+        run: sudo apt-get install libboost-all-dev liblua5.3-dev
+
+      - name: Setup sol2 deps
+        run: >
+          git clone --depth=1 https://github.com/ThePhD/sol2 &&
+          cd sol2 &&
+          cmake . &&
+          sudo cmake --install .
+
+      - name: Setup spdlog deps
+        run: >
+          git clone --depth=1 https://github.com/gabime/spdlog &&
+          mkdir spdlog/build &&
+          cd spdlog/build &&
+          cmake -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) .. &&
+          cmake --build . -- -j2 &&
+          sudo cmake --install .
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
+      - name: Setup nlohmann-json3 deps
+        run: >
+          git clone --depth=1 https://github.com/nlohmann/json &&
+          cd json &&
+          cmake . &&
+          sudo cmake --install .
+
+      - name: Generate project
+        run: >
+          mkdir build &&
+          cd build &&
+          cmake --log-level=DEBUG -DCMAKE_BUILD_TYPE=Release -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) ..
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
+      - name: Build project
+        working-directory: ${{github.workspace}}/build
+        run: cmake --build . -- -j2
+
+      - name: Run tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest
+
+      - name: Install project
+        working-directory: ${{github.workspace}}/build
+        run: sudo cmake --install .

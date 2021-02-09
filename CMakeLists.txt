@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
 
+message(DEBUG "C Compiler: ${CMAKE_C_COMPILER}, C++ Compiler: ${CMAKE_CXX_COMPILER}")
+message(DEBUG "Archiver: ${CMAKE_AR}, Ranlib: ${CMAKE_RANLIB}, Linker flags: $ENV{LDFLAGS}")
+
 project(RpTogether-Server LANGUAGES CXX VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 17)
