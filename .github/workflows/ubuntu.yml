@@ -62,14 +62,14 @@ jobs:
 
       - name: Setup sol2 deps
         run: >
-          git clone https://github.com/ThePhD/sol2 &&
+          git clone --depth=1 https://github.com/ThePhD/sol2 &&
           cd sol2 &&
           cmake . &&
           sudo cmake --install .
 
       - name: Setup spdlog deps
         run: >
-          git clone https://github.com/gabime/spdlog &&
+          git clone --depth=1 https://github.com/gabime/spdlog &&
           mkdir spdlog/build &&
           cd spdlog/build &&
           cmake -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) .. &&
@@ -85,7 +85,7 @@ jobs:
 
       - name: Setup nlohmann-json3 deps
         run: >
-          git clone https://github.com/nlohmann/json &&
+          git clone --depth=1 https://github.com/nlohmann/json &&
           cd json &&
           cmake . &&
           sudo cmake --install .
