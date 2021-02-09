@@ -42,6 +42,16 @@ jobs:
         env:
           TOOLCHAIN: ${{matrix.toolchain.install}}
 
+      - name: Toolchain summary
+        run: echo "Archiver=$(which $AR) ; Ranlib=$(which $RANLIB) ; CC=$CC ; CXX=$CXX ; LDflags=$LDFLAGS"
+
+        env:
+          CC: ${{matrix.toolchain.cc}}
+          CXX: ${{matrix.toolchain.cxx}}
+          AR: ${{matrix.toolchain.ar}}
+          RANLIB: ${{matrix.toolchain.ranlib}}
+          LDFLAGS: ${{matrix.toolchain.ldflags}}
+
       - name: Setup apt-get deps
         run: sudo apt-get install libboost-all-dev liblua5.3-dev
 
