@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Patch toolchain for Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}}
-        run: export TOOLCHAIN_INSTALL="$(echo $TOOLCHAIN_INSTALL | sed -E "s/(\s|^)(lld)(\s|$)/\1\2\-4\.0/")"
+        run: echo "TOOLCHAIN_INSTALL=$(echo $TOOLCHAIN_INSTALL | sed -E "s/(\s|^)(lld)(\s|$)/\1\2\-4\.0/")" >> $GITHUB_ENV
         if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
 
       - name: Setup ${{matrix.toolchain.name}}
