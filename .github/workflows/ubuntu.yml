@@ -32,7 +32,8 @@ jobs:
 
         exclude:
           - version: 16.04
-            toolchain.name: "LLVM"
+            toolchain:
+              name: "LLVM"
 
     runs-on: ubuntu-${{matrix.version}}
     name: Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}} build
