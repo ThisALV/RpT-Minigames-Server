@@ -2,7 +2,6 @@
 #define RPTOGETHER_SERVER_CONFIG_HPP
 
 #include <string_view>
-#import "../../../../usr/include/c++/10/string_view"
 
 #define RPT_RUNTIME_PLATFORM @RPT_TARGET_PLATFORM@ // Necessary for condition includes
 
@@ -23,7 +22,7 @@ constexpr Platform RUNTIME_PLATFORM { Platform::RPT_RUNTIME_PLATFORM };
 constexpr std::string_view runtimePlatformName() {
     if constexpr (RUNTIME_PLATFORM == Platform::Unix) {
         return "Unix";
-    } else if (RUNTIME_PLATFORM == Platform::Win32) {
+    } else {
         return "Win32";
     }
 }
