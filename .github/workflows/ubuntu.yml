@@ -30,26 +30,21 @@ jobs:
             ranlib: llvm-ranlib
             ldflags: "-fuse-ld=lld"
 
+        exclude:
+          - version: 16.04
+            toolchain.name: "LLVM"
+
     runs-on: ubuntu-${{matrix.version}}
     name: Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}} build
-
-    env:
-      TOOLCHAIN_INSTALL: ${{matrix.toolchain.install}}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Patch toolchain for Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}}
-        run: echo "TOOLCHAIN_INSTALL=$(echo $TOOLCHAIN_INSTALL | sed -E "s/(\s|^)(lld)(\s|$)/\1\2\-4\.0/")" >> $GITHUB_ENV
-        if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
-
-      - name: Patching toolchain... install alternative lld
-        run: sudo update-alternatives --install "$(dirname "$(which ld.lld-4)")" lld "$(which ld.lld-4)" 99
-        if: matrix.version == 16.04 && matrix.toolchain.name == 'LLVM'
-
       - name: Setup ${{matrix.toolchain.name}}
-        run: sudo apt-get install $TOOLCHAIN_INSTALL
+        run: sudo apt-get install $TOOLCHAIN
+
+        env:
+          TOOLCHAIN: ${{matrix.toolchain.install}}
 
       - name: Toolchain summary
         run: echo "Archiver=$(which $AR) ; Ranlib=$(which $RANLIB) ; CC=$CC ; CXX=$CXX ; LDflags=$LDFLAGS"
