@@ -36,6 +36,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - name: Patch toolchain for Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}}
+        run: export TOOLCHAIN="$(echo $TOOLCHAIN | sed -E "s/(\s|^)(lld)(\s|$)/\1\2\-4\.0/")"
+        if: matrix.version == 16.04 && matrix.toolchain.name == "LLVM"
+
       - name: Setup ${{matrix.toolchain.name}}
         run: sudo apt-get install $TOOLCHAIN
 
