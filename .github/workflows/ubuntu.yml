@@ -23,7 +23,7 @@ jobs:
             ldflags: ""
 
           - name: "LLVM"
-            install: "clang++ lld"
+            install: "clang lld"
             cc: clang
             cxx: clang++
             ar: llvm-ar
