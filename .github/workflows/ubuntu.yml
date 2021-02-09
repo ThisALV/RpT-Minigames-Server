@@ -34,7 +34,7 @@ jobs:
     name: Ubuntu ${{matrix.version}} ${{matrix.toolchain.name}} build
 
     env:
-      TOOLCHAIN_INSTALL: ${{matrix.toolchain.name}}
+      TOOLCHAIN_INSTALL: ${{matrix.toolchain.install}}
 
     steps:
       - name: Checkout
