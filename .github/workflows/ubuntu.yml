@@ -78,6 +78,13 @@ jobs:
           RANLIB: ${{matrix.toolchain.ranlib}}
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
+      - name: Setup nlohmann-json3 deps
+        run: >
+          git clone https://github.com/nlohmann/json &&
+          cd json &&
+          cmake . &&
+          sudo cmake --install .
+
       - name: Generate project
         run: >
           mkdir build &&
