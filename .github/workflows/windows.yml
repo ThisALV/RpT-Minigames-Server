@@ -18,8 +18,9 @@ jobs:
         msys:
           - architecture: x86_64
             env: MINGW64
-            bits: 64
-            suffix: x
+
+          - architecture: i686
+            env: MINGW32
 
     name: Windows ${{matrix.msys.env}} build
     steps:
@@ -30,9 +31,9 @@ jobs:
           msystem: ${{matrix.msys.env}}
           update: true
           install: >
-            mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-gcc
-            mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-cmake
-            mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-make
+            mingw-w64-${{matrix.msys.architecture}}-gcc
+            mingw-w64-${{matrix.msys.architecture}}-cmake
+            mingw-w64-${{matrix.msys.architecture}}-make
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -40,11 +41,11 @@ jobs:
       - name: Setup pacman deps
         run: >
           pacman --sync --noconfirm --needed
-          mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-boost
-          mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-spdlog
-          mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-nlohmann-json
-          mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-lua
-          mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-sol2
+          mingw-w64-${{matrix.msys.architecture}}-boost
+          mingw-w64-${{matrix.msys.architecture}}-spdlog
+          mingw-w64-${{matrix.msys.architecture}}-nlohmann-json
+          mingw-w64-${{matrix.msys.architecture}}-lua
+          mingw-w64-${{matrix.msys.architecture}}-sol2
 
       - name: Generate project
         run: >
