@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup ${{matrix.toolchain.name}}
-        run: sudo apt-get install $TOOLCHAIN
+        run: sudo apt-get install -y $TOOLCHAIN
 
         env:
           TOOLCHAIN: ${{matrix.toolchain.install}}
@@ -53,7 +53,7 @@ jobs:
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
       - name: Setup apt-get deps
-        run: sudo apt-get install libboost-all-dev liblua5.3-dev
+        run: sudo apt-get install -y libboost-all-dev liblua5.3-dev
 
       - name: Setup sol2 deps
         run: >
