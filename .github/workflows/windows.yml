@@ -50,7 +50,7 @@ jobs:
         run: >
           mkdir build &&
           cd build &&
-          cmake --log-level=DEBUG -DCMAKE_BUILD_TYPE=Release
+          cmake --log-level=DEBUG -DCMAKE_BUILD_TYPE=Release ..
 
       - name: Build project
         working-directory: ${{github.workspace}}/build
