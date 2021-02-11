@@ -20,6 +20,10 @@ jobs:
             env: MINGW64
             suffix: x
 
+          - architecture: i686
+            env: MINGW32
+            suffix: i
+
     name: Windows ${{matrix.msys.env}} build
     steps:
       - name: Setup msys2 for ${{matrix.msys.env}}
