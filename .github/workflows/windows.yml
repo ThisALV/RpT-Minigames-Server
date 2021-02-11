@@ -18,11 +18,9 @@ jobs:
         msys:
           - architecture: x86_64
             env: MINGW64
-            suffix: x
 
           - architecture: i686
             env: MINGW32
-            suffix: i
 
     name: Windows ${{matrix.msys.env}} build
     steps:
