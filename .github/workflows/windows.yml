@@ -39,7 +39,7 @@ jobs:
 
       - name: Setup pacman deps
         run: >
-          pacman --sync
+          pacman --sync --noconfirm --needed
           mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-boost
           mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-spdlog
           mingw-w${{matrix.msys.bits}}-${{matrix.msys.architecture}}-nlohmann-json
