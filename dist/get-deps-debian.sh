@@ -56,7 +56,9 @@ function tryHeaderOnlyGet() {
   local dep_full_name="$author/$name"
   echoPackageInstall "$dep_full_name"
 
-  local caller_dir="$(pwd)" # Must be absolute for working-directory restore
+  caller_dir="$(pwd)" # Must be absolute for working-directory restore
+  local caller_dir
+
   local install_dir="$caller_dir/install" # Must be absolute for CMake configuration
   local deps_dir="build"
   local project_dir="$deps_dir/$author/$name-$branch_name"
@@ -86,8 +88,10 @@ function trySourceGet() {
   local dep_full_name="$author/$name"
   echoPackageInstall "$dep_full_name"
 
-  local caller_dir="$(pwd)"
-  local install_dir="$caller_dir/install"
+  caller_dir="$(pwd)" # Must be absolute for working-directory restore
+  local caller_dir
+
+  local install_dir="$caller_dir/install" # Must be absolute for CMake configuration
   local deps_dir="build"
   local project_dir="$deps_dir/$author/$name-$branch_name"
 
