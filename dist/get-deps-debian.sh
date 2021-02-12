@@ -154,6 +154,11 @@ if [ ! "$RANLIB" ]; then
   RANLIB="ranlib"
 fi
 
+echo "==================== Toolchain summary ====================="
+echo "CC=$(which "$CC"), CXX=$(which "$CXX"), LDflags=$LDFLAGS"
+echo "Archiver=$(which "$AR"), Ranlib=$(which "$RANLIB")"
+echo "============================================================"
+
 tryAptGet libboost-all-dev
 tryAptGet liblua5.3-dev
 tryHeaderOnlyGet nlohmann json master
