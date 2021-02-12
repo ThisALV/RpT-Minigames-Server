@@ -2,9 +2,11 @@
 
 
 function echoPackageInstall() {
+  name="$1"
+
   echo
   echo "============================================================"
-  echo "Installing $1..."
+  echo "Installing $name..."
   echo "============================================================"
   echo
 }
