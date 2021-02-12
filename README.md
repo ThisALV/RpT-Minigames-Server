@@ -18,7 +18,7 @@ Roleplays are both easy to create and powerfully customizable to grant an unlimi
 
 *More information about Client and roleplays editor will arrive as development progress.*
 
-Get more details about gameplay in the [wiki](https://github.com/ThisALV/RpTogether-Server/wiki).
+Get more details about gameplay on the [wiki](https://github.com/ThisALV/RpTogether-Server/wiki).
 
 ## Install
 

@@ -37,3 +37,6 @@
 # CMake built configs
 Debug/
 Release/
+build/
+install/
+download/
