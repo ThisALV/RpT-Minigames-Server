@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup project deps
         working-directory: ${{github.workspace}}/dist
-        run: ./get-deps-debian.sh
+        run: sudo ./get-deps-debian.sh
 
         env:
           CC: ${{matrix.toolchain.cc}}
