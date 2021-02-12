@@ -95,6 +95,13 @@ function trySourceGet() {
   cd "$caller_dir" || exit 1
 }
 
+if [ ! "$AR" ]; then
+  AR="ar"
+fi
+
+if [ ! "$RANLIB" ]; then
+  RANLIB="ranlib"
+fi
 
 tryAptGet libboost-all-dev
 tryAptGet liblua5.3-dev
