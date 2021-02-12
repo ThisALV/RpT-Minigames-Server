@@ -140,14 +140,16 @@ function trySourceGet() {
   echo "Successfully get $dep_full_name." || \
   echo "Error : unable to get $dep_full_name."
 
-  cd "$caller_dir" || exit 1
+  cd "$caller_dir" || exit 1 # Script cannot continue normally if
 }
 
 
+# Default value for archiver used by CMake
 if [ ! "$AR" ]; then
   AR="ar"
 fi
 
+# Default value for ranlib executable used by CMake
 if [ ! "$RANLIB" ]; then
   RANLIB="ranlib"
 fi
