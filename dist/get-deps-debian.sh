@@ -67,6 +67,7 @@ function trySourceGet() {
   author="$1"
   name="$2"
   branch_name="$3"
+  special_build_dir="$4"
 
   dep_full_name="$author/$name"
   echoPackageInstall "$dep_full_name"
@@ -74,7 +75,12 @@ function trySourceGet() {
   caller_dir="$(pwd)"
   install_dir="$caller_dir/install"
   deps_dir="build"
-  build_dir="$deps_dir/$author/$name-$branch_name/build"
+
+  if [ "$special_build_dir" ]; then
+    build_dir="$deps_dir/$author/$special_build_dir/build"
+  else
+    build_dir="$deps_dir/$author/$name-$branch_name/build"
+  fi
 
   mkdir -p "$deps_dir" && \
   extractGitHubSource "$author" "$name" "$branch_name" "$deps_dir"
@@ -94,4 +100,4 @@ tryAptGet libboost-all-dev
 tryAptGet liblua5.3-dev
 tryHeaderOnlyGet nlohmann json master
 tryHeaderOnlyGet ThePhD sol2 main
-trySourceGet gabime spdlog v1.x
+trySourceGet gabime spdlog v1.x spdlog-1.x
