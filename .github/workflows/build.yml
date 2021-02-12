@@ -52,24 +52,9 @@ jobs:
           RANLIB: ${{matrix.toolchain.ranlib}}
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
-      - name: Setup apt-get deps
-        run: sudo apt-get install -y libboost-all-dev liblua5.3-dev
-
-      - name: Setup sol2 deps
-        run: >
-          git clone --depth=1 https://github.com/ThePhD/sol2 &&
-          cd sol2 &&
-          cmake . &&
-          sudo cmake --install .
-
-      - name: Setup spdlog deps
-        run: >
-          git clone --depth=1 https://github.com/gabime/spdlog &&
-          mkdir spdlog/build &&
-          cd spdlog/build &&
-          cmake -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) .. &&
-          cmake --build . -- -j2 &&
-          sudo cmake --install .
+      - name: Setup project deps
+        working-directory: ${{github.workspace}}/dist
+        run: ./get-deps-debian.sh
 
         env:
           CC: ${{matrix.toolchain.cc}}
@@ -77,13 +62,6 @@ jobs:
           AR: ${{matrix.toolchain.ar}}
           RANLIB: ${{matrix.toolchain.ranlib}}
           LDFLAGS: ${{matrix.toolchain.ldflags}}
-
-      - name: Setup nlohmann-json3 deps
-        run: >
-          git clone --depth=1 https://github.com/nlohmann/json &&
-          cd json &&
-          cmake . &&
-          sudo cmake --install .
 
       - name: Generate project
         run: >
