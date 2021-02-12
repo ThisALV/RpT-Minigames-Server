@@ -1,6 +1,9 @@
 #!/bin/bash
 
 
+## Print packages installation separator
+# Args:
+# $1: Full name of installed package
 function echoPackageInstall() {
   local name="$1"
 
@@ -11,6 +14,12 @@ function echoPackageInstall() {
   echo
 }
 
+## Download and extract GitHub sources archive
+# Args:
+# $1: Author of extracted package
+# $2: Name of extracted package
+# $3: Name of fetched remote branch
+# $4: Sources archive extraction destination
 function extractGitHubSource() {
   local author="$1"
   local name="$2"
@@ -36,6 +45,9 @@ function extractGitHubSource() {
 }
 
 
+## Retrieve and install package from apt-get
+# Args:
+# $1: Name of installed package
 function tryAptGet() {
   local name="$1"
 
@@ -48,6 +60,11 @@ function tryAptGet() {
   fi
 }
 
+## Retrieve and install header-only package from GitHub
+# Args:
+# $1: Author of extracted package
+# $2: Name of extracted package
+# $3: Name of fetched remote branch
 function tryHeaderOnlyGet() {
   local author="$1"
   local name="$2"
@@ -79,11 +96,17 @@ function tryHeaderOnlyGet() {
   cd "$caller_dir" || exit 1
 }
 
+## Retrieve, build and install package from Github
+# Args:
+# $1: Author of extracted package
+# $2: Name of extracted package
+# $3: Name of fetched remote branch
+# $4: (Optional) Custom name for project directory inside build/
 function trySourceGet() {
   local author="$1"
   local name="$2"
   local branch_name="$3"
-  local special_build_dir="$4"
+  local special_project_dir="$4"
 
   local dep_full_name="$author/$name"
   echoPackageInstall "$dep_full_name"
@@ -95,8 +118,8 @@ function trySourceGet() {
   local deps_dir="build"
   local project_dir="$deps_dir/$author/$name-$branch_name"
 
-  if [ "$special_build_dir" ]; then
-    build_dir="$deps_dir/$author/$special_build_dir/build"
+  if [ "$special_project_dir" ]; then
+    build_dir="$deps_dir/$author/$special_project_dir/build"
   else
     build_dir="$deps_dir/$author/$name-$branch_name/build"
   fi
