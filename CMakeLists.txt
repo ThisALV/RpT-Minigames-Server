@@ -49,7 +49,8 @@ endfunction()
 ## Init config
 
 set(RPT_CONFIG "Config.hpp")
-set(RPT_CONFIG_OUTPUT "${CMAKE_BINARY_DIR}/rpt-config/${RPT_CONFIG}")
+set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config")
+set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}")
 configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 
 ## Init source directories
