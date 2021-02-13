@@ -1,17 +1,31 @@
 #!/bin/bash
 
 
+## Escape consts
+RESET="\033[m"
+YELLOW="\033[33m"
+BRIGHT_GREEN="\033[92m"
+BRIGHT_WHITE="\033[97m"
+
+
+## Print script log message as white text
+# Args:
+# $1: Message to print
+function log() {
+  echo -e "${BRIGHT_GREEN}${1}${RESET}"
+}
+
 ## Print packages installation separator
 # Args:
 # $1: Full name of installed package
 function echoPackageInstall() {
   local name="$1"
 
-  echo
+  echo -e "$YELLOW"
   echo "============================================================"
   echo "Installing $name..."
   echo "============================================================"
-  echo
+  echo -e "$RESET"
 }
 
 ## Download and extract GitHub sources archive
@@ -32,16 +46,16 @@ function extractGitHubSource() {
   local archive="$name-$branch_name.tar.gz"
   local sources_url="https://github.com/$author/$name/archive/$branch_name.tar.gz"
 
-  echo "Create download directory $download_dir..." && \
+  log "Create download directory $download_dir..." && \
   mkdir -p "$download_dir" && \
-  echo "Download sources from $sources_url..." && \
+  log "Download sources from $sources_url..." && \
   wget -O "$download_dir/$archive" "$sources_url" && \
-  echo "Create destination directory $dest_dir..." && \
+  log "Create destination directory $dest_dir..." && \
   mkdir -p "$dest_dir" && \
-  echo "Extract downloaded sources to $dest_dir..." && \
+  log "Extract downloaded sources to $dest_dir..." && \
   tar -xzf "$download_dir/$archive" -C "$dest_dir" && \
-  echo "Extracting done for $dep_full_name." || \
-  echo "Error : unable to extract sources for $dep_full_name."
+  log "Extracting done for $dep_full_name." || \
+  log "Error : unable to extract sources for $dep_full_name."
 }
 
 
@@ -54,9 +68,9 @@ function tryAptGet() {
   echoPackageInstall "$name"
 
   if apt-get install -y "$name"; then
-    echo "Successfully get $name."
+    log "Successfully get $name."
   else
-    echo "Error : unable to get $name." >&2
+    log "Error : unable to get $name." >&2
   fi
 }
 
@@ -80,18 +94,18 @@ function tryHeaderOnlyGet() {
   local deps_dir="build"
   local project_dir="$deps_dir/$author/$name-$branch_name"
 
-  echo "Create deps build directory at $deps_dir..." && \
+  log "Create deps build directory at $deps_dir..." && \
   mkdir -p $deps_dir && \
-  echo "Extract $dep_full_name sources..." && \
+  log "Extract $dep_full_name sources..." && \
   extractGitHubSource "$author" "$name" "$branch_name" "$deps_dir" && \
-  echo "Go to $dep_full_name project directory $project_dir..." && \
+  log "Go to $dep_full_name project directory $project_dir..." && \
   cd "$project_dir" && \
-  echo "Configure project..." && \
+  log "Configure project..." && \
   cmake "-DCMAKE_INSTALL_PREFIX=$install_dir" . && \
-  echo "Install project to $install_dir..." && \
+  log "Install project to $install_dir..." && \
   cmake --install . && \
-  echo "Successfully get $dep_full_name." || \
-  echo "Error : unable to get $dep_full_name."
+  log "Successfully get $dep_full_name." || \
+  log "Error : unable to get $dep_full_name."
 
   cd "$caller_dir" || exit 1
 }
@@ -124,23 +138,23 @@ function trySourceGet() {
     build_dir="$deps_dir/$author/$name-$branch_name/build"
   fi
 
-  echo "Create deps build directory at $deps_dir..." && \
+  log "Create deps build directory at $deps_dir..." && \
   mkdir -p "$deps_dir" && \
   extractGitHubSource "$author" "$name" "$branch_name" "$deps_dir"
-  echo "Create $dep_full_name build directory at $build_dir..."
+  log "Create $dep_full_name build directory at $build_dir..."
   mkdir -p "$build_dir" && \
-  echo "Go to $dep_full_name project directory $project_dir..." && \
+  log "Go to $dep_full_name project directory $project_dir..." && \
   cd "$build_dir" && \
-  echo "Configure project..." && \
+  log "Configure project..." && \
   cmake "-DCMAKE_INSTALL_PREFIX=$install_dir" "-DCMAKE_AR=$(which "$AR")" "-DCMAKE_RANLIB=$(which "$RANLIB")" .. && \
-  echo "Build project..." && \
+  log "Build project..." && \
   cmake --build . -- "-j$(nproc)" && \
-  echo "Install project to $install_dir..." && \
+  log "Install project to $install_dir..." && \
   cmake --install . && \
-  echo "Successfully get $dep_full_name." || \
-  echo "Error : unable to get $dep_full_name."
+  log "Successfully get $dep_full_name." || \
+  log "Error : unable to get $dep_full_name."
 
-  echo "Back to $caller_dir..."
+  log "Back to $caller_dir..."
   cd "$caller_dir" || exit 1 # Script cannot continue normally if
 }
 
@@ -155,10 +169,12 @@ if [ ! "$RANLIB" ]; then
   RANLIB="ranlib"
 fi
 
+echo -e "$BRIGHT_WHITE"
 echo "==================== Toolchain summary ====================="
 echo "CC=$(which "$CC"), CXX=$(which "$CXX"), LDflags=$LDFLAGS"
 echo "Archiver=$(which "$AR"), Ranlib=$(which "$RANLIB")"
 echo "============================================================"
+echo -e "$RESET"
 
 tryAptGet libboost-all-dev
 tryAptGet liblua5.3-dev
