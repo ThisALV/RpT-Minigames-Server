@@ -121,20 +121,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup pacman deps
-        run: >
-          pacman --sync --noconfirm --needed
-          mingw-w64-${{matrix.msys.architecture}}-boost
-          mingw-w64-${{matrix.msys.architecture}}-spdlog
-          mingw-w64-${{matrix.msys.architecture}}-nlohmann-json
-          mingw-w64-${{matrix.msys.architecture}}-lua
-          mingw-w64-${{matrix.msys.architecture}}-sol2
+      - name: Setup project deps
+        working-directory: ${{github.workspace}}/dist
+        run: ./get-deps-msys2.sh $TARGET
+
+        env:
+          TARGET: ${{matrix.msys.architecture}}
 
       - name: Generate project
         run: >
           mkdir build &&
           cd build &&
-          cmake --log-level=DEBUG -DCMAKE_BUILD_TYPE=Release -G"MinGW Makefiles" ..
+          cmake --log-level=DEBUG -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_BUILD_TYPE=Release -G"MinGW Makefiles" ..
 
       - name: Build project
         working-directory: ${{github.workspace}}/build
