@@ -52,7 +52,7 @@ fi
 
 # Use default install path if local isn't set
 if [ "$local" ]; then
-  install_prefix="-DCMAKE_INSTALL_PREFIX=\"../dist/install\""
+  install_prefix="-DCMAKE_INSTALL_PREFIX=../dist/install"
 else
   install_prefix=""
 fi
