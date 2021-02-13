@@ -67,7 +67,7 @@ jobs:
         run: >
           mkdir build &&
           cd build &&
-          cmake --log-level=DEBUG -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_BUILD_TYPE=Release -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) ..
 
         env:
           CC: ${{matrix.toolchain.cc}}
@@ -132,7 +132,7 @@ jobs:
         run: >
           mkdir build &&
           cd build &&
-          cmake --log-level=DEBUG -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_BUILD_TYPE=Release -G"MinGW Makefiles" ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -G"MinGW Makefiles" ..
 
       - name: Build project
         working-directory: ${{github.workspace}}/build
