@@ -77,6 +77,9 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest
 
+      - name: Listing files
+        run: ls -l
+
       - name: Install project
         run: working_dir="$(pwd)" && sudo "$working_dir/install.sh"
 
