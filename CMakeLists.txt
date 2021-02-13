@@ -19,7 +19,7 @@ else()
     message(FATAL_ERROR "Unable to get target's platform type")
 endif()
 
-set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target's platform type")
+set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
 ## Init doc options
 
@@ -28,6 +28,7 @@ find_package(Doxygen)
 if(Doxygen_FOUND)
     message(STATUS "Doxygen ${DOXYGEN_VERSION} found.")
     set(RPT_GENERATE_DOC ON)
+    set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style")
     set(RPT_DOC_OUTPUT "${CMAKE_BINARY_DIR}/doc")
 
     message(STATUS "Doc will be generated to ${RPT_DOC_OUTPUT}")
@@ -72,6 +73,12 @@ if(RPT_GENERATE_DOC)
     set(DOXYGEN_GENERATE_HTML YES)
     set(DOXYGEN_GENERATE_MAN YES)
     set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
+
+    set(DOXYGEN_HTML_COLORSTYLE_HUE 60)
+    set(DOXYGEN_HTML_EXTRA_STYLESHEET
+            "${RPT_DOC_STYLESHEETS}/custom.css"
+            "${RPT_DOC_STYLESHEETS}/custom_dark_theme.css"
+            "${RPT_DOC_STYLESHEETS}/override_menu_colors.css")
 
     message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
     doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
