@@ -38,7 +38,11 @@ endif()
 
 function(register_doc_for INCLUDE_DIR)
     if(RPT_GENERATE_DOC)
-        set(RPT_INCLUDE_DIRS ${RPT_INCLUDE_DIRS} "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}")
+        set(ABSOLUTE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}")
+
+        set(RPT_INCLUDE_DIRS ${RPT_INCLUDE_DIRS} ${ABSOLUTE_INCLUDE_DIR} CACHE INTERNAL
+                "Header directories to use for API documenation")
+        message(DEBUG "Add include dir ${ABSOLUTE_INCLUDE_DIR} for doc.")
     endif()
 endfunction()
 
@@ -68,6 +72,7 @@ if(RPT_GENERATE_DOC)
     set(DOXYGEN_GENERATE_MAN YES)
     set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
 
+    message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
     doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
 
     install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
