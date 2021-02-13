@@ -21,10 +21,13 @@ function tryPacmanGet() {
     fi
 }
 
-# Determine target type with first script arg : 32 for i686, 64 for x86_64
-if [ "$1" == 32 ]; then
+
+## Determine target type with first script arg : 32 for i686, 64 for x86_64
+mode="$1"
+
+if [ "$mode" == 32 ] || [ "$mode" == "i686" ]; then
   target="i686"
-elif [ "$1" == 64 ]; then
+elif [ "$mode" == 64 ] || [ "$mode" == "x86_64" ]; then
   target="x86_64"
 else
   log "Error : Unable to get target type for mode \"$1\"."
