@@ -1,19 +1,7 @@
 #!/bin/bash
 
-
-## Escape consts
-RESET="\033[m"
-YELLOW="\033[33m"
-BRIGHT_GREEN="\033[92m"
-BRIGHT_WHITE="\033[97m"
-
-
-## Print script log message as white text
-# Args:
-# $1: Message to print
-function log() {
-  echo -e "${BRIGHT_GREEN}${1}${RESET}"
-}
+# Load utils shared across get-deps scripts
+source get-deps-common.sh
 
 ## Print packages installation separator
 # Args:
