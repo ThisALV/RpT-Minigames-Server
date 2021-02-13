@@ -12,7 +12,7 @@ mingw=
 
 ## Iterate args looking for :
 # --local : Install path set to dist/install
-# --mingw : Enable "MinGW Makefiles" generator
+# --mingw : Enable "MinGW Makefiles" generator and $MSYSTEM_PREFIX system install path
 for arg in "$@"; do
   if [ "$arg" ]; then
     if [ "$arg" == "--help" ]; then
@@ -36,7 +36,7 @@ if [ "$help" ]; then
   echo "Options are :"
   echo "    --help  : Print this message"
   echo "    --local : Set install path to dist/install"
-  echo "    --mingw : Set build generator to \"MinGW Makefiles\", required on MinGW"
+  echo "    --mingw : Set build generator to \"MinGW Makefiles\" and systme prefix path to $MSYSTEM_PREFIX, required on MinGW"
   echo
 
   exit 0
@@ -46,6 +46,10 @@ fi
 # Special case for MinGW environment
 if [ "$mingw" ]; then
   generator="MinGW Makefiles"
+
+  if [ ! "$local" ]; then
+    install_prefix="-DCMAKE_INSTALL_PREFIX=$MSYSTEM_PREFIX"
+  fi
 else
   generator="Unix Makefiles"
 fi
