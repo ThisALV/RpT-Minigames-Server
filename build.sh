@@ -57,10 +57,6 @@ fi
 # Special case for MinGW environment
 if [ "$mingw" ]; then
   generator="MinGW Makefiles"
-
-  if [ ! "$local" ]; then
-    install_prefix="-DCMAKE_INSTALL_PREFIX=$MSYSTEM_PREFIX"
-  fi
 else
   generator="Unix Makefiles"
 fi
@@ -69,7 +65,11 @@ fi
 if [ "$local" ]; then
   install_prefix="-DCMAKE_INSTALL_PREFIX=../dist/install"
 else
-  install_prefix=""
+  if [ "$mingw" ]; then
+    install_prefix="-DCMAKE_INSTALL_PREFIX=$MSYSTEM_PREFIX"
+  else
+    install_prefix=""
+  fi
 fi
 
 
@@ -82,7 +82,6 @@ fi
 if [ ! "$RANLIB" ]; then
   RANLIB="ranlib"
 fi
-
 
 ar_exec="$(which "$AR")"
 ranlib_exec="$(which "$RANLIB")"
