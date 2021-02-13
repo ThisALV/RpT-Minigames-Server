@@ -1,20 +1,9 @@
 #!/bin/bash
 
+
 # Load utils shared across get-deps scripts
 source get-deps-common.sh
 
-## Print packages installation separator
-# Args:
-# $1: Full name of installed package
-function echoPackageInstall() {
-  local name="$1"
-
-  echo -e "$YELLOW"
-  echo "============================================================"
-  echo "Installing $name..."
-  echo "============================================================"
-  echo -e "$RESET"
-}
 
 ## Download and extract GitHub sources archive
 # Args:

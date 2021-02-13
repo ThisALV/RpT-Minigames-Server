@@ -14,3 +14,16 @@ BRIGHT_WHITE="\033[97m"
 function log() {
   echo -e "${BRIGHT_GREEN}${1}${RESET}"
 }
+
+## Print packages installation separator
+# Args:
+# $1: Full name of installed package
+function echoPackageInstall() {
+  local name="$1"
+
+  echo -e "$YELLOW"
+  echo "============================================================"
+  echo "Installing $name..."
+  echo "============================================================"
+  echo -e "$RESET"
+}
