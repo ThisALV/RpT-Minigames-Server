@@ -63,11 +63,8 @@ jobs:
           RANLIB: ${{matrix.toolchain.ranlib}}
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
-      - name: Generate project
-        run: >
-          mkdir build &&
-          cd build &&
-          cmake --log-level=DEBUG -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_BUILD_TYPE=Release -DCMAKE_AR=$(which $AR) -DCMAKE_RANLIB=$(which $RANLIB) ..
+      - name: Generate and build project
+        run: ./build.sh
 
         env:
           CC: ${{matrix.toolchain.cc}}
@@ -76,17 +73,15 @@ jobs:
           RANLIB: ${{matrix.toolchain.ranlib}}
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
-      - name: Build project
-        working-directory: ${{github.workspace}}/build
-        run: cmake --build . -- -j2
-
       - name: Run tests
         working-directory: ${{github.workspace}}/build
         run: ctest
 
       - name: Install project
-        working-directory: ${{github.workspace}}/build
-        run: sudo cmake --install .
+        run: sudo ./install.sh
+
+      - name: Run server
+        run: rpt-server
 
   build-mingw:
     runs-on: windows-latest
@@ -128,20 +123,15 @@ jobs:
         env:
           TARGET: ${{matrix.msys.architecture}}
 
-      - name: Generate project
-        run: >
-          mkdir build &&
-          cd build &&
-          cmake --log-level=DEBUG -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" -DCMAKE_BUILD_TYPE=Release -G"MinGW Makefiles" ..
-
-      - name: Build project
-        working-directory: ${{github.workspace}}/build
-        run: cmake --build . -- -j2
+      - name: Generate and build project
+        run: ./build.sh --mingw
 
       - name: Run tests
         working-directory: ${{github.workspace}}/build
         run: ctest
 
       - name: Install project
-        working-directory: ${{github.workspace}}/build
-        run: cmake --install .
+        run: ./install.sh
+
+      - name: Run server
+        run: rpt-server.exe

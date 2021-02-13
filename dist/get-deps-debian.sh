@@ -78,7 +78,7 @@ function tryHeaderOnlyGet() {
   log "Go to $dep_full_name project directory $project_dir..." && \
   cd "$project_dir" && \
   log "Configure project..." && \
-  cmake "-DCMAKE_INSTALL_PREFIX=$install_dir" . && \
+  cmake -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$install_dir" . && \
   log "Install project to $install_dir..." && \
   cmake --install . && \
   log "Successfully get $dep_full_name." || \
@@ -123,7 +123,7 @@ function trySourceGet() {
   log "Go to $dep_full_name project directory $project_dir..." && \
   cd "$build_dir" && \
   log "Configure project..." && \
-  cmake "-DCMAKE_INSTALL_PREFIX=$install_dir" "-DCMAKE_AR=$(which "$AR")" "-DCMAKE_RANLIB=$(which "$RANLIB")" .. && \
+  cmake -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$install_dir" "-DCMAKE_AR=$(which "$AR")" "-DCMAKE_RANLIB=$(which "$RANLIB")" .. && \
   log "Build project..." && \
   cmake --build . -- "-j$(nproc)" && \
   log "Install project to $install_dir..." && \
