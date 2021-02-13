@@ -44,9 +44,9 @@ endfunction()
 
 ## Init config
 
-set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config")
 set(RPT_CONFIG "Config.hpp")
-configure_file(${RPT_CONFIG} "${RPT_CONFIG_DIR}/Rpt-Config/${RPT_CONFIG}")
+set(RPT_CONFIG_OUTPUT "${CMAKE_BINARY_DIR}/rpt-config/${RPT_CONFIG}")
+configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 
 ## Init source directories
 
@@ -68,7 +68,7 @@ if(RPT_GENERATE_DOC)
     set(DOXYGEN_GENERATE_MAN YES)
     set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
 
-    doxygen_add_docs(doc ${RPT_CONFIG} ${RPT_INCLUDE_DIRS} ALL)
+    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
 
     install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
     install(DIRECTORY "${RPT_DOC_OUTPUT}/man/" TYPE MAN)
