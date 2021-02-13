@@ -12,6 +12,7 @@ find_package(spdlog 1.8.1 REQUIRED CONFIG) # Required for forward-decl header, s
 add_library(rpt-core STATIC ${RPT_CORE_HEADERS} ${RPT_CORE_SOURCES})
 target_include_directories(rpt-core PUBLIC include PRIVATE ${Boost_INCLUDE_DIR})
 target_link_libraries(rpt-core PUBLIC rpt-gameplay PRIVATE spdlog::spdlog)
+register_doc_for(include)
 
 install(DIRECTORY "include/" TYPE INCLUDE)
 install(TARGETS rpt-core LIBRARY)

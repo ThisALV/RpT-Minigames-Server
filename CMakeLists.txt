@@ -5,6 +5,8 @@ message(STATUS "Archiver: ${CMAKE_AR}, Ranlib: ${CMAKE_RANLIB}, Linker flags: $E
 
 project(RpTogether-Server LANGUAGES CXX VERSION 0.0.1)
 
+## Init project options
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(Boost_USE_STATIC_LIBS ON)
@@ -17,18 +19,70 @@ else()
     message(FATAL_ERROR "Unable to get target's platform type")
 endif()
 
-set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target's platform type")
+set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
-set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config")
+## Init doc options
+
+find_package(Doxygen)
+
+if(Doxygen_FOUND)
+    message(STATUS "Doxygen ${DOXYGEN_VERSION} found.")
+    set(RPT_GENERATE_DOC ON)
+    set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style")
+    set(RPT_DOC_OUTPUT "${CMAKE_BINARY_DIR}/doc")
+
+    message(STATUS "Doc will be generated to ${RPT_DOC_OUTPUT}")
+else()
+    message(STATUS "Doxygen not found, doc will not be generated.")
+    set(RPT_GENERATE_DOC OFF)
+endif()
+
+function(register_doc_for INCLUDE_DIR)
+    if(RPT_GENERATE_DOC)
+        set(ABSOLUTE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}")
+
+        set(RPT_INCLUDE_DIRS ${RPT_INCLUDE_DIRS} ${ABSOLUTE_INCLUDE_DIR} CACHE INTERNAL
+                "Header directories to use for API documenation")
+        message(DEBUG "Add include dir ${ABSOLUTE_INCLUDE_DIR} for doc.")
+    endif()
+endfunction()
+
+## Init config
+
 set(RPT_CONFIG "Config.hpp")
-configure_file(${RPT_CONFIG} "${RPT_CONFIG_DIR}/Rpt-Config/${RPT_CONFIG}")
+set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config")
+set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}")
+configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
+
+## Init source directories
 
 add_subdirectory(rpt-gameplay)
 add_subdirectory(rpt-core)
 add_subdirectory(rpt-serialization)
 add_subdirectory(rpt-server)
 
+# Enable tests sources directory if Debug mode is enabled
 if("${CMAKE_BUILD_TYPE}" STREQUAL Debug)
     enable_testing()
     add_subdirectory(rpt-tests)
+endif()
+
+## Enable doc target
+
+if(RPT_GENERATE_DOC)
+    set(DOXYGEN_GENERATE_HTML YES)
+    set(DOXYGEN_GENERATE_MAN YES)
+    set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
+
+    set(DOXYGEN_HTML_COLORSTYLE_HUE 60)
+    set(DOXYGEN_HTML_EXTRA_STYLESHEET
+            "${RPT_DOC_STYLESHEETS}/custom.css"
+            "${RPT_DOC_STYLESHEETS}/custom_dark_theme.css"
+            "${RPT_DOC_STYLESHEETS}/override_menu_colors.css")
+
+    message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
+    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
+
+    install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
+    install(DIRECTORY "${RPT_DOC_OUTPUT}/man/" TYPE MAN)
 endif()

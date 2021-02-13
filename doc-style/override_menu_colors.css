@@ -1,0 +1,11 @@
+.sm-dox a, .sm-dox a:focus, .sm-dox a:hover, .sm-dox a:active {
+    color: #61612a;
+}
+
+.sm-dox a span.sub-arrow {
+    border-color: #61612a transparent transparent transparent;
+}
+
+.sm-dox .sm-nowrap > li > a {
+    color: #61612a;
+}
