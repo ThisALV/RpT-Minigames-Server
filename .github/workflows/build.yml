@@ -123,7 +123,10 @@ jobs:
 
       - name: Setup project deps
         working-directory: ${{github.workspace}}/dist
-        run: ./get-deps-msys2.sh
+        run: ./get-deps-msys2.sh $TARGET
+
+        env:
+          TARGET: ${{matrix.msys.architecture}}
 
       - name: Generate project
         run: >
