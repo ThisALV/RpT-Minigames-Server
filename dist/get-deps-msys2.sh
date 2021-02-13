@@ -9,27 +9,30 @@ source get-deps-common.sh
 # $1: Name of installed package
 # $2: MinGW target version (i686 / x86_64)
 function tryPacmanGet() {
-    local name="$1"
-    local target="$2"
+  local name="$1"
+  local target="$2"
 
-    echoPackageInstall "$name"
+  echoPackageInstall "$name"
 
-    if pacman --sync --noconfirm --needed "mingw-w64-$target-$name"; then
-      log "Successfully installed $name."
-    else
-      log "Error : Unable to install $name."
-    fi
+  # Try to install MinGW package for appropriate target (i686 or x86_64)
+  # --needed for no error if already installed, --noconfirm for non-interactive mode
+  if pacman --sync --noconfirm --needed "mingw-w64-$target-$name"; then
+    log "Successfully installed $name."
+  else
+    log "Error : Unable to install $name."
+  fi
 }
 
 
 ## Determine target type with first script arg : 32 for i686, 64 for x86_64
 mode="$1"
 
+# $target will be used to determine name of installed MinGW packages
 if [ "$mode" == 32 ] || [ "$mode" == "i686" ]; then
   target="i686"
 elif [ "$mode" == 64 ] || [ "$mode" == "x86_64" ]; then
   target="x86_64"
-else
+else # Parameter mode is required by the script
   log "Error : Unable to get target type for mode \"$1\"."
   exit 1
 fi

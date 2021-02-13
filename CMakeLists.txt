@@ -19,6 +19,7 @@ else()
     message(FATAL_ERROR "Unable to get target's platform type")
 endif()
 
+# CMake property used into sources for platform detection
 set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
 ## Init doc options
@@ -28,7 +29,7 @@ find_package(Doxygen)
 if(Doxygen_FOUND)
     message(STATUS "Doxygen ${DOXYGEN_VERSION} found.")
     set(RPT_GENERATE_DOC ON)
-    set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style")
+    set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style") # Path to custom dark theme
     set(RPT_DOC_OUTPUT "${CMAKE_BINARY_DIR}/doc")
 
     message(STATUS "Doc will be generated to ${RPT_DOC_OUTPUT}")
@@ -37,10 +38,13 @@ else()
     set(RPT_GENERATE_DOC OFF)
 endif()
 
+# Add headers directory to Doxygen API doc
 function(register_doc_for INCLUDE_DIR)
     if(RPT_GENERATE_DOC)
+        # Necessary as function will be called by subdirectories using relative paths
         set(ABSOLUTE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_DIR}")
 
+        # Append path to header directories
         set(RPT_INCLUDE_DIRS ${RPT_INCLUDE_DIRS} ${ABSOLUTE_INCLUDE_DIR} CACHE INTERNAL
                 "Header directories to use for API documenation")
         message(DEBUG "Add include dir ${ABSOLUTE_INCLUDE_DIR} for doc.")
@@ -50,8 +54,8 @@ endfunction()
 ## Init config
 
 set(RPT_CONFIG "Config.hpp")
-set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config")
-set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}")
+set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config") # Path used for including config header into source code
+set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}") # Full path of generated config header
 configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 
 ## Init source directories
@@ -74,14 +78,14 @@ if(RPT_GENERATE_DOC)
     set(DOXYGEN_GENERATE_MAN YES)
     set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
 
-    set(DOXYGEN_HTML_COLORSTYLE_HUE 60)
-    set(DOXYGEN_HTML_EXTRA_STYLESHEET
+    set(DOXYGEN_HTML_COLORSTYLE_HUE 60) # Dark yellow foreground
+    set(DOXYGEN_HTML_EXTRA_STYLESHEET # Enable custom dark theme
             "${RPT_DOC_STYLESHEETS}/custom.css"
             "${RPT_DOC_STYLESHEETS}/custom_dark_theme.css"
             "${RPT_DOC_STYLESHEETS}/override_menu_colors.css")
 
     message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
-    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
+    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL) # Doc for all headers (config and include files)
 
     install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
     install(DIRECTORY "${RPT_DOC_OUTPUT}/man/" TYPE MAN)

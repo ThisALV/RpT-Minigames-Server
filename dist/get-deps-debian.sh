@@ -17,11 +17,11 @@ function extractGitHubSource() {
   local branch_name="$3"
   local extract_dir="$4"
 
-  local dep_full_name="$author/$name"
-  local download_dir="download/$author"
-  local dest_dir="$extract_dir/$author"
-  local archive="$name-$branch_name.tar.gz"
-  local sources_url="https://github.com/$author/$name/archive/$branch_name.tar.gz"
+  local dep_full_name="$author/$name" # Full and unique name of dep used for logging
+  local download_dir="download/$author" # Downloaded archive location
+  local dest_dir="$extract_dir/$author" # Extracted archive content location
+  local archive="$name-$branch_name.tar.gz" # Name of downloaded archive
+  local sources_url="https://github.com/$author/$name/archive/$branch_name.tar.gz" # Download URL
 
   log "Create download directory $download_dir..." && \
   mkdir -p "$download_dir" && \
@@ -44,6 +44,7 @@ function tryAptGet() {
 
   echoPackageInstall "$name"
 
+  # Try to install package from apt-get, -y for non-interactive mode
   if apt-get install -y "$name"; then
     log "Successfully get $name."
   else
@@ -61,15 +62,15 @@ function tryHeaderOnlyGet() {
   local name="$2"
   local branch_name="$3"
 
-  local dep_full_name="$author/$name"
+  local dep_full_name="$author/$name" # Full and unique name of dep used for logging
   echoPackageInstall "$dep_full_name"
 
-  local caller_dir
+  local caller_dir # Saved working_directory for later restore as it will change during script execution
   caller_dir="$(pwd)" # Must be absolute for working-directory restore
 
   local install_dir="$caller_dir/install" # Must be absolute for CMake configuration
-  local deps_dir="build"
-  local project_dir="$deps_dir/$author/$name-$branch_name"
+  local deps_dir="build" # CMake project parent directory
+  local project_dir="$deps_dir/$author/$name-$branch_name" # CMake project fully-qualified directory
 
   log "Create deps build directory at $deps_dir..." && \
   mkdir -p $deps_dir && \
@@ -84,7 +85,7 @@ function tryHeaderOnlyGet() {
   log "Successfully get $dep_full_name." || \
   log "Error : unable to get $dep_full_name."
 
-  cd "$caller_dir" || exit 1
+  cd "$caller_dir" || exit 1 # Script cannot continue normally if working dir cannot be restored
 }
 
 ## Retrieve, build and install package from Github
@@ -99,15 +100,15 @@ function trySourceGet() {
   local branch_name="$3"
   local special_project_dir="$4"
 
-  local dep_full_name="$author/$name"
+  local dep_full_name="$author/$name" # Full and unique name of dep used for logging
   echoPackageInstall "$dep_full_name"
 
-  local caller_dir
+  local caller_dir # Saved working_directory for later restore as it will change during script execution
   caller_dir="$(pwd)" # Must be absolute for working-directory restore
 
   local install_dir="$caller_dir/install" # Must be absolute for CMake configuration
-  local deps_dir="build"
-  local project_dir="$deps_dir/$author/$name-$branch_name"
+  local deps_dir="build" # CMake project parent directory
+  local project_dir="$deps_dir/$author/$name-$branch_name" # CMake project fully-qualified directory
 
   if [ "$special_project_dir" ]; then
     build_dir="$deps_dir/$author/$special_project_dir/build"
@@ -132,7 +133,7 @@ function trySourceGet() {
   log "Error : unable to get $dep_full_name."
 
   log "Back to $caller_dir..."
-  cd "$caller_dir" || exit 1 # Script cannot continue normally if
+  cd "$caller_dir" || exit 1 # Script cannot continue normally if working dir cannot be restored
 }
 
 

@@ -12,6 +12,8 @@ local=
 mingw=
 
 ## Iterate args looking for :
+# --clear : Total remove of build/ directory
+# --help : Explain command usage
 # --local : Install path set to dist/install
 # --mingw : Enable "MinGW Makefiles" generator and $MSYSTEM_PREFIX system install path
 for arg in "$@"; do
@@ -65,9 +67,9 @@ fi
 if [ "$local" ]; then
   install_prefix="-DCMAKE_INSTALL_PREFIX=../dist/install"
 else
-  if [ "$mingw" ]; then
+  if [ "$mingw" ]; then # Better to use msystem environment as install directory for non-local MinGW installation
     install_prefix="-DCMAKE_INSTALL_PREFIX=$MSYSTEM_PREFIX"
-  else
+  else # If using any other environment, keep default system install path
     install_prefix=""
   fi
 fi
