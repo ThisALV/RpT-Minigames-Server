@@ -78,7 +78,7 @@ jobs:
         run: ctest
 
       - name: Install project
-        run: sudo ./install.sh
+        run: working_dir="$(pwd)" && sudo "$working_dir/install.sh"
 
       - name: Run server
         run: rpt-server
