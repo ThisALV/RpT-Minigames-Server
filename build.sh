@@ -6,6 +6,7 @@ RESET="\033[m"
 BRIGHT_RED="\033[91m"
 
 
+clear=
 help=
 local=
 mingw=
@@ -15,7 +16,9 @@ mingw=
 # --mingw : Enable "MinGW Makefiles" generator and $MSYSTEM_PREFIX system install path
 for arg in "$@"; do
   if [ "$arg" ]; then
-    if [ "$arg" == "--help" ]; then
+    if [ "$arg" == "--clear" ]; then
+      clear=1
+    elif [ "$arg" == "--help" ]; then
       help=1
     elif [ "$arg" == "--local" ]; then
       local=1
@@ -29,11 +32,19 @@ for arg in "$@"; do
 done
 
 
+# Clear project CMake dir mode
+if [ "$clear" ]; then
+  rm -r -f build/
+  exit 0
+fi
+
+
 # Help message mode
 if [ "$help" ]; then
   echo "Usage: $0 [option]..."
   echo
   echo "Options are :"
+  echo "    --clear : Clear build directory build/"
   echo "    --help  : Print this message"
   echo "    --local : Set install path to dist/install"
   echo "    --mingw : Set build generator to \"MinGW Makefiles\" and systme prefix path to $MSYSTEM_PREFIX, required on MinGW"
