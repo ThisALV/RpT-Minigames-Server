@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithoutValues) {
 
     // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::UnknownOption);
+                      RpT::Core::InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithValues) {
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithValues) {
 
     // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::UnknownOption);
+                      RpT::Core::InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
