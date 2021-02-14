@@ -1,5 +1,7 @@
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
+# Register test target under ${NAME}-tests with ${SOURCES} cpp files
+# Creates variable named ${NAME}_EXEC for adding include directories or libs to the new target
 function(register_test NAME SOURCES)
     set(EXEC_NAME "${NAME}-tests")
 
@@ -11,3 +13,7 @@ function(register_test NAME SOURCES)
 
     install(TARGETS ${EXEC_NAME} RUNTIME)
 endfunction()
+
+
+register_test(core CommandLineOptionsParserTests.cpp)
+target_link_libraries(${core_EXEC} PRIVATE rpt-core)
