@@ -5,6 +5,7 @@ function(register_test NAME SOURCES)
 
     add_executable(${EXEC_NAME} ${SOURCES})
     target_link_libraries(${EXEC_NAME} PRIVATE Boost::unit_test_framework)
+    set(${NAME}_EXEC ${EXEC_NAME} PARENT_SCOPE)
 
     add_test(NAME ${NAME} COMMAND ${EXEC_NAME})
 
