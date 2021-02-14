@@ -39,7 +39,7 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
             }
 
             // Add option to parsed options
-            const auto insert_result { parsed_options_.insert({ std::string { option_name }, {} }) };
+            const auto insert_result { parsed_options_.insert({ option_name, {} }) };
 
             // Check if the insertion was successful or not
             if (!insert_result.second) {
@@ -62,8 +62,9 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
             assert(i_arg > 1);
 
             // Get assigned option name, which corresponds to the previous argument
-            const std::string_view option_name { argv[i_arg - 1] };
-            parsed_options_.at(option_name) = arg;
+            const std::string_view option_arg { argv[i_arg - 1] };
+            // As argv contains only unparsed arguments, prefix need to be ignored with optionNameOf()
+            parsed_options_.at(optionNameOf(option_arg)) = arg;
 
             // As value has been assigned, previous option has been parsed, next argument should not be a value
             parsing_option = false;
