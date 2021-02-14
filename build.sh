@@ -10,12 +10,14 @@ clear=
 help=
 local=
 mingw=
+debug_features=
 
 ## Iterate args looking for :
 # --clear : Total remove of build/ directory
 # --help : Explain command usage
 # --local : Install path set to dist/install
 # --mingw : Enable "MinGW Makefiles" generator and $MSYSTEM_PREFIX system install path
+# --debug-features : Enable CMake targets for unit testing and doc generation, even if build type is Release
 for arg in "$@"; do
   if [ "$arg" ]; then
     if [ "$arg" == "--clear" ]; then
@@ -26,6 +28,8 @@ for arg in "$@"; do
       local=1
     elif [ "$arg" == "--mingw" ]; then
       mingw=1
+    elif [ "$arg" == "--debug-features" ]; then
+      debug_features=1
     else
       echo -e "${BRIGHT_RED}Unknown argument \"$arg\".${RESET}"
       exit 1
@@ -46,10 +50,13 @@ if [ "$help" ]; then
   echo "Usage: $0 [option]..."
   echo
   echo "Options are :"
-  echo "    --clear : Clear build directory build/"
-  echo "    --help  : Print this message"
-  echo "    --local : Set install path to dist/install"
-  echo "    --mingw : Set build generator to \"MinGW Makefiles\" and systme prefix path to $MSYSTEM_PREFIX, required on MinGW"
+  echo "    --clear          : Clear build directory build/"
+  echo "    --help           : Print this message"
+  echo "    --local          : Set install path to dist/install"
+  echo "    --mingw          : Set build generator to \"MinGW Makefiles\" and system"
+  echo "                       prefix path to $MSYSTEM_PREFIX. Required on MinGW."
+  echo "    --debug-features : Enable CMake targets for unit testing and doc generation,"
+  echo "                       even if this command use Release build."
   echo
 
   exit 0
@@ -74,6 +81,13 @@ else
   fi
 fi
 
+# Set CMake RPT_FORCE_DEBUG_FEATURES depending on --debug-features command option
+if [ "$debug_features" ]; then
+  debug_features_option="-DRPT_FORCE_DEBUG_FEATURES=1"
+else
+  debug_features_option="-DRPT_FORCE_DEBUG_FEATURES=0"
+fi
+
 
 # Default value for archiver used by CMake
 if [ ! "$AR" ]; then
@@ -92,7 +106,7 @@ ranlib_exec="$(which "$RANLIB")"
 mkdir -p build && \
 cd build && \
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" $install_prefix \
-  -DCMAKE_AR="$ar_exec" -DCMAKE_RANLIB="$ranlib_exec" -G"$generator" .. && \
+  -DCMAKE_AR="$ar_exec" -DCMAKE_RANLIB="$ranlib_exec" -G"$generator" $debug_features_option .. && \
 cmake --build . -- "-j$(nproc)" && \
 cd .. || \
 echo -e "${BRIGHT_RED}Error occurred during build script, build might be incomplete.${RESET}"
