@@ -9,6 +9,13 @@ constexpr bool CommandLineOptionsParser::isCommandLineOption(const std::string_v
     return argument.length() >= PREFIX_LENGTH && argument.substr(0, PREFIX_LENGTH) == OPTION_PREFIX;
 }
 
+constexpr std::string_view CommandLineOptionsParser::optionNameOf(std::string_view arg) {
+    // Private function that should only be used if isCommandLineOption() returned true
+    assert(isCommandLineOption(arg));
+
+    return arg.substr(PREFIX_LENGTH, std::string_view::npos); // Returns string after "--" prefix
+}
+
 CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** argv,
                                                    const std::initializer_list<std::string_view> allowed_options) {
 
@@ -22,22 +29,24 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
         const std::string_view arg { argv[i_arg] }; // Currently parsed single argument
 
         if (isCommandLineOption(arg)) {
-            if (std::find(allowed_begin, allowed_end, arg) == allowed_end) { // Check if option is found in allowed list
+            const std::string_view option_name { optionNameOf(arg) };
+
+            if (std::find(allowed_begin, allowed_end, option_name) == allowed_end) { // Check if option is found in allowed list
                 // If not, arguments are invalids
 
-                const std::string option_name { arg }; // Necessary to use concatenation on value
-                throw InvalidCommandLineOptions { "Option \"" + option_name + "\" isn't allowed" };
+                const std::string option_name_copy { option_name }; // Necessary to use concatenation on value
+                throw InvalidCommandLineOptions { "Option \"" + option_name_copy + "\" isn't allowed" };
             }
 
             // Add option to parsed options
-            const auto insert_result { parsed_options_.insert({ std::string { arg }, {} }) };
+            const auto insert_result { parsed_options_.insert({ std::string { option_name }, {} }) };
 
             // Check if the insertion was successful or not
             if (!insert_result.second) {
                 // If it failed, it is because the option has already been inputted
 
-                const std::string option { arg }; // Necessary to use concatenation on option name
-                throw InvalidCommandLineOptions { "Option \"" + option + "\" used at least twice" };
+                const std::string option_name_copy { option_name }; // Necessary to use concatenation on option name
+                throw InvalidCommandLineOptions { "Option \"" + option_name_copy + "\" used at least twice" };
             }
 
             parsing_option = true;
@@ -52,7 +61,7 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
             assert(i_arg > 1);
 
             // Get assigned option name, which corresponds to the previous argument
-            const std::string& option_name { argv[i_arg - 1] };
+            const std::string_view option_name { argv[i_arg - 1] };
             parsed_options_.at(option_name) = arg;
         }
     }

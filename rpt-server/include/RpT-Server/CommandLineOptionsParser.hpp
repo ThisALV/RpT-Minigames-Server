@@ -103,6 +103,17 @@ private:
     */
     static constexpr bool isCommandLineOption(std::string_view argument);
 
+    /**
+     * @brief Returns option name for a given option argument
+     *
+     * For option argument "--delay", returns option name "delay".
+     *
+     * @param arg Option argument on which option name will be extracted
+     *
+     * @returns Option name for option argument
+     */
+    static constexpr std::string_view optionNameOf(std::string_view arg);
+
 public:
     /**
      * @brief Parse command-line options
