@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cassert>
 
-namespace RpT::Server {
+namespace RpT::Core {
 
 constexpr bool CommandLineOptionsParser::isCommandLineOption(const std::string_view argument) {
     return argument.length() >= PREFIX_LENGTH && argument.substr(0, PREFIX_LENGTH) == OPTION_PREFIX;

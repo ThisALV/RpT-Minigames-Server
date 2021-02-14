@@ -52,8 +52,9 @@ int main(const int argc, const char** argv) {
         const bool done_successfully { rpt_executor.run() };
 
         return done_successfully ? SUCCESS : RUNTIME_ERROR; // Process exit code depends on main loop result
-    } catch (const RpT::Server::OptionsError& err) {
+    } catch (const RpT::Core::OptionsError& err) {
         std::cerr << "Command line error: " << err.what() << std::endl;
+
         return INVALID_ARGS;
     }
 }
