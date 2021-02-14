@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_FIXTURE_TEST_SUITE(Get, HasAndGetFixture)
 
 BOOST_AUTO_TEST_CASE(EnabledWithValue) {
-    BOOST_CHECK_EQUAL(cmd_line_options.get("b"), "Hello world:");
+    BOOST_CHECK_EQUAL(cmd_line_options.get("b"), "Hello world!");
 }
 
 BOOST_AUTO_TEST_CASE(EnabledWithoutValue) {
