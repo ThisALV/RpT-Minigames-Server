@@ -15,6 +15,8 @@ namespace RpT::Core {
  * @brief RpT main loop executor
  *
  * Run main loop for RpT.
+ *
+ * @author ThisALV, https://github.com/ThisALV
  */
 class Executor {
 public:
