@@ -15,5 +15,5 @@ function(register_test NAME SOURCES)
 endfunction()
 
 
-register_test(core CommandLineOptionsParserTests.cpp)
+register_test(core "src/CommandLineOptionsParserTests.cpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
