@@ -49,7 +49,7 @@ if(ENABLE_DEBUG_FEATURES)
         set(RPT_GENERATE_DOC OFF) # If Doxygen was not found, doc will not be generated
     endif()
 else() # If debug features are OFF, disable doc generation
-    message(STATUS "Release build type without debug features, doc will not be generate.")
+    message(STATUS "Release build type without debug features, doc will not be generated.")
     set(RPT_GENERATE_DOC OFF)
 endif()
 
