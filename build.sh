@@ -103,10 +103,18 @@ ar_exec="$(which "$AR")"
 ranlib_exec="$(which "$RANLIB")"
 
 
+successfull=
+
 mkdir -p build && \
 cd build && \
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" $install_prefix \
   -DCMAKE_AR="$ar_exec" -DCMAKE_RANLIB="$ranlib_exec" -G"$generator" $debug_features_option .. && \
 cmake --build . -- "-j$(nproc)" && \
-cd .. || \
-echo -e "${BRIGHT_RED}Error occurred during build script, build might be incomplete.${RESET}"
+cd .. && \
+successfull=1
+
+if [ ! $successfull ]; then
+  echo -e "${BRIGHT_RED}Error occurred during build script, build might be incomplete.${RESET}"
+  exit 2
+fi
+
