@@ -11,6 +11,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(Boost_USE_STATIC_LIBS ON)
 
+# Debug features are usually enabled only in Debug mode
+# User may configure project to enable debug features even in Release mode
+option(RPT_FORCE_DEBUG_FEATURES "Force testing and doc generation for Release build type" OFF)
+
+if(("${CMAKE_BUILD_TYPE}" STREQUAL Debug) OR ${RPT_FORCE_DEBUG_FEATURES})
+    set(ENABLE_DEBUG_FEATURES ON)
+else()
+    set(ENABLE_DEBUG_FEATURES OFF)
+endif()
+
 if(WIN32)
     set(PLATFORM Win32)
 elseif(UNIX)
@@ -22,19 +32,24 @@ endif()
 # CMake property used into sources for platform detection
 set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
-## Init doc options
+## Init doc options only if debug features are ON
 
-find_package(Doxygen)
+if(ENABLE_DEBUG_FEATURES)
+    find_package(Doxygen)
 
-if(Doxygen_FOUND)
-    message(STATUS "Doxygen ${DOXYGEN_VERSION} found.")
-    set(RPT_GENERATE_DOC ON)
-    set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style") # Path to custom dark theme
-    set(RPT_DOC_OUTPUT "${CMAKE_BINARY_DIR}/doc")
+    if(Doxygen_FOUND)
+        message(STATUS "Doxygen ${DOXYGEN_VERSION} found.")
+        set(RPT_GENERATE_DOC ON) # Generate doc only if Doxygen was found
+        set(RPT_DOC_STYLESHEETS "${CMAKE_SOURCE_DIR}/doc-style") # Path to custom dark theme
+        set(RPT_DOC_OUTPUT "${CMAKE_BINARY_DIR}/doc")
 
-    message(STATUS "Doc will be generated to ${RPT_DOC_OUTPUT}")
-else()
-    message(STATUS "Doxygen not found, doc will not be generated.")
+        message(STATUS "Doc will be generated to ${RPT_DOC_OUTPUT}")
+    else()
+        message(STATUS "Doxygen not found, doc will not be generated.")
+        set(RPT_GENERATE_DOC OFF) # If Doxygen was not found, doc will not be generated
+    endif()
+else() # If debug features are OFF, disable doc generation
+    message(STATUS "Release build type without debug features, doc will not be generate.")
     set(RPT_GENERATE_DOC OFF)
 endif()
 
@@ -65,15 +80,17 @@ add_subdirectory(rpt-core)
 add_subdirectory(rpt-serialization)
 add_subdirectory(rpt-server)
 
-# Enable tests sources directory if Debug mode is enabled
-if("${CMAKE_BUILD_TYPE}" STREQUAL Debug)
+# Enable tests sources directory if debug features are ON
+if(ENABLE_FEATURES)
+    message(STATUS "Enable RpT testing")
     enable_testing()
+
     add_subdirectory(rpt-tests)
 endif()
 
-## Enable doc target
+## Enable doc target if debug features are ON and Doxygen was found
 
-if(RPT_GENERATE_DOC)
+if(ENABLE_DEBUG_FEATURES AND RPT_GENERATE_DOC)
     set(DOXYGEN_GENERATE_HTML YES)
     set(DOXYGEN_GENERATE_MAN YES)
     set(DOXYGEN_OUTPUT_DIRECTORY ${RPT_DOC_OUTPUT})
