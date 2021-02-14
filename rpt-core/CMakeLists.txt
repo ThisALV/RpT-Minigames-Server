@@ -1,10 +1,12 @@
 set(RPT_CORE_HEADERS_DIR "include/RpT-Core")
 
 set(RPT_CORE_HEADERS
-        "${RPT_CORE_HEADERS_DIR}/NetworkProtocol.hpp")
+        "${RPT_CORE_HEADERS_DIR}/NetworkProtocol.hpp"
+        "${RPT_CORE_HEADERS_DIR}/Executor.hpp")
 
 set(RPT_CORE_SOURCES
-        "src/NetworkProtocol.cpp")
+        "src/NetworkProtocol.cpp"
+        "src/Executor.cpp")
 
 find_package(Boost REQUIRED)
 find_package(spdlog 1.8.1 REQUIRED CONFIG) # Required for forward-decl header, stdout fix and load_args/env_levels()
