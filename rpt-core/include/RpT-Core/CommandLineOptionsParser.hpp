@@ -1,5 +1,5 @@
-#ifndef RPTOGETHER_SERVER_COMMANDLINEOPTIONSPARSER_HPP
-#define RPTOGETHER_SERVER_COMMANDLINEOPTIONSPARSER_HPP
+#ifndef RPTOGETHER_CORE_COMMANDLINEOPTIONSPARSER_HPP
+#define RPTOGETHER_CORE_COMMANDLINEOPTIONSPARSER_HPP
 
 #include <initializer_list>
 #include <optional>
@@ -14,9 +14,9 @@
 
 
 /**
- * @brief %Server utils
+ * @brief RpT-Server engine and main loop related components
  */
-namespace RpT::Server {
+namespace RpT::Core {
 
 /**
  * @brief Base class for exceptions that can occur during arguments parsing or options manipulation
@@ -159,4 +159,4 @@ public:
 
 }
 
-#endif //RPTOGETHER_SERVER_COMMANDLINEOPTIONSPARSER_HPP
+#endif //RPTOGETHER_CORE_COMMANDLINEOPTIONSPARSER_HPP

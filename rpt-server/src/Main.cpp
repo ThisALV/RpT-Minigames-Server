@@ -2,7 +2,7 @@
 #include <iostream>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
-#include <RpT-Server/CommandLineOptionsParser.hpp>
+#include <RpT-Core/CommandLineOptionsParser.hpp>
 
 
 constexpr int SUCCESS { 0 };
@@ -13,7 +13,7 @@ constexpr int RUNTIME_ERROR { 2 };
 int main(const int argc, const char** argv) {
     try {
         // Read and parse command line options
-        const RpT::Server::CommandLineOptionsParser cmd_line_options { argc, argv, { "game" } };
+        const RpT::Core::CommandLineOptionsParser cmd_line_options { argc, argv, { "game" } };
 
         // Get game name from command line options
         const std::string_view game_name { cmd_line_options.get("game") };

@@ -1,11 +1,9 @@
 set(RPT_SERVER_HEADERS_DIR "include/RpT-Server")
 
-set(RPT_SERVER_HEADERS
-        "${RPT_SERVER_HEADERS_DIR}/CommandLineOptionsParser.hpp")
+set(RPT_SERVER_HEADERS "")
 
 set(RPT_SERVER_SOURCES
-        "src/Main.cpp"
-        "src/CommandLineOptionsParser.cpp")
+        "src/Main.cpp")
 
 add_executable(rpt-server ${RPT_SERVER_HEADERS} ${RPT_SERVER_SOURCES})
 target_include_directories(rpt-server PRIVATE include ${RPT_CONFIG_DIR})
