@@ -49,6 +49,7 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
                 throw InvalidCommandLineOptions { "Option \"" + option_name_copy + "\" used at least twice" };
             }
 
+            // Option argument parsed, next argument might be a value assigned to that option
             parsing_option = true;
         } else {
             // If argument isn't an option, it is a value. And if it is a value, it must be preceded by an option
@@ -63,6 +64,9 @@ CommandLineOptionsParser::CommandLineOptionsParser(const int argc, const char** 
             // Get assigned option name, which corresponds to the previous argument
             const std::string_view option_name { argv[i_arg - 1] };
             parsed_options_.at(option_name) = arg;
+
+            // As value has been assigned, previous option has been parsed, next argument should not be a value
+            parsing_option = false;
         }
     }
 }
