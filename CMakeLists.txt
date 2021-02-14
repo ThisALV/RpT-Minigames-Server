@@ -81,7 +81,7 @@ add_subdirectory(rpt-serialization)
 add_subdirectory(rpt-server)
 
 # Enable tests sources directory if debug features are ON
-if(ENABLE_FEATURES)
+if(ENABLE_DEBUG_FEATURES)
     message(STATUS "Enable RpT testing")
     enable_testing()
 
