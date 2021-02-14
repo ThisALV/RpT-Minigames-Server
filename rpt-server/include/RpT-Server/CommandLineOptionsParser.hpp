@@ -12,6 +12,10 @@
  * @file CommandLineOptionsParser.hpp
  */
 
+
+/**
+ * @brief %Server utils
+ */
 namespace RpT::Server {
 
 /**
