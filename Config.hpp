@@ -68,6 +68,24 @@ constexpr std::string_view VERSION { "@PROJECT_VERSION@" };
  */
 constexpr Platform RUNTIME_PLATFORM { Platform::RPT_RUNTIME_PLATFORM };
 
+/**
+ * @brief Returns if build target will be running on Unix
+ *
+ * @returns If target will run on Unix platform
+ */
+constexpr bool isUnixBuild() {
+    return RUNTIME_PLATFORM == Platform::Unix;
+}
+
+/**
+ * @brief Returns if build target will be running on Win32
+ *
+ * @returns If target will run on Win32 platform
+ */
+constexpr bool isWin32Build() {
+    return RUNTIME_PLATFORM == Platform::Win32;
+}
+
 
 /**
  * @brief Get a string representation for RUNTIME_PLATFORM
@@ -75,7 +93,7 @@ constexpr Platform RUNTIME_PLATFORM { Platform::RPT_RUNTIME_PLATFORM };
  * @returns "Unix" for Platform::Unix or "Win32" for Platform::Win32
  */
 constexpr std::string_view runtimePlatformName() {
-    if constexpr (RUNTIME_PLATFORM == Platform::Unix) {
+    if constexpr (isUnixBuild()) {
         return "Unix";
     } else {
         return "Win32";
