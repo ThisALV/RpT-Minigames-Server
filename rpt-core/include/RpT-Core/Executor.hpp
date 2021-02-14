@@ -28,6 +28,13 @@ public:
      */
     Executor(std::vector<std::filesystem::path> game_resources_path, std::string game_name);
 
+    // Entity class semantic :
+
+    Executor(const Executor&) = delete;
+    Executor& operator=(const Executor&) = delete;
+
+    bool operator==(const Executor&) const = delete;
+
     /**
      * @brief Start executor main loop
      *
