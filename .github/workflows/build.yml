@@ -64,7 +64,7 @@ jobs:
           LDFLAGS: ${{matrix.toolchain.ldflags}}
 
       - name: Generate and build project
-        run: ./build.sh
+        run: ./build.sh --debug-features
 
         env:
           CC: ${{matrix.toolchain.cc}}
@@ -124,7 +124,7 @@ jobs:
           TARGET: ${{matrix.msys.architecture}}
 
       - name: Generate and build project
-        run: ./build.sh --mingw
+        run: ./build.sh --mingw --debug-features
 
       - name: Run tests
         working-directory: ${{github.workspace}}/build
