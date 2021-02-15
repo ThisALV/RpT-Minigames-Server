@@ -40,3 +40,6 @@ Release/
 build/
 install/
 download/
+
+# Logging
+logs/
