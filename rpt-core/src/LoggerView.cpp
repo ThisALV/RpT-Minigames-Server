@@ -83,7 +83,7 @@ LoggerView::LoggerView(const std::string_view generic_name) {
 
     // Logger settings
     this_logger_->set_level(log_level_);
-    this_logger_->set_pattern("[%T.%e/%^%L%$] %-13n #%-5t : %v");
+    this_logger_->set_pattern("[%T.%e/%^%L%$] %-20n : %v");
     this_logger_->set_error_handler(handleError);
 
     // As each logger of same purpose has an UID, each logger should has an unique name
