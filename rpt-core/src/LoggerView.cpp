@@ -67,7 +67,7 @@ LoggerView::LoggerView(const std::string_view generic_name) {
     // Creates both console and rotating file sinks
     auto stdout_sink { std::make_shared<spdlog::sinks::stdout_color_sink_st>() };
     auto daily_file_sink {
-        std::make_shared<spdlog::sinks::daily_file_sink_st>("logs/rpt-server-", 0, 0)
+        std::make_shared<spdlog::sinks::daily_file_sink_st>("logs/rpt-server", 0, 0)
     };
 
     // If entry doesn't exist, then loggers count is initialized to 0
