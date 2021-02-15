@@ -1,7 +1,7 @@
 #ifndef RPTOGETHER_SERVER_EXECUTOR_HPP
 #define RPTOGETHER_SERVER_EXECUTOR_HPP
 
-#include <filesystem>
+#include <RpT-Config/Filesystem.hpp>
 #include <vector>
 
 /**
@@ -26,7 +26,7 @@ public:
      * @param game_resources_path A list of paths the game loader will search for resources on
      * @param game_name Name of game to play during this executor run, can be modified by players later
      */
-    Executor(std::vector<std::filesystem::path> game_resources_path, std::string game_name);
+    Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name);
 
     // Entity class semantic :
 

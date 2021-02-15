@@ -32,6 +32,15 @@ endif()
 # CMake property used into sources for platform detection
 set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
+## Check filesystem availability as it is required by some subdirectories
+
+# If C++ compiler is G++ with version lower than 8...
+if ((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU) AND (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 8))
+    set(RPT_FILESYSTEM_SUPPORT RPT_FILESYSTEM_EXPERIMENTAL) # ...then filesystem support is still experimental
+else()
+    set(RPT_FILESYSTEM_SUPPORT RPT_FILESYSTEM_STANDARD) # ...else, filesystem support is integrated to standard
+endif()
+
 ## Init doc options only if debug features are ON
 
 if(ENABLE_DEBUG_FEATURES)
@@ -68,10 +77,18 @@ endfunction()
 
 ## Init config
 
+# General configuration
 set(RPT_CONFIG "Config.hpp")
+# filesystem library specific configuration
+set(RPT_FILESYSTEM_CONFIG "Filesystem.hpp") # Must be included by sources which use stdc++fs library
+
 set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config") # Path used for including config header into source code
-set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}") # Full path of generated config header
+set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}") # Full path of generated misc config header
+set(RPT_FILESYSTEM_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_FILESYSTEM_CONFIG}") # Full path of generated fs config header
+
+# Configure both general and filesystem config headers
 configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
+configure_file(${RPT_FILESYSTEM_CONFIG} ${RPT_FILESYSTEM_CONFIG_OUTPUT})
 
 ## Init source directories
 
@@ -102,7 +119,8 @@ if(ENABLE_DEBUG_FEATURES AND RPT_GENERATE_DOC)
             "${RPT_DOC_STYLESHEETS}/override_menu_colors.css")
 
     message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
-    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL) # Doc for all headers (config and include files)
+    # Doc for all headers (config and include files)
+    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_FILESYSTEM_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
 
     install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
     install(DIRECTORY "${RPT_DOC_OUTPUT}/man/" TYPE MAN)
