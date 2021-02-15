@@ -4,15 +4,17 @@
 
 namespace RpT::Core {
 
-Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name) {
-    std::cout << "Game name : " << game_name << std::endl;
+Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name) :
+    logger_ { "Executor" } {
+
+    logger_.debug("Game name: {}", game_name);
 
     for (const supported_fs::path& resource_path : game_resources_path)
-        std::cout << "Game resources path : " << resource_path << std::endl;
+        logger_.debug("Game resources path: {}", resource_path.string());
 }
 
 bool Executor::run() {
-    std::cout << "Start." << std::endl;
+    logger_.info("Start.");
 
     return true;
 }
