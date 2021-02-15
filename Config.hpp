@@ -15,7 +15,7 @@
  * @brief Platform of build target
  *
  * Available as a macro to allow conditional includes.
- * It's recommended to use RpT::Config::RUNTIME_PLATFORM is it isn't necessary.
+ * It's recommended to use RpT::Config::RUNTIME_PLATFORM if it isn't necessary.
  *
  * @see RpT::Config::Platform
  */
