@@ -4,7 +4,8 @@
 #include <spdlog/sinks/sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/daily_file_sink.h>
-#include <Rpt-Config/Config.hpp>
+#include <RpT-Config/Config.hpp>
+
 
 // wingdi.h header overrides this enum value, making it unusable into switch cases
 #if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_WIN32
