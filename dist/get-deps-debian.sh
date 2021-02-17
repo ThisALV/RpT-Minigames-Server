@@ -151,7 +151,8 @@ function trySourceGet() {
   cmake --build . -- "-j$(nproc)" && \
   log "Install project to $install_dir..." && \
   cmake --install . && \
-  log "Successfully get $dep_full_name." || \
+  log "Successfully get $dep_full_name." && \
+  failure=0 || \
   error "Error : unable to get $dep_full_name."
 
   log "Back to $caller_dir..."
