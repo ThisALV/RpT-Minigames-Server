@@ -1,8 +1,9 @@
 #ifndef RPTOGETHER_SERVER_EXECUTOR_HPP
 #define RPTOGETHER_SERVER_EXECUTOR_HPP
 
-#include <RpT-Config/Filesystem.hpp>
 #include <vector>
+#include <RpT-Config/Filesystem.hpp>
+#include <RpT-Core/LoggerView.hpp>
 
 /**
  * @file Executor.hpp
@@ -19,6 +20,9 @@ namespace RpT::Core {
  * @author ThisALV, https://github.com/ThisALV
  */
 class Executor {
+private:
+    LoggerView logger_;
+
 public:
     /**
      * @brief Construct executor with user-defined resources path
