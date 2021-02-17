@@ -1,5 +1,9 @@
 #!/bin/bash
 
+## Return codes :
+# 1 : A package hasn't been installed correctly
+# 2 : A fatal error occurred
+
 
 # Load utils shared across get-deps scripts
 source get-deps-common.sh
@@ -32,7 +36,7 @@ function extractGitHubSource() {
   log "Extract downloaded sources to $dest_dir..." && \
   tar -xzf "$download_dir/$archive" -C "$dest_dir" && \
   log "Extracting done for $dep_full_name." || \
-  log "Error : unable to extract sources for $dep_full_name."
+  error "Error : unable to extract sources for $dep_full_name."
 }
 
 
@@ -44,12 +48,18 @@ function tryAptGet() {
 
   echoPackageInstall "$name"
 
+  # Return code to indicate if any error occurred during install
+  local failure=
   # Try to install package from apt-get, -y for non-interactive mode
   if apt-get install -y "$name"; then
+    failure=0
     log "Successfully get $name."
   else
-    log "Error : unable to get $name." >&2
+    failure=1
+    error "Error : unable to get $name." >&2
   fi
+
+  return $failure
 }
 
 ## Retrieve and install header-only package from GitHub
@@ -72,6 +82,10 @@ function tryHeaderOnlyGet() {
   local deps_dir="build" # CMake project parent directory
   local project_dir="$deps_dir/$author/$name-$branch_name" # CMake project fully-qualified directory
 
+  # Return code to indicate if any error occurred during install
+  # Set to 0 at the end of install operations if successfully done
+  local failure=1
+
   log "Create deps build directory at $deps_dir..." && \
   mkdir -p $deps_dir && \
   log "Extract $dep_full_name sources..." && \
@@ -82,10 +96,14 @@ function tryHeaderOnlyGet() {
   cmake -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=$install_dir" . && \
   log "Install project to $install_dir..." && \
   cmake --install . && \
-  log "Successfully get $dep_full_name." || \
-  log "Error : unable to get $dep_full_name."
+  log "Successfully get $dep_full_name." && \
+  failure=0 || \
+  error "Error : unable to get $dep_full_name."
 
-  cd "$caller_dir" || exit 1 # Script cannot continue normally if working dir cannot be restored
+  log "Back to $caller_dir..."
+  cd "$caller_dir" || exit 2 # Script cannot continue normally if working dir cannot be restored
+
+  return $failure
 }
 
 ## Retrieve, build and install package from Github
@@ -116,6 +134,10 @@ function trySourceGet() {
     build_dir="$deps_dir/$author/$name-$branch_name/build"
   fi
 
+  # Return code to indicate if any error occurred during install
+  # Set to 0 at the end of install operations if successfully done
+  local failure=1
+
   log "Create deps build directory at $deps_dir..." && \
   mkdir -p "$deps_dir" && \
   extractGitHubSource "$author" "$name" "$branch_name" "$deps_dir"
@@ -129,11 +151,14 @@ function trySourceGet() {
   cmake --build . -- "-j$(nproc)" && \
   log "Install project to $install_dir..." && \
   cmake --install . && \
-  log "Successfully get $dep_full_name." || \
-  log "Error : unable to get $dep_full_name."
+  log "Successfully get $dep_full_name." && \
+  failure=0 || \
+  error "Error : unable to get $dep_full_name."
 
   log "Back to $caller_dir..."
-  cd "$caller_dir" || exit 1 # Script cannot continue normally if working dir cannot be restored
+  cd "$caller_dir" || exit 2 # Script cannot continue normally if working dir cannot be restored
+
+  return $failure
 }
 
 
@@ -154,8 +179,15 @@ echo "Archiver=$(which "$AR"), Ranlib=$(which "$RANLIB")"
 echo "============================================================"
 echo -e "$RESET"
 
-tryAptGet libboost-all-dev
-tryAptGet liblua5.3-dev
-tryHeaderOnlyGet nlohmann json master
-tryHeaderOnlyGet ThePhD sol2 main
-trySourceGet gabime spdlog v1.x spdlog-1.x
+
+failure= # Set if any of install try actually fails
+
+tryAptGet libboost-all-dev || failure=1
+tryAptGet liblua5.3-dev || failure=1
+tryHeaderOnlyGet nlohmann json master || failure=1
+tryHeaderOnlyGet ThePhD sol2 main || failure=1
+trySourceGet gabime spdlog v1.x spdlog-1.x || failure=1
+
+if [ $failure ]; then # If any error occurred...
+  exit 1 # ...the script hasn't complete successfully
+fi
