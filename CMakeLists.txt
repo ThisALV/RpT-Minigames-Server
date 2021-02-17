@@ -22,15 +22,12 @@ else()
 endif()
 
 if(WIN32)
-    set(PLATFORM Win32)
+    set(RPT_TARGET_PLATFORM RPT_RUNTIME_WIN32)
 elseif(UNIX)
-    set(PLATFORM Unix)
+    set(RPT_TARGET_PLATFORM RPT_RUNTIME_UNIX)
 else()
     message(FATAL_ERROR "Unable to get target's platform type")
 endif()
-
-# CMake property used into sources for platform detection
-set(RPT_TARGET_PLATFORM ${PLATFORM} CACHE INTERNAL "Target platform type")
 
 ## Check filesystem availability as it is required by some subdirectories
 

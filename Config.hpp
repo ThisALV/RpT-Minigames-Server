@@ -11,6 +11,11 @@
  */
 
 
+/// Unix runtime RPT_RUNTIME_PLATFORM value
+#define RPT_RUNTIME_UNIX 0
+/// Win32 runtime RPT_RUNTIME_PLATFORM value
+#define RPT_RUNTIME_WIN32 1
+
 /**
  * @brief Platform of build target
  *
@@ -31,8 +36,9 @@ namespace RpT::Config {
 /**
  * @brief Platforms that can be used as build target
  */
-enum struct Platform {
-    Unix, Win32
+enum struct Platform : int {
+    Unix = RPT_RUNTIME_UNIX,
+    Win32 = RPT_RUNTIME_WIN32
 };
 
 
@@ -66,7 +72,7 @@ constexpr std::string_view VERSION { "@PROJECT_VERSION@" };
 /**
  * @brief Platform build target will be running on
  */
-constexpr Platform RUNTIME_PLATFORM { Platform::RPT_RUNTIME_PLATFORM };
+constexpr Platform RUNTIME_PLATFORM { Platform { RPT_RUNTIME_PLATFORM } };
 
 /**
  * @brief Returns if build target will be running on Unix
