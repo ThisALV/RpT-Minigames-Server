@@ -52,14 +52,14 @@ public:
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class UnknownOption : public OptionsError {
+class MissingOption : public OptionsError {
 public:
     /**
      * @brief Constructs exception with error message
      *
      * @param option Option that was look up
      */
-    explicit UnknownOption(const std::string& option) : OptionsError { "Option \"" + option + "\" is unknown" } {}
+    explicit MissingOption(const std::string& option) : OptionsError { "Option \"" + option + "\" is missing" } {}
 };
 
 /**
@@ -148,7 +148,7 @@ public:
      *
      * @param option Name of option that will return the value
      *
-     * @throws UnknownOption If `option` doesn't exists
+     * @throws MissingOption If `option` doesn't exists
      * @throws NoValueAssigned If `option` exists but hasn't any assigned value
      *
      * @return Value of `option`

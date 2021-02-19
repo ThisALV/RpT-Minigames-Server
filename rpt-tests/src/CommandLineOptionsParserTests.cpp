@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithoutValues) {
     const int argc { 4 };
     const char* argv[] { "--unused", "--a", "--z", "--c" };
 
-    // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
+    // Check for constructor if it throws MissingOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
                       RpT::Core::InvalidCommandLineOptions);
 }
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithValues) {
     const int argc { 6 };
     const char* argv[] { "--unused", "--a", "Hello", "--z", "world!", "--c" };
 
-    // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
+    // Check for constructor if it throws MissingOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
                       RpT::Core::InvalidCommandLineOptions);
 }
@@ -167,11 +167,11 @@ BOOST_AUTO_TEST_CASE(EnabledWithoutValue) {
 }
 
 BOOST_AUTO_TEST_CASE(DisabledButAllowed) {
-    BOOST_CHECK_THROW(cmd_line_options.get("d"), RpT::Core::UnknownOption);
+    BOOST_CHECK_THROW(cmd_line_options.get("d"), RpT::Core::MissingOption);
 }
 
 BOOST_AUTO_TEST_CASE(DisabledAndNotAllowed) {
-    BOOST_CHECK_THROW(cmd_line_options.get("e"), RpT::Core::UnknownOption);
+    BOOST_CHECK_THROW(cmd_line_options.get("e"), RpT::Core::MissingOption);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

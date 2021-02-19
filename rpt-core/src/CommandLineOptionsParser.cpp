@@ -80,7 +80,7 @@ std::string_view CommandLineOptionsParser::get(std::string_view option) const {
     const std::string option_name { option }; // Necessary for exceptions message construction
 
     if (!has(option)) // Check if option exists
-        throw UnknownOption { option_name };
+        throw MissingOption { option_name };
 
     try {
         return parsed_options_.at(option).value(); // Try to get option value
