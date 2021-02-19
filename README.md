@@ -66,10 +66,10 @@ It will install files to ./dist/install directory.
 ## Run
 
 ```shell
-rpt-server # for Linux users
-rpt-server.exe # for Windows MinGW users
+rpt-server --game <game_name> # for Linux users
+rpt-server.exe --game <game_name> # for Windows MinGW users
 
 ## If locally installed with --local
-./dist/install/bin/rpt-server # for Linux users
-./dist/install/bin/rpt-server.exe # for Windows MinGW users
+./dist/install/bin/rpt-server --game <game_name> # for Linux users
+./dist/install/bin/rpt-server.exe --game <game_name> # for Windows MinGW users
 ```
