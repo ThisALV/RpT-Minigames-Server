@@ -1,10 +1,10 @@
-#define BOOST_TEST_MODULE Core
+#define BOOST_TEST_MODULE Utils
 #include <boost/test/unit_test.hpp>
 
-#include <RpT-Core/CommandLineOptionsParser.hpp>
+#include <RpT-Utils/CommandLineOptionsParser.hpp>
 
 
-using namespace RpT::Core;
+using namespace RpT::Utils;
 
 
 BOOST_AUTO_TEST_SUITE(CommandLineOptionsParserTests)
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(OptionsWithTwoConsecutiveValues) {
 
     // Check for constructor if it throws InvalidCommandLineOptions as "world!" hasn't any option to be assigned
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::InvalidCommandLineOptions);
+                      InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_CASE(ValueAtBegin) {
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(ValueAtBegin) {
 
     // Check for constructor if it throws InvalidCommandLineOptions as "6789" hasn't any option to be assigned
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::InvalidCommandLineOptions);
+                      InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithoutValues) {
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithoutValues) {
 
     // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::InvalidCommandLineOptions);
+                      InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithValues) {
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(NotAllowedOptionsWithValues) {
 
     // Check for constructor if it throws UnknownOption as "z" isn't in allowed list
     BOOST_CHECK_THROW((CommandLineOptionsParser { argc, argv, { "a", "b", "c", "d" } }),
-                      RpT::Core::InvalidCommandLineOptions);
+                      InvalidCommandLineOptions);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -163,15 +163,15 @@ BOOST_AUTO_TEST_CASE(EnabledWithValue) {
 }
 
 BOOST_AUTO_TEST_CASE(EnabledWithoutValue) {
-    BOOST_CHECK_THROW(cmd_line_options.get("a"), RpT::Core::NoValueAssigned);
+    BOOST_CHECK_THROW(cmd_line_options.get("a"), NoValueAssigned);
 }
 
 BOOST_AUTO_TEST_CASE(DisabledButAllowed) {
-    BOOST_CHECK_THROW(cmd_line_options.get("d"), RpT::Core::UnknownOption);
+    BOOST_CHECK_THROW(cmd_line_options.get("d"), UnknownOption);
 }
 
 BOOST_AUTO_TEST_CASE(DisabledAndNotAllowed) {
-    BOOST_CHECK_THROW(cmd_line_options.get("e"), RpT::Core::UnknownOption);
+    BOOST_CHECK_THROW(cmd_line_options.get("e"), UnknownOption);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

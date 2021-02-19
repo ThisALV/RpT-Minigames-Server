@@ -3,13 +3,11 @@ set(RPT_CORE_HEADERS_DIR "include/RpT-Core")
 set(RPT_CORE_HEADERS
         "${RPT_CORE_HEADERS_DIR}/ServicesEventRequestProtocol.hpp"
         "${RPT_CORE_HEADERS_DIR}/Executor.hpp"
-        "${RPT_CORE_HEADERS_DIR}/CommandLineOptionsParser.hpp"
         "${RPT_CORE_HEADERS_DIR}/LoggerView.hpp")
 
 set(RPT_CORE_SOURCES
         "src/ServicesEventRequestProtocol.cpp"
         "src/Executor.cpp"
-        "src/CommandLineOptionsParser.cpp"
         "src/LoggerView.cpp")
 
 find_package(Boost REQUIRED)
