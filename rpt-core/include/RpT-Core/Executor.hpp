@@ -1,16 +1,23 @@
 #ifndef RPTOGETHER_SERVER_EXECUTOR_HPP
 #define RPTOGETHER_SERVER_EXECUTOR_HPP
 
+#include <string>
 #include <vector>
 #include <RpT-Config/Filesystem.hpp>
+#include <RpT-Core/InputOutputInterface.hpp>
 #include <RpT-Core/LoggerView.hpp>
+#include <RpT-Core/ServicesEventRequestProtocol.hpp>
 
 /**
  * @file Executor.hpp
  */
 
 
+/**
+ * @brief Server engine and main loop related code
+ */
 namespace RpT::Core {
+
 
 /**
  * @brief RpT main loop executor
@@ -22,6 +29,7 @@ namespace RpT::Core {
 class Executor {
 private:
     LoggerView logger_;
+    InputOutputInterface& io_interface_;
 
 public:
     /**
@@ -30,7 +38,8 @@ public:
      * @param game_resources_path A list of paths the game loader will search for resources on
      * @param game_name Name of game to play during this executor run, can be modified by players later
      */
-    Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name);
+    Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name,
+             InputOutputInterface& io_interface);
 
     // Entity class semantic :
 
@@ -50,6 +59,7 @@ public:
      */
     bool run();
 };
+
 
 }
 
