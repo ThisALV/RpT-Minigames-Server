@@ -84,8 +84,8 @@ InputEvent::Type JoinedEvent::type() const {
  */
 
 LeftEvent::LeftEvent(std::string_view actor, Reason disconnection_reason,
-                     const std::optional<std::string_view>& err_msg) :
-    InputEvent { actor }, disconnection_reason_ { disconnection_reason }, error_message_ { err_msg } {
+                     std::optional<std::string> err_msg) :
+    InputEvent { actor }, disconnection_reason_ { disconnection_reason }, error_message_ { std::move(err_msg) } {
 
     // Error message must be present IF AND ONLY IF disconnection reason is a crash
     assert((disconnection_reason_ == Reason::Crash) == error_message_.has_value());
@@ -100,10 +100,7 @@ std::optional<std::string> LeftEvent::additionalData() const {
     case Reason::Clean:
         return "Clean";
     case Reason::Crash:
-        // Copy is necessary for additional data construction
-        const std::string err_message_copy { *error_message_ };
-
-        return "Crash;" + err_message_copy;
+        return "Crash;" + *error_message_;
     }
 }
 
