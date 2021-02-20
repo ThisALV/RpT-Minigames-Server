@@ -103,7 +103,7 @@ std::optional<std::string> LeftEvent::additionalData() const {
         // Copy is necessary for additional data construction
         const std::string err_message_copy { *error_message_ };
 
-        return "Crash";
+        return "Crash;" + err_message_copy;
     }
 }
 
