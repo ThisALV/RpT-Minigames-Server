@@ -20,9 +20,16 @@ namespace RpT::Core {
  */
 class InputEvent {
 private:
-    const std::string actor_;
+    const std::string_view actor_;
 
 public:
+    /**
+     * @brief Base constructor for initializing actor's name
+     *
+     * @param actor Actor's name access
+     */
+    explicit InputEvent(std::string_view actor);
+
     /**
      * @brief Kind of input
      *
@@ -55,7 +62,7 @@ public:
      *
      * @return Actor's name
      */
-    const std::string& actor() const;
+    std::string_view actor() const;
 };
 
 /**

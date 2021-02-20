@@ -11,6 +11,8 @@ class SimpleIO : public RpT::Core::InputOutputInterface {
 private:
     class NoneEvent : public RpT::Core::InputEvent {
     public:
+        NoneEvent(const std::string_view actor) : RpT::Core::InputEvent { actor } {}
+
         Type type() const override {
             return Type::None;
         }
@@ -18,7 +20,7 @@ private:
 
 public:
     std::unique_ptr<RpT::Core::InputEvent> waitForInput() override {
-        return std::make_unique<NoneEvent>();
+        return std::make_unique<NoneEvent>("None");
     }
 };
 

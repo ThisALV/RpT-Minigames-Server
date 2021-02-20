@@ -4,7 +4,9 @@
 namespace RpT::Core {
 
 
-const std::string& InputEvent::actor() const {
+InputEvent::InputEvent(const std::string_view actor) : actor_ { actor } {}
+
+std::string_view InputEvent::actor() const {
     return actor_;
 }
 
