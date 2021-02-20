@@ -89,7 +89,7 @@ public:
 };
 
 /// Event emitted when service request is received
-class ServiceRequestEvent : InputEvent {
+class ServiceRequestEvent : public InputEvent {
 private:
     std::string service_request_;
 
