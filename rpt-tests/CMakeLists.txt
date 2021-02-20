@@ -17,3 +17,6 @@ endfunction()
 
 register_test(utils "src/CommandLineOptionsParserTests.cpp")
 target_link_libraries(${utils_EXEC} PRIVATE rpt-utils)
+
+register_test(core "src/InputEventTests.cpp")
+target_link_libraries(${core_EXEC} PRIVATE rpt-core)
