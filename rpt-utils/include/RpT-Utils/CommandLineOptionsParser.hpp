@@ -14,9 +14,9 @@
 
 
 /**
- * @brief RpT-Server engine and main loop related components
+ * @brief RpT-Server utilities provided to user
  */
-namespace RpT::Core {
+namespace RpT::Utils {
 
 /**
  * @brief Base class for exceptions that can occur during arguments parsing or options manipulation

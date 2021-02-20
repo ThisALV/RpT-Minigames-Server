@@ -4,8 +4,10 @@
 
 namespace RpT::Core {
 
-Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name) :
-    logger_ { "Executor" } {
+Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name,
+                   InputOutputInterface& io_interface) :
+    logger_ { "Executor" },
+    io_interface_ { io_interface } {
 
     logger_.debug("Game name: {}", game_name);
 

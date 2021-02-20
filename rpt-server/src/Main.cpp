@@ -1,7 +1,26 @@
 #include <cstdlib>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
-#include <RpT-Core/CommandLineOptionsParser.hpp>
+#include <RpT-Utils/CommandLineOptionsParser.hpp>
+
+
+/**
+ * @brief Tests purposes IO interface, should be deleted in further build
+ */
+class SimpleIO : public RpT::Core::InputOutputInterface {
+private:
+    class NoneEvent : public RpT::Core::InputEvent {
+    public:
+        Type type() const override {
+            return Type::None;
+        }
+    };
+
+public:
+    std::unique_ptr<RpT::Core::InputEvent> waitForInput() override {
+        return std::make_unique<NoneEvent>();
+    }
+};
 
 
 constexpr int SUCCESS { 0 };
@@ -45,7 +64,7 @@ int main(const int argc, const char** argv) {
 
     try {
         // Read and parse command line options
-        const RpT::Core::CommandLineOptionsParser cmd_line_options { argc, argv, { "game", "log-level" } };
+        const RpT::Utils::CommandLineOptionsParser cmd_line_options { argc, argv, { "game", "log-level" } };
 
         // Get game name from command line options
         const std::string_view game_name { cmd_line_options.get("game") };
@@ -94,12 +113,14 @@ int main(const int argc, const char** argv) {
         game_resources_path.push_back(std::move(user_path));
         game_resources_path.push_back(std::move(local_path));
 
-        // Create executor with listed resources paths, game name argument and run main loop
-        RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name } };
+        // Create executor with listed resources paths, game name argument and run main loop with simple IO interface
+        // required to build
+        SimpleIO io;
+        RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name }, io };
         const bool done_successfully { rpt_executor.run() };
 
         return done_successfully ? SUCCESS : RUNTIME_ERROR; // Process exit code depends on main loop result
-    } catch (const RpT::Core::OptionsError& err) {
+    } catch (const RpT::Utils::OptionsError& err) {
         logger.fatal("Command line error: {}", err.what());
 
         return INVALID_ARGS;

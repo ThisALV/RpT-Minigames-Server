@@ -1,9 +1,9 @@
-#include <RpT-Core/CommandLineOptionsParser.hpp>
+#include <RpT-Utils/CommandLineOptionsParser.hpp>
 
 #include <algorithm>
 #include <cassert>
 
-namespace RpT::Core {
+namespace RpT::Utils {
 
 constexpr bool CommandLineOptionsParser::isCommandLineOption(const std::string_view argument) {
     return argument.length() >= PREFIX_LENGTH && argument.substr(0, PREFIX_LENGTH) == OPTION_PREFIX;
