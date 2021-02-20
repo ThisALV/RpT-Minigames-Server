@@ -74,6 +74,9 @@ public:
  */
 class InputOutputInterface {
 public:
+    /**
+     * @brief Default constructor allowing base classes to be default constructed
+     */
     InputOutputInterface() = default;
 
     // Entity class semantic :

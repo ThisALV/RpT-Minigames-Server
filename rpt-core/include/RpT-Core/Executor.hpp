@@ -33,10 +33,11 @@ private:
 
 public:
     /**
-     * @brief Construct executor with user-defined resources path
+     * @brief Construct executor with user-defined resources path and IO interface
      *
      * @param game_resources_path A list of paths the game loader will search for resources on
      * @param game_name Name of game to play during this executor run, can be modified by players later
+     * @param io_interface Backend for input and output based main loop events handling
      */
     Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name,
              InputOutputInterface& io_interface);
