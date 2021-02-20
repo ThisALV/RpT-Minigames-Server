@@ -1,0 +1,6 @@
+#ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKEND_HPP
+#define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKEND_HPP
+
+// Empty files purpose is to enable rpt-network as a target and add it into Git VCS
+
+#endif //RPTOGETHER_SERVER_BEASTWEBSOCKETBACKEND_HPP
