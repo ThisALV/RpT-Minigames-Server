@@ -8,19 +8,9 @@
  * @brief Tests purposes IO interface, should be deleted in further build
  */
 class SimpleIO : public RpT::Core::InputOutputInterface {
-private:
-    class NoneEvent : public RpT::Core::InputEvent {
-    public:
-        NoneEvent(const std::string_view actor) : RpT::Core::InputEvent { actor } {}
-
-        Type type() const override {
-            return Type::None;
-        }
-    };
-
 public:
     std::unique_ptr<RpT::Core::InputEvent> waitForInput() override {
-        return std::make_unique<NoneEvent>("None");
+        return std::make_unique<RpT::Core::NoneEvent>("None");
     }
 };
 

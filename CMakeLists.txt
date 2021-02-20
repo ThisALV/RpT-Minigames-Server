@@ -92,8 +92,9 @@ configure_file(${RPT_FILESYSTEM_CONFIG} ${RPT_FILESYSTEM_CONFIG_OUTPUT})
 add_subdirectory(rpt-gameplay)
 add_subdirectory(rpt-core)
 add_subdirectory(rpt-serialization)
-add_subdirectory(rpt-server)
 add_subdirectory(rpt-utils)
+add_subdirectory(rpt-network)
+add_subdirectory(rpt-server)
 
 # Enable tests sources directory if debug features are ON
 if(ENABLE_DEBUG_FEATURES)

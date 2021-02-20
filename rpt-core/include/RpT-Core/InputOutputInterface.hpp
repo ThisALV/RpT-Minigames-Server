@@ -2,73 +2,15 @@
 #define RPTOGETHER_SERVER_INPUTOUTPUTINTERFACE_HPP
 
 #include <memory>
-#include <optional>
-#include <string>
+#include <RpT-Core/InputEvent.hpp>
+
+/**
+ * @file InputOutputInterface.hpp
+ */
 
 
 namespace RpT::Core {
 
-/**
- * @brief Input event, like timer trigger, service request or server termination request
- *
- * Represents any kind of input event which can occur at IO interface level, returned by
- * `InputOutputInterface::waitForInput()`.
- *
- * An input is defined by a type and an actor, which emitted the event.
- *
- * @author ThisALV, https://github.com/ThisALV
- */
-class InputEvent {
-private:
-    const std::string_view actor_;
-
-public:
-    /**
-     * @brief Base constructor for initializing actor's name
-     *
-     * @param actor Actor's name access
-     */
-    explicit InputEvent(std::string_view actor);
-
-    // Necessary for correct deletion of subclasses instances
-    virtual ~InputEvent() = default;
-
-    /**
-     * @brief Kind of input
-     *
-     * @author ThisALV, https://github.com/ThisALV
-     */
-    enum struct Type {
-        /// Returned to indicate that interface has been closed
-        None,
-        /// Any player sent service request
-        ServiceRequest,
-        /// Any active timer actually timed out
-        TimerTrigger,
-        /// Any signal or console ctrl asked the server to stop
-        StopRequest,
-        /// A new player joined the server
-        PlayerJoined,
-        /// A player left the server, no matter the reason
-        PlayerLeft
-    };
-
-    /**
-     * @brief Get what kind of event it is
-     *
-     * @return `Type` representation to determine event nature
-     */
-    virtual Type type() const = 0;
-
-
-
-    /**
-     * @brief Get actor who emitted this event
-     *
-     * @return Actor's name
-     */
-    std::string_view actor() const;
-};
 
 /**
  * @brief Base class for input/output operations backend
@@ -105,6 +47,7 @@ public:
      */
     virtual std::unique_ptr<InputEvent> waitForInput() = 0;
 };
+
 
 }
 
