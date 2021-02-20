@@ -8,9 +8,31 @@
  * @brief Tests purposes IO interface, should be deleted in further build
  */
 class SimpleIO : public RpT::Core::InputOutputInterface {
+private:
+    RpT::Core::LoggerView logger_;
+
 public:
+    SimpleIO() : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events" } {}
+
     std::unique_ptr<RpT::Core::InputEvent> waitForInput() override {
         return std::make_unique<RpT::Core::NoneEvent>("None");
+    }
+
+    void replyTo(const RpT::Core::ServiceRequestEvent& service_request, const bool success,
+                 const std::optional<std::string>& error_message) override {
+
+        logger_.info("Reply to {} \"{}\": {}", service_request.actor(), *service_request.additionalData(), success);
+
+        if (!success)
+            logger_.error("Error reason: {}", *error_message);
+    }
+
+    void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
+        logger_.info("Request handled for {}: \"{}\"", service_request.actor(), *service_request.additionalData());
+    }
+
+    void outputEvent(const std::string& event) override {
+        logger_.info("Event emitted: \"{}\"", event);
     }
 };
 

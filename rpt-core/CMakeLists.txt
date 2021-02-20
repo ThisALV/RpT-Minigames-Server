@@ -11,7 +11,8 @@ set(RPT_CORE_SOURCES
         "src/ServicesEventRequestProtocol.cpp"
         "src/Executor.cpp"
         "src/LoggerView.cpp"
-        "src/InputEvent.cpp")
+        "src/InputEvent.cpp"
+        "src/InputOutputInterface.cpp")
 
 find_package(spdlog 1.8.1 REQUIRED CONFIG) # Required for forward-decl header, stdout fix and load_args/env_levels()
 
