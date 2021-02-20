@@ -30,6 +30,9 @@ public:
      */
     explicit InputEvent(std::string_view actor);
 
+    // Necessary for correct deletion of subclasses instances
+    virtual ~InputEvent() = default;
+
     /**
      * @brief Kind of input
      *
@@ -56,6 +59,8 @@ public:
      * @return `Type` representation to determine event nature
      */
     virtual Type type() const = 0;
+
+
 
     /**
      * @brief Get actor who emitted this event
