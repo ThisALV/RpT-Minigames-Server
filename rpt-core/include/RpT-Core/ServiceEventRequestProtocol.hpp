@@ -90,14 +90,15 @@ public:
     virtual std::string_view name() const = 0;
 
     /**
-     * @brief Tries to handle a given command executed for a given actor
+     * @brief Tries to handle a given command executed by a given actor
      *
      * @param actor Actor who's trying to execute the given SR command
-     * @param sr_command_data Command to handle
+     * @param sr_command_arguments Service Request command arguments (or command data words)
      *
      * @returns Boolean which indicates if SR command was successfully handled
      */
-    virtual bool handleRequestCommand(std::string_view actor, std::string_view sr_command_data) = 0;
+    virtual bool handleRequestCommand(std::string_view actor,
+                                      const std::vector<std::string_view>& sr_command_arguments) = 0;
 };
 
 /**
@@ -196,6 +197,7 @@ private:
      * @brief Get list of words inside given Service Request command, separated by char ' '
      *
      * @param sr_command Service Request command to parse
+     *
      * @returns String views to each separated word contained inside `sr_command`
      */
     static std::vector<std::string_view> getWordsFor(std::string_view sr_command);

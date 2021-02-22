@@ -106,8 +106,12 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
 
     Service& intended_service { running_services_.at(intended_service_name).get() };
 
-    // Execute given command, and returns service execution result
-    return intended_service.handleRequestCommand(actor, service_request);
+    // Execute given command contained in command data arguments, and returns service execution result
+    const std::vector<std::string_view> command_data_arguments { // Extract SR command words which are command arguments
+        sr_command_words.cbegin() + 2, sr_command_words.cend()
+    };
+
+    return intended_service.handleRequestCommand(actor, command_data_arguments);
 }
 
 
