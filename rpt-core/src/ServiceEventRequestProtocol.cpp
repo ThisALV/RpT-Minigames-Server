@@ -7,6 +7,23 @@
 namespace RpT::Core {
 
 
+EventsPipeline::EventsPipeline() : destination_events_queue_ { nullptr } {}
+
+EventsPipeline::EventsPipeline(std::queue<std::string>& active_protocol_events_queue) :
+destination_events_queue_ { &active_protocol_events_queue } {}
+
+void EventsPipeline::pushServiceEvent(std::string se_command) {
+    // Pipeline must refers to valid destination events queue, not nullptr
+    if (!destination_events_queue_)
+        throw PipelineNotBound {};
+
+    destination_events_queue_->push(std::move(se_command)); // Given SE command is moved to queue
+}
+
+void Service::emitEventsFor(EventsPipeline events_queue_pipeline) {
+    events_queue_ = events_queue_pipeline;
+}
+
 std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::string_view sr_command) {
     std::vector<std::string_view> parsed_words;
 
@@ -44,6 +61,9 @@ std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::stri
 ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const std::initializer_list<std::reference_wrapper<Service>>& services) {
 
+    // Pipeline will be distributed among registered services
+    const EventsPipeline instance_pipeline { services_events_queue_ };
+
     // Each given service reference must be registered as running service
     for (const auto service_ref : services) {
         const std::string_view service_name { service_ref.get().name() };
@@ -54,6 +74,9 @@ ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const auto service_registration_result { running_services_.insert({ service_name, service_ref }) };
         // Must be sure that service has been successfully registered, this is why insertion result is saved
         assert(service_registration_result.second);
+
+        // Service must be able to emit events
+        service_ref.get().emitEventsFor(instance_pipeline);
     }
 }
 
@@ -87,9 +110,6 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
     return intended_service.handleRequestCommand(actor, service_request);
 }
 
-void ServiceEventRequestProtocol::pushServiceEvent(std::string se_command) {
-    services_events_queue_.push(std::move(se_command)); // Given SE command is moved to queue
-}
 
 std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
     // Event to poll is uninitialized

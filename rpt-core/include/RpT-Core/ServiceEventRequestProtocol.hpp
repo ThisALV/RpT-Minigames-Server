@@ -20,6 +20,50 @@ namespace RpT::Core {
 
 
 /**
+ * @brief Thrown if event is pushed on a pipeline which isn't referring to valid SER Protocol events queue
+ *
+ * It is typically thrown if `EventsPipeline` push event into null_ptr destination.
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class PipelineNotBound : std::logic_error {
+public:
+    PipelineNotBound() : std::logic_error { "Pipeline isn't bound to any valid destination events queue" } {}
+};
+
+/**
+ * @brief Pipeline for events emitted by services to SER Protocol
+ *
+ * Instances has reference to events queue for current SER Protocol instance (see `ServiceEventRequestProtocol`), so
+ * events can be pushed from this class without giving public access to SER Protocol private events queue.
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class EventsPipeline {
+private:
+    std::queue<std::string>* destination_events_queue_; // Must be copyable, so pointer is used instead of reference
+
+public:
+    EventsPipeline();
+
+    /**
+     * @brief Constructs pipeline using given destination events queue
+     *
+     * @param active_protocol_events_queue Destination for pushed events
+     */
+    explicit EventsPipeline(std::queue<std::string>& active_protocol_events_queue);
+
+    /**
+     * @brief Push Service Event command into events queue
+     *
+     * @param se_command SE command to push
+     *
+     * @throws PipelineNotBound if default constructed (which means that pipeline destination isn't valid)
+     */
+    void pushServiceEvent(std::string se_command);
+};
+
+/**
  * @brief Service ran by `ServiceEventRequestProtocol`
  *
  * Service requirement is being able to handle SR commands.
@@ -27,7 +71,17 @@ namespace RpT::Core {
  * @author ThisALV, https://github.com/ThisALV
  */
 class Service {
+protected:
+    EventsPipeline events_queue_;
+
 public:
+    /**
+     * @brief Set SER Protocol which is dispatching emitted events
+     *
+     * @param events_queue_pipeline Events pipeline to SER Protocol events queue that must dispatch emitted events
+     */
+    void emitEventsFor(EventsPipeline events_queue_pipeline);
+
     /**
      * @brief Get service name for registration
      *
@@ -184,13 +238,6 @@ public:
      * @returns Optional value, initialized with error message if not handled successfully, uninitialized else
      */
     bool handleServiceRequest(std::string_view actor, std::string_view service_request);
-
-    /**
-     * @brief Push Service Event command into events queue
-     *
-     * @param se_command SE command to push
-     */
-    void pushServiceEvent(std::string se_command);
 
     /**
      * @brief Poll next Service Event command in queue, do nothing if queue is empty
