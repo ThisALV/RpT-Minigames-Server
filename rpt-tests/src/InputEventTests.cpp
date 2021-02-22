@@ -33,9 +33,6 @@ std::ostream& operator<<(std::ostream& out, const InputEvent::Type event_type) {
 
 BOOST_AUTO_TEST_SUITE(InputEventTests)
 
-// Use anonymous namespace to prevent redefinition of util function
-namespace {
-
 // Necessary because Boost Test cannot natively print std::optional
 // Also, it would be difficult to define a custom operator<<, as optional belongs to namespace "std"
 template<typename T>
@@ -51,8 +48,6 @@ void boostCheckOptionalsEqual(std::optional<T>&& lhs, std::optional<T>&& rhs) {
         // ...these values must be equals.
         BOOST_CHECK_EQUAL(*lhs, *rhs);
     }
-}
-
 }
 
 /*
