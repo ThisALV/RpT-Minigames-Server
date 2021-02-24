@@ -8,6 +8,12 @@
 namespace RpT::Core {
 
 
+ServiceContext::ServiceContext() : events_count_ { 0 } {}
+
+std::size_t ServiceContext::newEventPushed() {
+    return events_count_++;
+}
+
 Service::Service(ServiceContext& run_context) : run_context_ { run_context } {}
 
 void Service::emitEvent(std::string event_command) {
