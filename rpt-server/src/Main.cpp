@@ -133,7 +133,16 @@ int main(const int argc, const char** argv) {
         RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name }, io };
         const bool done_successfully { rpt_executor.run() };
 
-        return done_successfully ? SUCCESS : RUNTIME_ERROR; // Process exit code depends on main loop result
+        // Process exit code depends on main loop result
+        if (done_successfully) {
+            logger.info("Successfully shut down.");
+
+            return SUCCESS;
+        } else {
+            logger.fatal("Shut down for unhandled error.");
+
+            return RUNTIME_ERROR;
+        }
     } catch (const RpT::Utils::OptionsError& err) {
         logger.fatal("Command line error: {}", err.what());
 

@@ -20,27 +20,33 @@ Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::str
 bool Executor::run() {
     logger_.info("Start.");
 
-    bool running { true };
-    while (running) {
-        const AnyInputEvent input_event { io_interface_.waitForInput() };
+    try {
+        bool running { true };
+        while (running) {
+            const AnyInputEvent input_event { io_interface_.waitForInput() };
 
-        std::visit([&](auto&& event) {
-            using EventType = std::decay_t<decltype(event)>;
+            std::visit([&](auto&& event) {
+                using EventType = std::decay_t<decltype(event)>;
 
-            if constexpr (std::is_same_v<EventType, StopEvent>) {
-                logger_.info("Stopping server: caught signal {}", event.caughtSignal());
-                running = false;
-            } else if constexpr (std::is_same_v<EventType, ServiceRequestEvent>) {
-                logger_.trace("Received SR command: {}", event.serviceRequest());
-            } else {
-                throw std::runtime_error { "Unexpected input event" };
-            }
-        }, input_event);
+                if constexpr (std::is_same_v<EventType, StopEvent>) {
+                    logger_.info("Stopping server: caught signal {}", event.caughtSignal());
+                    running = false;
+                } else if constexpr (std::is_same_v<EventType, ServiceRequestEvent>) {
+                    logger_.trace("Received SR command: {}", event.serviceRequest());
+                } else {
+                    throw std::runtime_error { "Unexpected input event" };
+                }
+            }, input_event);
+        }
+
+        logger_.info("Stopped.");
+
+        return true;
+    } catch (const std::exception& err) {
+        logger_.error("Runtime error: {}", err.what());
+
+        return false;
     }
-
-    logger_.info("Stopped.");
-
-    return true;
 }
 
 }
