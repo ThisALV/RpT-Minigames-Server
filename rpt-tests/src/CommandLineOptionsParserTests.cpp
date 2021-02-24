@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE Utils
-#include <boost/test/unit_test.hpp>
+#include <RpT-Testing/TestingUtils.hpp>
 
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
 

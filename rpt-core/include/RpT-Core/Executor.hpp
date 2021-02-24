@@ -6,7 +6,7 @@
 #include <RpT-Config/Filesystem.hpp>
 #include <RpT-Core/InputOutputInterface.hpp>
 #include <RpT-Core/LoggerView.hpp>
-#include <RpT-Core/ServicesEventRequestProtocol.hpp>
+#include <RpT-Core/ServiceEventRequestProtocol.hpp>
 
 /**
  * @file Executor.hpp

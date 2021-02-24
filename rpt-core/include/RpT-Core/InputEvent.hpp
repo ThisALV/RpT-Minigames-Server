@@ -160,7 +160,7 @@ public:
     };
 private:
     Reason disconnection_reason_;
-    std::optional<std::string_view> error_message_;
+    std::optional<std::string> error_message_;
 
 public:
     /**
@@ -172,7 +172,7 @@ public:
      * @param disconnection_reason The reason for which the player disconnected
      * @param err_msg Optional error message, only accepted if reason is `Reason::Crash`
      */
-    LeftEvent(std::string_view actor, Reason disconnection_reason, const std::optional<std::string_view>& err_msg = {});
+    LeftEvent(std::string_view actor, Reason disconnection_reason, std::optional<std::string> err_msg = {});
 
     /// Returns `InputEvent::Type::PlayerLeft`
     Type type() const override;
