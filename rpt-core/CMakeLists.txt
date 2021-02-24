@@ -5,14 +5,16 @@ set(RPT_CORE_HEADERS
         "${RPT_CORE_HEADERS_DIR}/Executor.hpp"
         "${RPT_CORE_HEADERS_DIR}/LoggerView.hpp"
         "${RPT_CORE_HEADERS_DIR}/InputOutputInterface.hpp"
-        "${RPT_CORE_HEADERS_DIR}/InputEvent.hpp")
+        "${RPT_CORE_HEADERS_DIR}/InputEvent.hpp"
+        "${RPT_CORE_HEADERS_DIR}/Service.hpp")
 
 set(RPT_CORE_SOURCES
         "src/ServiceEventRequestProtocol.cpp"
         "src/Executor.cpp"
         "src/LoggerView.cpp"
         "src/InputEvent.cpp"
-        "src/InputOutputInterface.cpp")
+        "src/InputOutputInterface.cpp"
+        "src/Service.cpp")
 
 find_package(spdlog 1.8.1 REQUIRED CONFIG) # Required for forward-decl header, stdout fix and load_args/env_levels()
 
