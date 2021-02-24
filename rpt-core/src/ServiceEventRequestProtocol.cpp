@@ -27,7 +27,7 @@ std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::stri
 
         // Word begin and end index calculations
         const long word_begin_i { word_begin - cmd_begin };
-        const long word_end_i { word_end - cmd_end };
+        const long word_end_i { word_end - cmd_begin };
 
         // Indexes must be positives, else it means either word_begin or word_end is out of range
         assert(word_begin_i >= 0 && word_end_i >= 0);
