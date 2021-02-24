@@ -1,4 +1,3 @@
-#define BOOST_TEST_MODULE Core
 #include <RpT-Testing/TestingUtils.hpp>
 
 #include <cassert>
