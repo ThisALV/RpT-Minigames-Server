@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 
 
 /**
@@ -20,55 +21,81 @@ namespace RpT::Core {
 
 
 /**
- * @brief Thrown if event is pushed by a service which isn't bound to valid SER Protocol events queue
+ * @brief Thrown if trying to poll event when queue is empty
  *
- * It is typically thrown if `Service` tries pushing event before any call to `Service::emitEventsFor()`.
+ * @see Service
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class ServiceNotBound : public std::logic_error {
+class EmptyEventsQueue : public std::logic_error {
 public:
-    ServiceNotBound() : std::logic_error { "Service isn't bound to any valid destination events queue" } {}
+    /**
+     * @brief Constructs error with basic message including queue service name
+     *
+     * @param service Name of service the queue belongs to
+     */
+    explicit EmptyEventsQueue(const std::string_view service) :
+        std::logic_error { "No more events for \"" + std::string { service } + '"' } {}
 };
+
 
 /**
  * @brief Service ran by `ServiceEventRequestProtocol`
  *
- * Service requirement is being able to handle SR commands.
+ * Service requirement is being able to handle SR commands, implementations must define `handleRequestCommand()`
+ * virtual method.
+ *
+ * Implementations will access protected method `emitEvent()` so they can trigger events later polled by any SER
+ * Protocol instance.
+ *
+ * Each service possesses its own events queue, and each event contains a event ID, which allows knowing what event
+ * was triggered first (as ID is growing from low to high) and an event command, corresponding to words after `EVENT`
+ * prefix and service name inside Service Event command.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
 class Service {
+private:
+    static std::size_t events_count_;
+
+    std::queue<std::pair<std::size_t, std::string>> events_queue_;
+
 protected:
-    // May be uninitialized if service isn't bound to any SER Protocol instance
-    std::optional<std::reference_wrapper<std::queue<std::string>>> events_queue_;
+    /**
+     * @brief Emits event command into service
+     *
+     * @param event_command Event command to emit (words coming after `EVENT` prefix and service name in SE command)
+     */
+    void emitEvent(std::string event_command);
 
 public:
+    /// Returned by `checkEvent()` when service events queue is empty
+    static constexpr std::optional<std::size_t> EMPTY_QUEUE {};
+
     /**
-     * @brief Constructs service by setting its emitted events queue as uninitialized, service is at "not bound" state.
+     * @brief Constructs service with empty events queue
      */
     Service() = default;
 
     /**
-     * @brief Set events queue which is receiving emitted events
+     * @brief Get next event ID so check for newest event between services can be performed
      *
-     * @note Method called by `ServiceEventRequestProtocol` constructor to bind registered services, shouldn't be
-     * called by user.
+     * @note Called by `ServiceEventRequestProtocol` instance to perform described check, shouldn't be called by user.
      *
-     * @param emitted_events_queue Events queue for SER Protocol where emitted events are pushed
+     * @returns ID for next queued event, or uninitialized if queue is empty
      */
-    void emitEventsFor(std::queue<std::string>& emitted_events_queue);
+    std::optional<std::size_t> checkEvent() const;
 
     /**
-     * @brief Emits event into Service bound events queue
+     * @brief Get next event command
      *
-     * Event command will be formatted so it will respect Service Event command syntax.
+     * @note Called by `ServiceEventRequestProtocol` instance to dispatch across actors, shouldn't be called by user.
      *
-     * @param event_command_data Event command to emit (words coming after `EVENT` prefix and service name)
+     * @returns Command for next queued event
      *
-     * @throws ServiceNotBound if not any call to `emitEventsFor()` was done prior this method call
+     * @throws EmptyEventsQueue if queue is empty so event cannot be polled
      */
-    void emitEvent(const std::string& event_command_data);
+    std::string pollEvent();
 
     /**
      * @brief Get service name for registration
@@ -191,7 +218,6 @@ private:
     static std::vector<std::string_view> getWordsFor(std::string_view sr_command);
 
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
-    std::queue<std::string> services_events_queue_;
 
 public:
     /**
@@ -230,9 +256,9 @@ public:
     bool handleServiceRequest(std::string_view actor, std::string_view service_request);
 
     /**
-     * @brief Poll next Service Event command in queue, do nothing if queue is empty
+     * @brief Poll next Service Event command in services queue, do nothing if queue is empty
      *
-     * @returns Optional value, initialized to next SE command if it exists, uninitialized else
+     * @returns Optional value, initialized to next SE command if it exists, uninitialized otherwise
      */
     std::optional<std::string> pollServiceEvent();
 };

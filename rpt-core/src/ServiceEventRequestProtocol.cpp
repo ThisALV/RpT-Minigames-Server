@@ -7,17 +7,29 @@
 namespace RpT::Core {
 
 
-void Service::emitEventsFor(std::queue<std::string>& emitted_events_queue) {
-    events_queue_ = &emitted_events_queue;
+std::size_t Service::events_count_ { 0 };
+
+
+void Service::emitEvent(std::string event_command) {
+    const std::size_t event_id { events_count_++ }; // Event counter is growing, ID is given so trigger order is kept
+
+    events_queue_.push({ event_id, std::move(event_command) }); // Event command moved in queue with appropriate ID
 }
 
-void Service::emitEvent(const std::string& event_command_data) {
-    // Service must have been bound to SER Protocol events queue prior this call
-    if (!events_queue_)
-        throw ServiceNotBound {};
+std::optional<std::size_t> Service::checkEvent() const {
+    return events_queue_.empty() ? EMPTY_QUEUE : events_queue_.front().first;
+}
 
-    // Given SE command data (or command arguments) is formatted then pushed into queue
-    events_queue_->push("EVENT " + std::string { name() } + ' ' + event_command_data);
+std::string Service::pollEvent() {
+    if (events_queue_.empty()) // There must be at least one event to poll, checked with checkEvent() call
+        throw EmptyEventsQueue { name() };
+
+    // Command is moved from queue to local, and will be returned by copy-elision later
+    std::string event_command { std::move(events_queue_.front().second) };
+    // Event with moved command can now be destroyed
+    events_queue_.pop();
+
+    return event_command;
 }
 
 std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::string_view sr_command) {
@@ -67,9 +79,6 @@ ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const auto service_registration_result { running_services_.insert({ service_name, service_ref }) };
         // Must be sure that service has been successfully registered, this is why insertion result is saved
         assert(service_registration_result.second);
-
-        // Service must be able to emit events now since they're bound to this SER Protocol instance
-        service_ref.get().emitEventsFor(services_events_queue_);
     }
 }
 
@@ -109,12 +118,29 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
 
 
 std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
-    // Event to poll is uninitialized
-    std::optional<std::string> next_event;
+    std::optional<std::string> next_event; // Event to poll is first uninitialized
 
-    if (!services_events_queue_.empty()) { // If there is at least one event to poll
-        next_event = std::move(services_events_queue_.front()); // Then event is moved to polled event
-        services_events_queue_.pop(); // And moved event is popped from queue
+    Service* newest_event_emitter { nullptr }; // Service with event which has the lowest ID
+    std::size_t lowest_event_id;
+    for (auto registered_service : running_services_) {
+        Service& service { registered_service.second.get() };
+
+        const std::optional<std::size_t> next_event_id { service.checkEvent() };
+
+        if (next_event_id.has_value()) { // Skip service if has an empty events queue
+            // If there isn't any event to poll or current was triggered first...
+            if (!newest_event_emitter || next_event_id < lowest_event_id) {
+                // ...then set new event emitter, and update lowest ID
+                newest_event_emitter = &service;
+                lowest_event_id = *next_event_id;
+            }
+        }
+    }
+
+    if (newest_event_emitter) { // If there is any emitted event, format it and move it into polled event
+        const std::string service_name_copy { newest_event_emitter->name() }; // Required for concatenation
+
+        next_event = std::string { EVENT_PREFIX } + ' ' + service_name_copy + ' ' + newest_event_emitter->pollEvent();
     }
 
     return next_event;
