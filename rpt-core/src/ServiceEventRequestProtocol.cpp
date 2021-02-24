@@ -8,37 +8,34 @@ namespace RpT::Core {
 
 
 std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::string_view sr_command) {
-    std::vector<std::string_view> parsed_words;
-
     // Begin and end constant iterators for SR command string
     const auto cmd_begin { sr_command.cbegin() };
     const auto cmd_end { sr_command.cend() };
 
     // Starts without any word parsed yet
-    std::vector<std::string_view> words;
+    std::vector<std::string_view> parsed_words;
 
-    // Starts string parsing from the beginning
+    // Starts string parsing from the first word
     auto word_begin { cmd_begin };
-    auto word_end { cmd_begin };
+    auto word_end { std::find(cmd_begin, cmd_end, ' ') };
 
-    // Until end of string is reached
-    while (word_end != cmd_end) {
-        word_end = std::find(word_begin + 1, cmd_end, ' '); // Find next ' ' char into unparsed command string
-
-        // Word begin and end index calculations
+    // While entire string hasn't be parsed (while word begin isn't at string end)
+    while (word_begin != word_end) {
+        // Calculate index for word begin, and next word size
         const long word_begin_i { word_begin - cmd_begin };
-        const long word_end_i { word_end - cmd_begin };
+        const long word_length { (word_end - word_begin) };
 
-        // Indexes must be positives, else it means either word_begin or word_end is out of range
-        assert(word_begin_i >= 0 && word_end_i >= 0);
+        parsed_words.push_back(sr_command.substr(word_begin_i, word_length )); // Add currently parsed word to words
 
-        // Adds parsed word from its first char to next space excluded
-        words.push_back(sr_command.substr(word_begin_i, word_end_i));
+        word_begin = word_end; // Is the string end reached ?
 
-        word_begin = word_end ; // Next search should begin after current word
+        if (word_end != cmd_end) { // Is the string end reached ?
+            word_begin++; // Then, move word begin after previously found space
+            word_end = std::find(word_begin, cmd_end, ' '); // And find next word end starting from next word begin
+        }
     }
 
-    return words;
+    return parsed_words;
 }
 
 ServiceEventRequestProtocol::ServiceEventRequestProtocol(
