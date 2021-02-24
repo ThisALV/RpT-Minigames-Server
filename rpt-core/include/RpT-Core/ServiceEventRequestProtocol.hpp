@@ -20,47 +20,15 @@ namespace RpT::Core {
 
 
 /**
- * @brief Thrown if event is pushed on a pipeline which isn't referring to valid SER Protocol events queue
+ * @brief Thrown if event is pushed by a service which isn't bound to valid SER Protocol events queue
  *
- * It is typically thrown if `EventsPipeline` push event into null_ptr destination.
- *
- * @author ThisALV, https://github.com/ThisALV
- */
-class PipelineNotBound : std::logic_error {
-public:
-    PipelineNotBound() : std::logic_error { "Pipeline isn't bound to any valid destination events queue" } {}
-};
-
-/**
- * @brief Pipeline for events emitted by services to SER Protocol
- *
- * Instances has reference to events queue for current SER Protocol instance (see `ServiceEventRequestProtocol`), so
- * events can be pushed from this class without giving public access to SER Protocol private events queue.
+ * It is typically thrown if `Service` tries pushing event before any call to `Service::emitEventsFor()`.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class EventsPipeline {
-private:
-    std::queue<std::string>* destination_events_queue_; // Must be copyable, so pointer is used instead of reference
-
+class ServiceNotBound : public std::logic_error {
 public:
-    EventsPipeline();
-
-    /**
-     * @brief Constructs pipeline using given destination events queue
-     *
-     * @param active_protocol_events_queue Destination for pushed events
-     */
-    explicit EventsPipeline(std::queue<std::string>& active_protocol_events_queue);
-
-    /**
-     * @brief Push Service Event command into events queue
-     *
-     * @param se_command SE command to push
-     *
-     * @throws PipelineNotBound if default constructed (which means that pipeline destination isn't valid)
-     */
-    void pushServiceEvent(std::string se_command);
+    ServiceNotBound() : std::logic_error { "Service isn't bound to any valid destination events queue" } {}
 };
 
 /**
@@ -72,15 +40,35 @@ public:
  */
 class Service {
 protected:
-    EventsPipeline events_queue_;
+    // May be uninitialized if service isn't bound to any SER Protocol instance
+    std::optional<std::reference_wrapper<std::queue<std::string>>> events_queue_;
 
 public:
     /**
-     * @brief Set SER Protocol which is dispatching emitted events
-     *
-     * @param events_queue_pipeline Events pipeline to SER Protocol events queue that must dispatch emitted events
+     * @brief Constructs service by setting its emitted events queue as uninitialized, service is at "not bound" state.
      */
-    void emitEventsFor(EventsPipeline events_queue_pipeline);
+    Service() = default;
+
+    /**
+     * @brief Set events queue which is receiving emitted events
+     *
+     * @note Method called by `ServiceEventRequestProtocol` constructor to bind registered services, shouldn't be
+     * called by user.
+     *
+     * @param emitted_events_queue Events queue for SER Protocol where emitted events are pushed
+     */
+    void emitEventsFor(std::queue<std::string>& emitted_events_queue);
+
+    /**
+     * @brief Emits event into Service bound events queue
+     *
+     * Event command will be formatted so it will respect Service Event command syntax.
+     *
+     * @param event_command_data Event command to emit (words coming after `EVENT` prefix and service name)
+     *
+     * @throws ServiceNotBound if not any call to `emitEventsFor()` was done prior this method call
+     */
+    void emitEvent(const std::string& event_command_data);
 
     /**
      * @brief Get service name for registration

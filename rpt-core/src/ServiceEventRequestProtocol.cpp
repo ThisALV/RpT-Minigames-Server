@@ -7,21 +7,17 @@
 namespace RpT::Core {
 
 
-EventsPipeline::EventsPipeline() : destination_events_queue_ { nullptr } {}
-
-EventsPipeline::EventsPipeline(std::queue<std::string>& active_protocol_events_queue) :
-destination_events_queue_ { &active_protocol_events_queue } {}
-
-void EventsPipeline::pushServiceEvent(std::string se_command) {
-    // Pipeline must refers to valid destination events queue, not nullptr
-    if (!destination_events_queue_)
-        throw PipelineNotBound {};
-
-    destination_events_queue_->push(std::move(se_command)); // Given SE command is moved to queue
+void Service::emitEventsFor(std::queue<std::string>& emitted_events_queue) {
+    events_queue_ = &emitted_events_queue;
 }
 
-void Service::emitEventsFor(EventsPipeline events_queue_pipeline) {
-    events_queue_ = events_queue_pipeline;
+void Service::emitEvent(const std::string& event_command_data) {
+    // Service must have been bound to SER Protocol events queue prior this call
+    if (!events_queue_)
+        throw ServiceNotBound {};
+
+    // Given SE command data (or command arguments) is formatted then pushed into queue
+    events_queue_->push("EVENT " + std::string { name() } + ' ' + event_command_data);
 }
 
 std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::string_view sr_command) {
@@ -61,9 +57,6 @@ std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::stri
 ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const std::initializer_list<std::reference_wrapper<Service>>& services) {
 
-    // Pipeline will be distributed among registered services
-    const EventsPipeline instance_pipeline { services_events_queue_ };
-
     // Each given service reference must be registered as running service
     for (const auto service_ref : services) {
         const std::string_view service_name { service_ref.get().name() };
@@ -75,8 +68,8 @@ ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         // Must be sure that service has been successfully registered, this is why insertion result is saved
         assert(service_registration_result.second);
 
-        // Service must be able to emit events
-        service_ref.get().emitEventsFor(instance_pipeline);
+        // Service must be able to emit events now since they're bound to this SER Protocol instance
+        service_ref.get().emitEventsFor(services_events_queue_);
     }
 }
 
