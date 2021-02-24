@@ -12,6 +12,7 @@
 namespace RpT::Core {
 
 
+/// For using visitor pattern on received input event. See `InputOutputInterface::waitForInput()`.
 using AnyInputEvent = std::variant<NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
 
 
@@ -27,7 +28,7 @@ using AnyInputEvent = std::variant<NoneEvent, StopEvent, ServiceRequestEvent, Ti
  * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. This might
  * either be a service request which was successfully handled or an event emitted by a service.
  *
- * @note Interface is automatically closed at destruction.
+ * @note Interface is NOT automatically closed at destruction.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -54,9 +55,9 @@ public:
     bool operator==(const InputOutputInterface&) const = delete;
 
     /**
-     * @brief Blocks until any kind of input event occurs
+     * @brief Blocks until any kind of input event occurs, then retrieves it
      *
-     * @returns Pointer to the last input event that occurred, so polymorphism can be used
+     * @returns An instance of `InputEvent` subclass. Type depends on input type.
      */
     virtual AnyInputEvent waitForInput() = 0;
 
