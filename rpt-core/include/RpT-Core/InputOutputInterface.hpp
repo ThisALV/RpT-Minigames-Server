@@ -1,7 +1,7 @@
 #ifndef RPTOGETHER_SERVER_INPUTOUTPUTINTERFACE_HPP
 #define RPTOGETHER_SERVER_INPUTOUTPUTINTERFACE_HPP
 
-#include <memory>
+#include <variant>
 #include <RpT-Core/InputEvent.hpp>
 
 /**
@@ -10,6 +10,9 @@
 
 
 namespace RpT::Core {
+
+
+using AnyInputEvent = std::variant<NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
 
 
 /**
@@ -55,7 +58,7 @@ public:
      *
      * @returns Pointer to the last input event that occurred, so polymorphism can be used
      */
-    virtual std::unique_ptr<InputEvent> waitForInput() = 0;
+    virtual AnyInputEvent waitForInput() = 0;
 
     /**
      * @brief Output response to actor for a given service request

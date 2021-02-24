@@ -11,10 +11,6 @@ namespace RpT::Core {
 
 InputEvent::InputEvent(const std::string_view actor) : actor_ { actor } {}
 
-std::optional<std::string> InputEvent::additionalData() const {
-    return {};
-}
-
 std::string_view InputEvent::actor() const {
     return actor_;
 }
@@ -25,10 +21,6 @@ std::string_view InputEvent::actor() const {
 
 NoneEvent::NoneEvent(std::string_view actor) : InputEvent { actor } {}
 
-InputEvent::Type NoneEvent::type() const {
-    return InputEvent::Type::None;
-}
-
 /*
  * ServiceRequest
  */
@@ -36,12 +28,8 @@ InputEvent::Type NoneEvent::type() const {
 ServiceRequestEvent::ServiceRequestEvent(std::string_view actor, std::string service_request) :
     InputEvent { actor }, service_request_ { std::move(service_request) } {}
 
-InputEvent::Type ServiceRequestEvent::type() const {
-    return InputEvent::Type::ServiceRequest;
-}
-
-std::optional<std::string> ServiceRequestEvent::additionalData() const {
-    return { service_request_ };
+const std::string& ServiceRequestEvent::serviceRequest() const {
+    return service_request_;
 }
 
 /*
@@ -50,10 +38,6 @@ std::optional<std::string> ServiceRequestEvent::additionalData() const {
 
 TimerEvent::TimerEvent(const std::string_view actor) : InputEvent { actor } {}
 
-InputEvent::Type TimerEvent::type() const {
-    return InputEvent::Type::TimerTrigger;
-}
-
 /*
  * StopRequest
  */
@@ -61,12 +45,8 @@ InputEvent::Type TimerEvent::type() const {
 StopEvent::StopEvent(std::string_view actor, std::uint8_t caught_signal) :
     InputEvent { actor }, caught_signal_ { caught_signal } {}
 
-InputEvent::Type StopEvent::type() const {
-    return InputEvent::Type::StopRequest;
-}
-
-std::optional<std::string> StopEvent::additionalData() const {
-    return std::to_string(caught_signal_);
+std::uint8_t StopEvent::caughtSignal() const {
+    return caught_signal_;
 }
 
 /*
@@ -74,10 +54,6 @@ std::optional<std::string> StopEvent::additionalData() const {
  */
 
 JoinedEvent::JoinedEvent(std::string_view actor) : InputEvent { actor } {}
-
-InputEvent::Type JoinedEvent::type() const {
-    return InputEvent::Type::PlayerJoined;
-}
 
 /*
  * PlayerLeft
@@ -87,21 +63,19 @@ LeftEvent::LeftEvent(std::string_view actor, Reason disconnection_reason,
                      std::optional<std::string> err_msg) :
     InputEvent { actor }, disconnection_reason_ { disconnection_reason }, error_message_ { std::move(err_msg) } {
 
-    // Error message must be present IF AND ONLY IF disconnection reason is a crash
+    // Error message must be present IF AND ONLY IF disconnection disconnectionReason is a crash
     assert((disconnection_reason_ == Reason::Crash) == error_message_.has_value());
 }
 
-InputEvent::Type LeftEvent::type() const {
-    return InputEvent::Type::PlayerLeft;
+LeftEvent::Reason LeftEvent::disconnectionReason() const {
+    return disconnection_reason_;
 }
 
-std::optional<std::string> LeftEvent::additionalData() const {
-    switch (disconnection_reason_) {
-    case Reason::Clean:
-        return "Clean";
-    case Reason::Crash:
-        return "Crash;" + *error_message_;
-    }
+const std::string& LeftEvent::errorMessage() const {
+    if (!error_message_) // Disconnection reason must be an error if error_message_ is accessed
+        throw NotAnErrorReason {};
+
+    return *error_message_; // If it an error, retrieves message
 }
 
 

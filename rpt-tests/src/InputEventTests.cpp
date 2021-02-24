@@ -1,31 +1,28 @@
 #include <RpT-Testing/TestingUtils.hpp>
 
 #include <cassert>
+#include <iostream>
 #include <RpT-Core/InputEvent.hpp>
 
 
 using namespace RpT::Core;
 
 
+// << overloads must be defined inside this namespace, so ADL can be performed to find them when boost use <<
+// operator on RpT::Core types
 namespace RpT::Core {
 
-// Required for Boost Tests to print InputEvent::Type values, must be in RpT::Core to be located by C++ ADL
-std::ostream& operator<<(std::ostream& out, const InputEvent::Type event_type) {
-    switch (event_type) {
-    case InputEvent::Type::None:
-        return out << "None";
-    case InputEvent::Type::ServiceRequest:
-        return out << "ServiceRequest";
-    case InputEvent::Type::TimerTrigger:
-        return out << "TimerTrigger";
-    case InputEvent::Type::StopRequest:
-        return out << "StopRequest";
-    case InputEvent::Type::PlayerJoined:
-        return out << "PlayerJoined";
-    case InputEvent::Type::PlayerLeft:
-        return out << "PlayerLeft";
+
+// Required for Boost.Test logging
+std::ostream& operator<<(std::ostream& out, const LeftEvent::Reason dc_reason) {
+    switch (dc_reason) {
+    case LeftEvent::Reason::Clean:
+        return out << "Clean";
+    case LeftEvent::Reason::Crash:
+        return out << "Crash";
     }
 }
+
 
 }
 
@@ -41,9 +38,7 @@ BOOST_AUTO_TEST_SUITE(None)
 BOOST_AUTO_TEST_CASE(ActorName) {
     const NoneEvent event { "Actor" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::None);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> {});
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -54,20 +49,19 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(ServiceRequest)
 
-BOOST_AUTO_TEST_CASE(ActorNameAndEmptyRequest) {
-    const ServiceRequestEvent event { "Actor", "" };
+BOOST_AUTO_TEST_CASE(ActorNameAndInvalidRequest) {
+    const ServiceRequestEvent event { "Actor", "A random string" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::ServiceRequest);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "" });
+    // InputEvent shouldn't care about request validity
+    BOOST_CHECK_EQUAL(event.serviceRequest(), "A random string");
 }
 
-BOOST_AUTO_TEST_CASE(ActorNameAndRequest) {
-    const ServiceRequestEvent event { "Actor", "this is a random request" };
+BOOST_AUTO_TEST_CASE(ActorNameAndValidRequest) {
+    const ServiceRequestEvent event { "Actor", "REQUEST Service command" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::ServiceRequest);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "this is a random request" });
+    BOOST_CHECK_EQUAL(event.serviceRequest(), "REQUEST Service command");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -81,9 +75,7 @@ BOOST_AUTO_TEST_SUITE(TimerTrigger)
 BOOST_AUTO_TEST_CASE(ActorName) {
     const TimerEvent event { "Actor" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::TimerTrigger);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> {});
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -97,17 +89,15 @@ BOOST_AUTO_TEST_SUITE(StopRequest)
 BOOST_AUTO_TEST_CASE(ActorNameAndSignal0) {
     const StopEvent event { "Actor", 0 };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::StopRequest);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "0" });
+    BOOST_CHECK_EQUAL(event.caughtSignal(), 0); // Check for minimal value
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndSignal255) {
     const StopEvent event { "Actor", 255 };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::StopRequest);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "255" });
+    BOOST_CHECK_EQUAL(event.caughtSignal(), 255); // Check for maximal value
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -121,9 +111,7 @@ BOOST_AUTO_TEST_SUITE(PlayerJoined)
 BOOST_AUTO_TEST_CASE(ActorName) {
     const JoinedEvent event { "Actor" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::PlayerJoined);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> {});
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -137,17 +125,17 @@ BOOST_AUTO_TEST_SUITE(PlayerLeft)
 BOOST_AUTO_TEST_CASE(ActorNameAndCleanDisconnection) {
     const LeftEvent event { "Actor", LeftEvent::Reason::Clean };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::PlayerLeft);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "Clean" });
+    BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Clean);
+    BOOST_CHECK_THROW(event.errorMessage(), NotAnErrorReason); // As DC was clean, there shouldn't be any error msg
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndCrashDisconnectionWithErrorMsg) {
-    const LeftEvent event { "Actor", LeftEvent::Reason::Crash, "a random error" };
+    const LeftEvent event { "Actor", LeftEvent::Reason::Crash, "A random error" };
 
-    BOOST_CHECK_EQUAL(event.type(), InputEvent::Type::PlayerLeft);
     BOOST_CHECK_EQUAL(event.actor(), "Actor");
-    RpT::Testing::boostCheckOptionalsEqual(event.additionalData(), std::optional<std::string> { "Crash;a random error" });
+    BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Crash);
+    BOOST_CHECK_EQUAL(event.errorMessage(), "A random error"); // There should be an error msg with this value
 }
 
 BOOST_AUTO_TEST_SUITE_END()

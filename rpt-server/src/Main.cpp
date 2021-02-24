@@ -14,25 +14,25 @@ private:
 public:
     SimpleIO() : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events" } {}
 
-    std::unique_ptr<RpT::Core::InputEvent> waitForInput() override {
-        return std::make_unique<RpT::Core::NoneEvent>("None");
+    RpT::Core::AnyInputEvent waitForInput() override {
+        return RpT::Core::StopEvent { "Server", 0 };
     }
 
     void replyTo(const RpT::Core::ServiceRequestEvent& service_request, const bool success,
                  const std::optional<std::string>& error_message) override {
 
-        logger_.info("Reply to {} \"{}\": {}", service_request.actor(), *service_request.additionalData(), success);
+        logger_.info("Reply to {} \"{}\": {}", service_request.actor(), service_request.serviceRequest(), success);
 
         if (!success)
-            logger_.error("Error reason: {}", *error_message);
+            logger_.error("Error: {}", *error_message);
     }
 
     void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
-        logger_.info("Request handled for {}: \"{}\"", service_request.actor(), *service_request.additionalData());
+        logger_.info("Request handled for {}: \"{}\"", service_request.actor(), service_request.serviceRequest());
     }
 
     void outputEvent(const std::string& event) override {
-        logger_.info("Event emitted: \"{}\"", event);
+        logger_.info("Event triggered: \"{}\"", event);
     }
 };
 
