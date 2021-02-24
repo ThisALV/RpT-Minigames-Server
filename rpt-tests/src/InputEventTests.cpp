@@ -1,5 +1,5 @@
 #define BOOST_TEST_MODULE Core
-#include <boost/test/unit_test.hpp>
+#include <RpT-Testing/TestingUtils.hpp>
 
 #include <cassert>
 #include <RpT-Core/InputEvent.hpp>
@@ -32,23 +32,6 @@ std::ostream& operator<<(std::ostream& out, const InputEvent::Type event_type) {
 
 
 BOOST_AUTO_TEST_SUITE(InputEventTests)
-
-// Necessary because Boost Test cannot natively print std::optional
-// Also, it would be difficult to define a custom operator<<, as optional belongs to namespace "std"
-template<typename T>
-void boostCheckOptionalsEqual(std::optional<T>&& lhs, std::optional<T>&& rhs) {
-    const bool l_has_value { lhs.has_value() };
-    const bool r_has_value { rhs.has_value() };
-
-    // Both optional must have the same state to be equals
-    BOOST_CHECK_EQUAL(l_has_value, r_has_value);
-
-    // And if they both have value...
-    if (l_has_value && r_has_value) {
-        // ...these values must be equals.
-        BOOST_CHECK_EQUAL(*lhs, *rhs);
-    }
-}
 
 /*
  * None event

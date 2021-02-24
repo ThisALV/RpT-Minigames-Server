@@ -1,5 +1,7 @@
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
+set(RPT_TESTING_HEADERS_DIR "include/RpT-Testing") # Utils header
+
 # Register test target under ${NAME}-tests with given additional arguments cpp files
 # Creates variable named ${NAME}_EXEC for adding include directories or libs to the new target
 function(register_test NAME)
@@ -13,7 +15,8 @@ function(register_test NAME)
 
     set(EXEC_NAME "${NAME}-tests")
 
-    add_executable(${EXEC_NAME} ${SOURCES_LIST})
+    add_executable(${EXEC_NAME} ${SOURCES_LIST} ${RPT_TESTING_HEADERS_DIR})
+    target_include_directories(${EXEC_NAME} PRIVATE include)
     target_link_libraries(${EXEC_NAME} PRIVATE Boost::unit_test_framework)
     set(${NAME}_EXEC ${EXEC_NAME} PARENT_SCOPE)
 
