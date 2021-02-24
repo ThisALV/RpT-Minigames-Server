@@ -8,11 +8,10 @@
 namespace RpT::Core {
 
 
-std::size_t Service::events_count_ { 0 };
-
+Service::Service(ServiceContext& run_context) : run_context_ { run_context } {}
 
 void Service::emitEvent(std::string event_command) {
-    const std::size_t event_id { events_count_++ }; // Event counter is growing, ID is given so trigger order is kept
+    const std::size_t event_id { run_context_.newEventPushed() }; // Event counter is growing, ID is given so trigger order is kept
 
     events_queue_.push({ event_id, std::move(event_command) }); // Event command moved in queue with appropriate ID
 }

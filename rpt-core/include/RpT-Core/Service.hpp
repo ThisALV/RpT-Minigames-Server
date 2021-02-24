@@ -17,6 +17,35 @@ namespace RpT::Core {
 
 
 /**
+ * @brief Provides a context for services to run, same instance expected for constructs all Service instances
+ * registered in same SER Protocol.
+ *
+ * Instance is used for providing events ID.
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class ServiceContext {
+private:
+    std::size_t events_count_;
+
+public:
+    /**
+     * @brief Initialize events count at 0
+     */
+    ServiceContext();
+
+    /**
+     * @brief Increments events count and retrieve its previous value
+     *
+     * @note Called by `Service::emitEvent()` for retrieving triggered event ID, shouldn't be called by user.
+     *
+     * @return Previous value for events count
+     */
+    std::size_t newEventPushed();
+};
+
+
+/**
  * @brief Thrown if trying to poll event when queue is empty
  *
  * @see Service
@@ -44,16 +73,15 @@ public:
  * Implementations will access protected method `emitEvent()` so they can trigger events later polled by any SER
  * Protocol instance.
  *
- * Each service possesses its own events queue, and each event contains a event ID, which allows knowing what event
- * was triggered first (as ID is growing from low to high) and an event command, corresponding to words after `EVENT`
- * prefix and service name inside Service Event command.
+ * Each service possesses its own events queue, and each event contains a event ID provided by `ServiceContext`, which
+ * allows knowing what event was triggered first (as ID is growing from low to high) and an event command,
+ * corresponding to words after `EVENT` prefix and service name inside Service Event command.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
 class Service {
 private:
-    static std::size_t events_count_;
-
+    ServiceContext& run_context_;
     std::queue<std::pair<std::size_t, std::string>> events_queue_;
 
 protected:
@@ -69,9 +97,11 @@ public:
     static constexpr std::optional<std::size_t> EMPTY_QUEUE {};
 
     /**
-     * @brief Constructs service with empty events queue
+     * @brief Constructs service with empty events queue and given run context
+     *
+     * @param run_context Context, should be same instance for services registered in same SER Protocol
      */
-    Service() = default;
+    explicit Service(ServiceContext& run_context);
 
     /**
      * @brief Get next event ID so check for newest event between services can be performed
