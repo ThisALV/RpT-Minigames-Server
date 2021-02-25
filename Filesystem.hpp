@@ -9,9 +9,9 @@
 
 
 /// Experimental filesystem support
-#define RPT_FILESYSTEM_EXPERIMENTAL 0
+#define RPT_FILESYSTEM_EXPERIMENTAL 1
 /// Standard filesystem support
-#define RPT_FILESYSTEM_STANDARD 1
+#define RPT_FILESYSTEM_STANDARD 2
 
 /**
  * @brief <filesystem> library supported by current build compiler
