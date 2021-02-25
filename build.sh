@@ -82,8 +82,9 @@ else
 fi
 
 # Set CMake RPT_FORCE_DEBUG_FEATURES depending on --debug-features command option
+# Change default log-level only if --debug-features is on
 if [ "$debug_features" ]; then
-  debug_features_option="-DRPT_FORCE_DEBUG_FEATURES=1"
+  debug_features_option="-DRPT_FORCE_DEBUG_FEATURES=1 --log-level=DEBUG"
 else
   debug_features_option="-DRPT_FORCE_DEBUG_FEATURES=0"
 fi
