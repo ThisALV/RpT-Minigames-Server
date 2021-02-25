@@ -1,7 +1,6 @@
 #include <RpT-Core/Executor.hpp>
 
 #include <type_traits>
-#include <variant>
 
 
 namespace RpT::Core {
@@ -25,7 +24,7 @@ bool Executor::run() {
         while (running) {
             const AnyInputEvent input_event { io_interface_.waitForInput() };
 
-            std::visit([&](auto&& event) {
+            supported_visit([&](auto&& event) {
                 using EventType = std::decay_t<decltype(event)>;
 
                 if constexpr (std::is_same_v<EventType, StopEvent>) {

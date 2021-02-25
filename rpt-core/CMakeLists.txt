@@ -23,5 +23,13 @@ target_include_directories(rpt-core PUBLIC include ${RPT_CONFIG_DIR})
 target_link_libraries(rpt-core PUBLIC stdc++fs rpt-gameplay spdlog::spdlog) # stdc++fs necessary if GCC < 9
 register_doc_for(include)
 
+# Import Boost if Boost.Variant is used by variant library support
+if("${RPT_VARIANT_SUPPORT}" STREQUAL "${RPT_VARIANT_BOOST}")
+    message(DEBUG "Boost.Variant imported for variant support")
+
+    find_package(Boost REQUIRED)
+    target_include_directories(rpt-core ${Boost_INCLUDE_DIR})
+endif()
+
 install(DIRECTORY "include/" TYPE INCLUDE)
 install(TARGETS rpt-core LIBRARY)
