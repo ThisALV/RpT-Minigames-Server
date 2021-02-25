@@ -13,7 +13,8 @@ namespace RpT::Core {
 
 
 /// For using visitor pattern on received input event. See `InputOutputInterface::waitForInput()`.
-using AnyInputEvent = supported_variant<NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
+using AnyInputEvent = supported_variants::variant<
+        NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
 
 
 /**

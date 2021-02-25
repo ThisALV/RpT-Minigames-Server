@@ -24,7 +24,7 @@ bool Executor::run() {
         while (running) {
             const AnyInputEvent input_event { io_interface_.waitForInput() };
 
-            supported_visit([&](auto&& event) {
+            supported_variants::visit([&](auto&& event) {
                 using EventType = std::decay_t<decltype(event)>;
 
                 if constexpr (std::is_same_v<EventType, StopEvent>) {
