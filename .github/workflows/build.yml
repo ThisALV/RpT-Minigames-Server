@@ -15,7 +15,7 @@ jobs:
         version: [18.04, 20.04]
         toolchain:
           - name: "GCC"
-            install: "g++"
+            install: "g++" # Space separated list for required packages
             cc: gcc
             cxx: g++
             ar: ar
@@ -23,7 +23,7 @@ jobs:
             ldflags: ""
 
           - name: "LLVM"
-            install: "llvm clang lld"
+            install: "llvm clang lld" # Space separated list for required packages
             cc: clang
             cxx: clang++
             ar: llvm-ar
@@ -37,7 +37,8 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup ${{matrix.toolchain.name}}
-        run: sudo apt-get install -y $TOOLCHAIN
+        # Install toolchain packages requirements and Doxygen with DOT requirements
+        run: sudo apt-get install -y doxygen graphviz $TOOLCHAIN
 
         env:
           TOOLCHAIN: ${{matrix.toolchain.install}}
@@ -108,10 +109,13 @@ jobs:
         with:
           msystem: ${{matrix.msys.env}}
           update: true
+          # Install toolchain packages requirements and Doxygen with DOT requirements
           install: >
             mingw-w64-${{matrix.msys.architecture}}-gcc
             mingw-w64-${{matrix.msys.architecture}}-cmake
             mingw-w64-${{matrix.msys.architecture}}-make
+            mingw-w64-${{matrix.msys.architecture}}-doxygen
+            mingw-w64-${{matrix.msys.architecture}}-graphviz
 
       - name: Checkout
         uses: actions/checkout@v2
