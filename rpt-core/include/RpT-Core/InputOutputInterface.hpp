@@ -1,7 +1,7 @@
 #ifndef RPTOGETHER_SERVER_INPUTOUTPUTINTERFACE_HPP
 #define RPTOGETHER_SERVER_INPUTOUTPUTINTERFACE_HPP
 
-#include <RpT-Config/Variant.hpp>
+#include <boost/variant.hpp>
 #include <RpT-Core/InputEvent.hpp>
 
 /**
@@ -13,8 +13,7 @@ namespace RpT::Core {
 
 
 /// For using visitor pattern on received input event. See `InputOutputInterface::waitForInput()`.
-using AnyInputEvent = supported_variants::variant<
-        NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
+using AnyInputEvent = boost::variant<NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
 
 
 /**

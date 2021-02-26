@@ -101,12 +101,12 @@ int main(const int argc, const char** argv) {
 
         logger.info("Running RpT server {} on {}.", RpT::Config::VERSION, RpT::Config::runtimePlatformName());
 
-        std::vector<supported_fs::path> game_resources_path;
+        std::vector<boost::filesystem::path> game_resources_path;
         // At max 3 paths : next to server executable, into user directory and into /usr/share for Unix platform
         game_resources_path.reserve(3);
 
-        supported_fs::path local_path { ".rpt-server" };
-        supported_fs::path user_path; // Platform dependent
+        boost::filesystem::path local_path { ".rpt-server" };
+        boost::filesystem::path user_path; // Platform dependent
 
         // Get user home directory depending of the current runtime platform
         if constexpr (RpT::Config::isUnixBuild()) {
@@ -118,7 +118,7 @@ int main(const int argc, const char** argv) {
         user_path /= ".rpt-server"; // Search for .rpt-server hidden subdirectory inside user directory
 
         if constexpr (RpT::Config::isUnixBuild()) { // Unix systems may have /usr/share directory for programs data
-            supported_fs::path system_path { "/usr/share/rpt-server" };
+            boost::filesystem::path system_path { "/usr/share/rpt-server" };
 
             game_resources_path.push_back(std::move(system_path)); // Add Unix /usr/share directory
         }

@@ -31,25 +31,6 @@ else()
     message(FATAL_ERROR "Unable to get target's platform type")
 endif()
 
-## Check filesystem availability as it is required by some subdirectories
-
-# If C++ compiler is G++ with version lower than 8...
-if ((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU) AND (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 8))
-    set(RPT_FILESYSTEM_SUPPORT RPT_FILESYSTEM_EXPERIMENTAL) # ...then filesystem support is still experimental
-else()
-    set(RPT_FILESYSTEM_SUPPORT RPT_FILESYSTEM_STANDARD) # ...else, filesystem support is integrated to standard
-endif()
-
-## Check for compiler version, as required <variant> doesn't properly work under Clang 6
-## (see https://bugs.llvm.org/show_bug.cgi?id=33222)
-
-# If compiler is Clang 6...
-if ((${CMAKE_CXX_COMPILER_ID} STREQUAL Clang) AND (${CMAKE_CXX_COMPILER_VERSION} VERSION_EQUAL 6))
-    set(RPT_VARIANT_SUPPORT RPT_VARIANT_BOOST) # ...then Boost.Variant should be used
-else()
-    set(RPT_VARIANT_SUPPORT RPT_VARIANT_STANDARD) # ...else, STL variant will work
-endif()
-
 ## Init doc options only if debug features are ON
 
 if(ENABLE_DEBUG_FEATURES)
@@ -88,20 +69,12 @@ endfunction()
 
 # General configuration
 set(RPT_CONFIG "Config.hpp")
-# filesystem library specific configuration
-set(RPT_FILESYSTEM_CONFIG "Filesystem.hpp") # Must be included by sources which use stdc++fs library
-# variant library specific configuration
-set(RPT_VARIANT_CONFIG "Variant.hpp") # Must be included by sources which use variant/visit library features
 
 set(RPT_CONFIG_DIR "${CMAKE_BINARY_DIR}/rpt-config") # Path used for including config header into source code
 set(RPT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_CONFIG}") # Full path of generated misc config header
-set(RPT_FILESYSTEM_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_FILESYSTEM_CONFIG}") # Full path of generated fs config header
-set(RPT_VARIANT_CONFIG_OUTPUT "${RPT_CONFIG_DIR}/RpT-Config/${RPT_VARIANT_CONFIG}") # Full path of generated variant config header
 
-# Configure both general and filesystem config headers
+# Configure general header, making it ready to be included into sources
 configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
-configure_file(${RPT_FILESYSTEM_CONFIG} ${RPT_FILESYSTEM_CONFIG_OUTPUT})
-configure_file(${RPT_VARIANT_CONFIG} ${RPT_VARIANT_CONFIG_OUTPUT})
 
 ## Init source directories
 
@@ -135,12 +108,7 @@ if(ENABLE_DEBUG_FEATURES AND RPT_GENERATE_DOC)
 
     message(DEBUG "Additional include dirs for doc : ${RPT_INCLUDE_DIRS}")
     # Doc for all headers (config and include files)
-    doxygen_add_docs(doc
-            ${RPT_CONFIG_OUTPUT}
-            ${RPT_FILESYSTEM_CONFIG_OUTPUT}
-            ${RPT_VARIANT_CONFIG_OUTPUT}
-            ${RPT_INCLUDE_DIRS}
-            ALL)
+    doxygen_add_docs(doc ${RPT_CONFIG_OUTPUT} ${RPT_INCLUDE_DIRS} ALL)
 
     install(DIRECTORY "${RPT_DOC_OUTPUT}/html/" DESTINATION share/doc/${CMAKE_PROJECT_NAME}/html)
     install(DIRECTORY "${RPT_DOC_OUTPUT}/man/" TYPE MAN)

@@ -5,14 +5,14 @@
 
 namespace RpT::Core {
 
-Executor::Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name,
+Executor::Executor(std::vector<boost::filesystem::path> game_resources_path, std::string game_name,
                    InputOutputInterface& io_interface) :
     logger_ { "Executor" },
     io_interface_ { io_interface } {
 
     logger_.debug("Game name: {}", game_name);
 
-    for (const supported_fs::path& resource_path : game_resources_path)
+    for (const boost::filesystem::path& resource_path : game_resources_path)
         logger_.debug("Game resources path: {}", resource_path.string());
 }
 
@@ -24,7 +24,7 @@ bool Executor::run() {
         while (running) {
             const AnyInputEvent input_event { io_interface_.waitForInput() };
 
-            supported_variants::visit([&](auto&& event) {
+            boost::apply_visitor([&](auto&& event) {
                 using EventType = std::decay_t<decltype(event)>;
 
                 if constexpr (std::is_same_v<EventType, StopEvent>) {

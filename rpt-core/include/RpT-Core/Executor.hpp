@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <RpT-Config/Filesystem.hpp>
+#include <boost/filesystem.hpp>
 #include <RpT-Core/InputOutputInterface.hpp>
 #include <RpT-Core/LoggerView.hpp>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
@@ -39,7 +39,7 @@ public:
      * @param game_name Name of game to play during this executor run, can be modified by players later
      * @param io_interface Backend for input and output based main loop events handling
      */
-    Executor(std::vector<supported_fs::path> game_resources_path, std::string game_name,
+    Executor(std::vector<boost::filesystem::path> game_resources_path, std::string game_name,
              InputOutputInterface& io_interface);
 
     // Entity class semantic :
