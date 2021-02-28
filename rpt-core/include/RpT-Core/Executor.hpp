@@ -5,8 +5,8 @@
 #include <vector>
 #include <boost/filesystem.hpp>
 #include <RpT-Core/InputOutputInterface.hpp>
-#include <RpT-Core/LoggerView.hpp>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
+#include <RpT-Utils/LoggerView.hpp>
 
 /**
  * @file Executor.hpp
@@ -28,7 +28,7 @@ namespace RpT::Core {
  */
 class Executor {
 private:
-    LoggerView logger_;
+    Utils::LoggerView logger_;
     InputOutputInterface& io_interface_;
 
 public:

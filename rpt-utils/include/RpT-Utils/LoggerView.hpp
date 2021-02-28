@@ -15,7 +15,7 @@
 /**
  * @brief RpT-Server engine and main loop related components
  */
-namespace RpT::Core {
+namespace RpT::Utils {
 
 /**
  * @brief Available logging levels to use with `LoggerView::updateLogLevel()`

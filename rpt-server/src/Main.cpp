@@ -9,7 +9,7 @@
  */
 class SimpleIO : public RpT::Core::InputOutputInterface {
 private:
-    RpT::Core::LoggerView logger_;
+    RpT::Utils::LoggerView logger_;
 
 public:
     SimpleIO() : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events" } {}
@@ -51,22 +51,22 @@ constexpr int RUNTIME_ERROR { 2 };
  *
  * @return Corresponding `RpT::Core::LogLevel` enum value
  */
-constexpr RpT::Core::LogLevel parseLogLevel(const std::string_view level) {
+constexpr RpT::Utils::LogLevel parseLogLevel(const std::string_view level) {
     // Initialization is necessary for constexpr function until C++20
-    RpT::Core::LogLevel parsed_level { RpT::Core::LogLevel::INFO };
+    RpT::Utils::LogLevel parsed_level { RpT::Utils::LogLevel::INFO };
 
     if (level == "t" || level == "trace")
-        parsed_level = RpT::Core::LogLevel::TRACE;
+        parsed_level = RpT::Utils::LogLevel::TRACE;
     else if (level == "d" || level == "debug")
-        parsed_level = RpT::Core::LogLevel::DEBUG;
+        parsed_level = RpT::Utils::LogLevel::DEBUG;
     else if (level == "i" || level == "info")
-        parsed_level = RpT::Core::LogLevel::INFO;
+        parsed_level = RpT::Utils::LogLevel::INFO;
     else if (level == "w" || level == "warn")
-        parsed_level = RpT::Core::LogLevel::WARN;
+        parsed_level = RpT::Utils::LogLevel::WARN;
     else if (level == "e" || level == "error")
-        parsed_level = RpT::Core::LogLevel::ERROR;
+        parsed_level = RpT::Utils::LogLevel::ERROR;
     else if (level == "f" || level == "fatal")
-        parsed_level = RpT::Core::LogLevel::FATAL;
+        parsed_level = RpT::Utils::LogLevel::FATAL;
     else
         throw std::invalid_argument { "Unable to parse level \"" + std::string { level }+ "\"" };
 
@@ -74,7 +74,7 @@ constexpr RpT::Core::LogLevel parseLogLevel(const std::string_view level) {
 }
 
 int main(const int argc, const char** argv) {
-    RpT::Core::LoggerView logger { "Main" };
+    RpT::Utils::LoggerView logger { "Main" };
 
     try {
         // Read and parse command line options
@@ -89,9 +89,9 @@ int main(const int argc, const char** argv) {
                 // Get option value from command line
                 const std::string_view log_level_argument { cmd_line_options.get("log-level") };
                 // Parse option value
-                const RpT::Core::LogLevel parsed_log_level { parseLogLevel(log_level_argument) };
+                const RpT::Utils::LogLevel parsed_log_level { parseLogLevel(log_level_argument) };
 
-                RpT::Core::LoggerView::updateLogLevel(parsed_log_level);
+                RpT::Utils::LoggerView::updateLogLevel(parsed_log_level);
                 logger.debug("Logging level set to \"{}\".", log_level_argument);
             } catch (const std::logic_error& err) { // Option value may be missing, or parse may fail
                 logger.error("Log-level parsing: {}", err.what());

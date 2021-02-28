@@ -1,4 +1,4 @@
-#include <RpT-Core/LoggerView.hpp>
+#include <RpT-Utils/LoggerView.hpp>
 
 #include <iostream>
 #include <spdlog/sinks/sink.h>
@@ -12,7 +12,7 @@
 #undef ERROR
 #endif
 
-namespace RpT::Core {
+namespace RpT::Utils {
 
 // Spdlog loggers record initialization
 std::unordered_map<std::string_view, std::size_t> LoggerView::registered_loggers_record_ {};
