@@ -14,7 +14,7 @@
 
 
 /**
- * @brief RpT-Server utilities provided to user
+ * @brief RpT-Server utilities provided to user, and useful among all server components and libraries
  */
 namespace RpT::Utils {
 
