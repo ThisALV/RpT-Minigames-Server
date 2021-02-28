@@ -184,9 +184,9 @@ failure= # Set if any of install try actually fails
 
 tryAptGet libboost-all-dev || failure=1
 tryAptGet liblua5.3-dev || failure=1
+tryAptGet libspdlog-dev || failure=1
 tryHeaderOnlyGet nlohmann json master || failure=1
 tryHeaderOnlyGet ThePhD sol2 main || failure=1
-trySourceGet gabime spdlog v1.x spdlog-1.x || failure=1
 
 if [ $failure ]; then # If any error occurred...
   exit 1 # ...the script hasn't complete successfully

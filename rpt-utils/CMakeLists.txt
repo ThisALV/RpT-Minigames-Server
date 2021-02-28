@@ -8,7 +8,7 @@ set(RPT_UTILS_SOURCES
         "src/CommandLineOptionsParser.cpp"
         "src/LoggerView.cpp")
 
-find_package(spdlog 1.8.1 REQUIRED CONFIG) # Required for forward-decl header and stdout fix
+find_package(spdlog CONFIG)
 
 add_library(rpt-utils STATIC ${RPT_UTILS_HEADERS} ${RPT_UTILS_SOURCES})
 target_include_directories(rpt-utils PUBLIC include ${RPT_CONFIG_DIR})
