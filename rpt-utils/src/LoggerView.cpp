@@ -52,5 +52,14 @@ void LoggerView::refreshLoggingLevel() {
     backend_->set_level(apiToBackendLevel(context_.get().retrieveLoggingLevel()));
 }
 
+LogLevel LoggerView::loggingLevel() const {
+    const LogLevel current_logging_level { backendToApiLevel(backend_->level()) };
+
+    // Must corresponds to context logging level
+    assert(current_logging_level == context_.get().retrieveLoggingLevel());
+
+    return current_logging_level;
+}
+
 
 }

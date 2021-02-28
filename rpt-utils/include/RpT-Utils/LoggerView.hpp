@@ -64,6 +64,26 @@ private:
             return spdlog::level::critical;
         }
     }
+
+    // Converts backend logging level enum value to API logging level enum value
+    static constexpr LogLevel backendToApiLevel(const spdlog::level::level_enum backend_logging_level) {
+        switch (backend_logging_level) {
+        case spdlog::level::trace:
+            return LogLevel::TRACE;
+        case spdlog::level::debug:
+            return LogLevel::DEBUG;
+        case spdlog::level::info:
+            return LogLevel::INFO;
+        case spdlog::level::warn:
+            return LogLevel::WARN;
+        case spdlog::level::err:
+            return LogLevel::ERROR;
+        case spdlog::level::critical:
+            return LogLevel::FATAL;
+        case spdlog::level::off:
+            throw std::logic_error { "Unhandled backend logging level \"off\"" };
+        }
+    }
     
     /**
      * @brief Logging errors handler
@@ -89,6 +109,13 @@ public:
      * @returns Name of backend logger used : `${generic_name}-${uid}`
      */
     const std::string& name() const;
+
+    /**
+     * @brief Gets backend logging level
+     *
+     * @returns Logging level used by backend : will corresponds to `LoggingContext` logging level
+     */
+    LogLevel loggingLevel() const;
 
     /**
      * @brief Update backend logger to follow current context logging level
