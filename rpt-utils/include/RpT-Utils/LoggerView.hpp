@@ -84,6 +84,13 @@ public:
     explicit LoggerView(std::string_view generic_name, LoggingContext& context);
 
     /**
+     * @brief Gets backend logger name
+     *
+     * @returns Name of backend logger used : `${generic_name}-${uid}`
+     */
+    const std::string& name() const;
+
+    /**
      * @brief Update backend logger to follow current context logging level
      */
     void refreshLoggingLevel();

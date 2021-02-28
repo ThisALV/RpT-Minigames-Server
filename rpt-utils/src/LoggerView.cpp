@@ -44,6 +44,10 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
     spdlog::register_logger(backend_);
 }
 
+const std::string& LoggerView::name() const {
+    return backend_->name();
+}
+
 void LoggerView::refreshLoggingLevel() {
     backend_->set_level(apiToBackendLevel(context_.get().retrieveLoggingLevel()));
 }
