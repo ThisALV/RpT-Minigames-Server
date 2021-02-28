@@ -12,7 +12,8 @@ private:
     RpT::Utils::LoggerView logger_;
 
 public:
-    SimpleIO() : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events" } {}
+    SimpleIO(RpT::Utils::LoggingContext& logger_context)
+    : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
 
     RpT::Core::AnyInputEvent waitForInput() override {
         return RpT::Core::StopEvent { "Server", 0 };
@@ -74,7 +75,8 @@ constexpr RpT::Utils::LogLevel parseLogLevel(const std::string_view level) {
 }
 
 int main(const int argc, const char** argv) {
-    RpT::Utils::LoggerView logger { "Main" };
+    RpT::Utils::LoggingContext server_logging;
+    RpT::Utils::LoggerView logger { "Main", server_logging };
 
     try {
         // Read and parse command line options
@@ -91,7 +93,7 @@ int main(const int argc, const char** argv) {
                 // Parse option value
                 const RpT::Utils::LogLevel parsed_log_level { parseLogLevel(log_level_argument) };
 
-                RpT::Utils::LoggerView::updateLogLevel(parsed_log_level);
+                server_logging.updateLoggingLevel(parsed_log_level);
                 logger.debug("Logging level set to \"{}\".", log_level_argument);
             } catch (const std::logic_error& err) { // Option value may be missing, or parse may fail
                 logger.error("Log-level parsing: {}", err.what());
@@ -129,8 +131,8 @@ int main(const int argc, const char** argv) {
 
         // Create executor with listed resources paths, game name argument and run main loop with simple IO interface
         // required to build
-        SimpleIO io;
-        RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name }, io };
+        SimpleIO io { server_logging };
+        RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name }, io, server_logging };
         const bool done_successfully { rpt_executor.run() };
 
         // Process exit code depends on main loop result

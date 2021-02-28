@@ -40,7 +40,7 @@ public:
      * @param io_interface Backend for input and output based main loop events handling
      */
     Executor(std::vector<boost::filesystem::path> game_resources_path, std::string game_name,
-             InputOutputInterface& io_interface);
+             InputOutputInterface& io_interface, Utils::LoggingContext& logger_context);
 
     // Entity class semantic :
 
