@@ -80,7 +80,7 @@ private:
         case spdlog::level::critical:
             return LogLevel::FATAL;
         case spdlog::level::off:
-            throw std::logic_error { "Unhandled backend logging level \"off\"" };
+            throw std::invalid_argument { "Unhandled backend logging level \"off\"" };
         }
     }
     
@@ -92,6 +92,24 @@ private:
      * @param msg Error reason
      */
     static void handleError(const std::string& msg);
+
+    /**
+     * @brief Logs message if and only if logging is enabled inside current context
+     *
+     * @tparam message_level Message priority level
+     * @tparam Args Formatter arguments type
+     *
+     * @param fmt Message format
+     * @param args Formatter arguments
+     */
+    template<LogLevel message_level, typename... Args>
+    void log(const std::string_view fmt, Args&& ...args) {
+        if (context_.get().isEnabled()) { // Should be logged only if logging is enabled inside this context
+            constexpr spdlog::level::level_enum backend_message_level { apiToBackendLevel(message_level) };
+
+            backend_->log(backend_message_level, fmt, std::forward<Args>(args)...);
+        }
+    }
 
 public:
     /**
@@ -124,39 +142,40 @@ public:
     /// Log trace level message
     template<typename... Args>
     void trace(const std::string_view fmt, Args&& ...args) {
-        backend_->trace(fmt, std::forward<Args>(args)...);
+        log<LogLevel::TRACE>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log debug level message
     template<typename... Args>
     void debug(const std::string_view fmt, Args&& ...args) {
-        backend_->debug(fmt, std::forward<Args>(args)...);
+        log<LogLevel::DEBUG>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log info level message
     template<typename... Args>
     void info(const std::string_view fmt, Args&& ...args) {
-        backend_->info(fmt, std::forward<Args>(args)...);
+        log<LogLevel::INFO>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log warn level message
     template<typename... Args>
     void warn(const std::string_view fmt, Args&& ...args) {
-        backend_->warn(fmt, std::forward<Args>(args)...);
+        log<LogLevel::WARN>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log error level message
     template<typename... Args>
     void error(const std::string_view fmt, Args&& ...args) {
-        backend_->error(fmt, std::forward<Args>(args)...);
+        log<LogLevel::ERROR>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log fatal level message
     template<typename... Args>
     void fatal(const std::string_view fmt, Args&& ...args) {
-        backend_->critical(fmt, std::forward<Args>(args)...);
+        log<LogLevel::FATAL>(fmt, std::forward<Args>(args)...);
     }
 };
+
 
 }
 

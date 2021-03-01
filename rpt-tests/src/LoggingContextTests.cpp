@@ -47,12 +47,16 @@ BOOST_AUTO_TEST_CASE(DefaultLoggingLevel) {
 
     // Default logging lvl should be INFO
     BOOST_CHECK_EQUAL(logging_context.retrieveLoggingLevel(), LogLevel::INFO);
+    // Logging should be enabled by default
+    BOOST_CHECK(logging_context.isEnabled());
 }
 
 BOOST_AUTO_TEST_CASE(FatalLoggingLevel) {
     const LoggingContext logging_context { LogLevel::FATAL };
 
     BOOST_CHECK_EQUAL(logging_context.retrieveLoggingLevel(), LogLevel::FATAL);
+    // Logging should be enabled by default
+    BOOST_CHECK(logging_context.isEnabled());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -187,6 +191,40 @@ BOOST_AUTO_TEST_CASE(LoggersRegisteredBeforeAndAfter) {
     BOOST_CHECK_EQUAL(logger_b.loggingLevel(), LogLevel::WARN);
     BOOST_CHECK_EQUAL(logger_c.loggingLevel(), LogLevel::WARN);
     BOOST_CHECK_EQUAL(logger_d.loggingLevel(), LogLevel::WARN);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * enable/disable() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(IsEnabled)
+
+BOOST_AUTO_TEST_CASE(Enabled) {
+    LoggingContext logging_context;
+
+    // Disable multiple times and re-enable logging
+    logging_context.disable();
+    logging_context.disable();
+    logging_context.disable();
+    logging_context.enable();
+
+    // Last method called is enable(), so logging should be enabled
+    BOOST_CHECK(logging_context.isEnabled());
+}
+
+BOOST_AUTO_TEST_CASE(Disabled) {
+    LoggingContext logging_context;
+
+    // Re-nable multiple times and disable logging
+    logging_context.enable();
+    logging_context.enable();
+    logging_context.enable();
+    logging_context.disable();
+
+    // Last method called is disable(), so logging should NOT be enabled
+    BOOST_CHECK(!logging_context.isEnabled());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -5,8 +5,7 @@
 namespace RpT::Utils {
 
 
-LoggingContext::LoggingContext(const LogLevel logging_level)
-: logging_level_ { logging_level } {}
+LoggingContext::LoggingContext(const LogLevel logging_level) : logging_level_ { logging_level }, enabled_ { true } {}
 
 std::size_t LoggingContext::newLoggerFor(const std::string_view generic_name, LoggerView& created_logger) {
     // Register logger entry into loggers list, construct in place so only raw reference can be given
@@ -29,6 +28,18 @@ void LoggingContext::updateLoggingLevel(LogLevel default_logging_level) {
 
 LogLevel LoggingContext::retrieveLoggingLevel() const {
     return logging_level_;
+}
+
+void LoggingContext::enable() {
+    enabled_ = true;
+}
+
+void LoggingContext::disable() {
+    enabled_ = false;
+}
+
+bool LoggingContext::isEnabled() const {
+    return enabled_;
 }
 
 

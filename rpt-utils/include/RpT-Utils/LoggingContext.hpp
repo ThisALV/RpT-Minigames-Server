@@ -37,7 +37,8 @@ enum struct LogLevel {
  * @brief Provides context for multiple LoggerView management
  *
  * This context keep count for all LoggerView that are registered in it, so it can be used to determine logger UID
- * for unique name, and keep trace for last assigned default logging level.
+ * for unique name, and keep trace for last assigned default logging level. Logging can be toggled inside whole
+ * context so backend is not called by `LoggerView` logging methods.
  *
  * LoggerView should keep reference to it's assigned context, so it can be refreshed and check for newly assigned
  * default logging level.
@@ -52,10 +53,13 @@ private:
     LogLevel logging_level_;
     // Loggers that will be notified for logging level changes
     std::vector<std::reference_wrapper<LoggerView>> registered_loggers_;
+    // Logging can be disabled at any moment
+    bool enabled_;
 
 public:
     /**
-     * @brief Constructs new logging context with empty logging backend records and given default logging level
+     * @brief Constructs new logging context with empty logging backend records and given default logging level.
+     * Logging is enabled by default.
      *
      * @param logging_level Logging level default used by LoggerView referencing this context
      */
@@ -94,6 +98,23 @@ public:
      * @returns Currently set default logging level
      */
     LogLevel retrieveLoggingLevel() const;
+
+    /**
+     * @brief After call, `isEnabled()` returns `true`
+     */
+    void enable();
+
+    /**
+     * @brief After call, `isEnabled()` returns `false`
+     */
+    void disable();
+
+    /**
+     * @brief Gets if `LoggerView` should call backend loggers
+     *
+     * @returns `true` if messages will be logged, `false` otherwise
+     */
+    bool isEnabled() const;
 };
 
 
