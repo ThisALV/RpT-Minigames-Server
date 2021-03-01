@@ -65,11 +65,24 @@ public:
 
 
 /**
- * @brief Provides 3 basic services implementations for testing purpose
+ * @brief Provides `LoggingContext` with disabled logging
+ */
+class DisabledLoggingFixture {
+public:
+    RpT::Utils::LoggingContext logging_context;
+
+    DisabledLoggingFixture() {
+        logging_context.disable();
+    }
+};
+
+
+/**
+ * @brief Provides 3 basic services implementations for testing purpose, and extends `DisabledLoggingFixture`
  *
  * Default state: Just initialized `ServiceContext`, used to construct `ServiceA`, `ServiceB` and `ServiceC`
  */
-class MinimalServiceImplementationsFixture {
+class MinimalServiceImplementationsFixture : public DisabledLoggingFixture {
 public:
     ServiceContext context;
 
@@ -78,6 +91,7 @@ public:
     ServiceC svc_c;
 
     MinimalServiceImplementationsFixture() :
+            DisabledLoggingFixture {},
             context {}, svc_a { context }, svc_b { context }, svc_c { context } {}
 };
 
@@ -85,13 +99,18 @@ public:
 /**
  * @brief Extends `SerProtocolTests` global fixture adding SER Protocol instance with `svc_a`, `svc_b` and `svc_c`
  * registered
+ *
+ * SER Protocol logging is disabled by context
  */
-class SerProtocolWithMinimalServiceFixture : public MinimalServiceImplementationsFixture {
+class SerProtocolWithMinimalServiceFixture :
+        public MinimalServiceImplementationsFixture {
+
 public:
     ServiceEventRequestProtocol ser_protocol;
 
     SerProtocolWithMinimalServiceFixture() :
-            MinimalServiceImplementationsFixture {}, ser_protocol { svc_a, svc_b, svc_c } {}
+            MinimalServiceImplementationsFixture {},
+            ser_protocol { { svc_a, svc_b, svc_c }, logging_context } {}
 };
 
 
@@ -104,14 +123,14 @@ BOOST_FIXTURE_TEST_SUITE(SerProtocolTests, MinimalServiceImplementationsFixture)
 BOOST_AUTO_TEST_SUITE(Constructor)
 
 BOOST_AUTO_TEST_CASE(NoServices) {
-    const ServiceEventRequestProtocol ser_protocol {};
+    const ServiceEventRequestProtocol ser_protocol { {}, logging_context };
 
     // Not any service should be registered
     BOOST_CHECK(!ser_protocol.isRegistered("NonexistentService"));
 }
 
 BOOST_AUTO_TEST_CASE(SomeServices) {
-    const ServiceEventRequestProtocol ser_protocol { svc_a, svc_b, svc_c };
+    const ServiceEventRequestProtocol ser_protocol { { svc_a, svc_b, svc_c }, logging_context };
 
     // Checks if service is registered
     BOOST_CHECK(ser_protocol.isRegistered("ServiceA"));
@@ -125,12 +144,14 @@ BOOST_AUTO_TEST_CASE(SomeServiceAndTwiceSameName) {
     ServiceA svc_a_bis { context };
 
     // Checks if exception is thrown as svc_a_bis and svc_a both have name "ServiceA"
-    BOOST_CHECK_THROW((ServiceEventRequestProtocol { svc_a, svc_b, svc_c, svc_a_bis }), ServiceNameAlreadyRegistered);
+    BOOST_CHECK_THROW((ServiceEventRequestProtocol { { svc_a, svc_b, svc_c, svc_a_bis }, logging_context }),
+                      ServiceNameAlreadyRegistered);
 }
 
 BOOST_AUTO_TEST_CASE(SomeServiceAndTwiceSameInstance) {
     // Checks if exception is thrown as svc_a is registered twice under "ServiceA" name
-    BOOST_CHECK_THROW((ServiceEventRequestProtocol { svc_a, svc_b, svc_c, svc_a }), ServiceNameAlreadyRegistered);
+    BOOST_CHECK_THROW((ServiceEventRequestProtocol { { svc_a, svc_b, svc_c, svc_a }, logging_context }),
+                      ServiceNameAlreadyRegistered);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
