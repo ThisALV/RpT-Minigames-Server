@@ -26,8 +26,16 @@ function(register_test NAME)
 endfunction()
 
 
-register_test(utils "src/UtilsTests.cpp" "src/CommandLineOptionsParserTests.cpp" "src/LoggingContextTests.cpp")
+register_test(utils
+        "src/UtilsTests.cpp"
+        "src/CommandLineOptionsParserTests.cpp"
+        "src/LoggingContextTests.cpp"
+        "src/HandlingResultTests.cpp")
 target_link_libraries(${utils_EXEC} PRIVATE rpt-utils)
 
-register_test(core "src/CoreTests.cpp" "src/InputEventTests.cpp" "src/ServiceTests.cpp" "src/SerProtocolTests.cpp")
+register_test(core
+        "src/CoreTests.cpp"
+        "src/InputEventTests.cpp"
+        "src/ServiceTests.cpp"
+        "src/SerProtocolTests.cpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
