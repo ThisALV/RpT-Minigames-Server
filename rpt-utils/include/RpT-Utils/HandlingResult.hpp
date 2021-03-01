@@ -56,7 +56,7 @@ public:
      *
      * @returns `true` if handler completed success, `false` otherwise
      */
-    operator bool() const;
+    explicit operator bool() const;
 
     /**
      * @brief Gets error which happened during handler execution
