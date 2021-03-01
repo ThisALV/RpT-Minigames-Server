@@ -6,8 +6,8 @@
 namespace RpT::Core {
 
 Executor::Executor(std::vector<boost::filesystem::path> game_resources_path, std::string game_name,
-                   InputOutputInterface& io_interface) :
-    logger_ { "Executor" },
+                   InputOutputInterface& io_interface, Utils::LoggingContext& logger_context) :
+    logger_ { "Executor", logger_context },
     io_interface_ { io_interface } {
 
     logger_.debug("Game name: {}", game_name);

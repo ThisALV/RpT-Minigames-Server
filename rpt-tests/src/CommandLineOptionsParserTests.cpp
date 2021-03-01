@@ -1,4 +1,3 @@
-#define BOOST_TEST_MODULE Utils
 #include <RpT-Testing/TestingUtils.hpp>
 
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
