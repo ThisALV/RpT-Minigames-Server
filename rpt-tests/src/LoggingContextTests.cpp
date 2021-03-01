@@ -7,6 +7,33 @@
 using namespace RpT::Utils;
 
 
+// << overloads must be defined inside this namespace, so ADL can be performed to find them when boost use <<
+// operator on RpT::Utils types
+namespace RpT::Utils {
+
+
+// Required for Boost.Test logging
+std::ostream& operator<<(std::ostream& out, const LogLevel api_logging_level) {
+    switch (api_logging_level) {
+    case LogLevel::TRACE:
+        return out << "TRACE";
+    case LogLevel::DEBUG:
+        return out << "DEBUG";
+    case LogLevel::INFO:
+        return out << "INFO";
+    case LogLevel::WARN:
+        return out << "WARN";
+    case LogLevel::ERROR:
+        return out << "ERROR";
+    case LogLevel::FATAL:
+        return out << "FATAL";
+    }
+}
+
+
+}
+
+
 BOOST_AUTO_TEST_SUITE(LoggingContextTests)
 
 /*
