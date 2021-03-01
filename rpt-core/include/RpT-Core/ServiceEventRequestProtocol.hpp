@@ -9,6 +9,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <RpT-Core/Service.hpp>
+#include <RpT-Utils/LoggerView.hpp>
 
 
 /**
@@ -120,6 +121,7 @@ private:
      */
     static std::vector<std::string_view> getWordsFor(std::string_view sr_command);
 
+    Utils::LoggerView logger_;
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
 
 public:
@@ -131,8 +133,10 @@ public:
      * @throws ServiceNameAlreadyRegistered if a service name appears twice into services list
      *
      * @param services References to services
+     * @param Context for SER Protocol logging
      */
-    ServiceEventRequestProtocol(const std::initializer_list<std::reference_wrapper<Service>>& services);
+    ServiceEventRequestProtocol(const std::initializer_list<std::reference_wrapper<Service>>& services,
+                                Utils::LoggingContext& logging_context);
 
     /**
      * @brief Get if given service is already registered

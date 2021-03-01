@@ -39,7 +39,10 @@ std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::stri
 }
 
 ServiceEventRequestProtocol::ServiceEventRequestProtocol(
-        const std::initializer_list<std::reference_wrapper<Service>>& services) {
+        const std::initializer_list<std::reference_wrapper<Service>>& services,
+        Utils::LoggingContext& logging_context) :
+
+        logger_ { "SER-Protocol", logging_context } {
 
     // Each given service reference must be registered as running service
     for (const auto service_ref : services) {
@@ -51,6 +54,8 @@ ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const auto service_registration_result { running_services_.insert({ service_name, service_ref }) };
         // Must be sure that service has been successfully registered, this is why insertion result is saved
         assert(service_registration_result.second);
+
+        logger_.debug("Registered service {}.", service_name);
     }
 }
 
@@ -60,6 +65,8 @@ bool ServiceEventRequestProtocol::isRegistered(const std::string_view service) c
 
 bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view actor,
                                                        const std::string_view service_request) {
+
+    logger_.trace("Handling SR command from \"{}\": {}", actor, service_request);
 
     // Get all parsed words into SR command
     const std::vector<std::string_view> sr_command_words { getWordsFor(service_request) };
@@ -85,6 +92,8 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
         sr_command_words.cbegin() + 2, sr_command_words.cend()
     };
 
+    logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
+
     return intended_service.handleRequestCommand(actor, command_data_arguments);
 }
 
@@ -100,12 +109,16 @@ std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
         const std::optional<std::size_t> next_event_id { service.checkEvent() };
 
         if (next_event_id.has_value()) { // Skip service if has an empty events queue
+            logger_.trace("Service {} last event ID: {}", service.name(), *next_event_id);
+
             // If there isn't any event to poll or current was triggered first...
             if (!newest_event_emitter || next_event_id < lowest_event_id) {
                 // ...then set new event emitter, and update lowest ID
                 newest_event_emitter = &service;
                 lowest_event_id = *next_event_id;
             }
+        } else {
+            logger_.trace("Service {} hasn't any event.", service.name());
         }
     }
 
@@ -113,6 +126,10 @@ std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
         const std::string service_name_copy { newest_event_emitter->name() }; // Required for concatenation
 
         next_event = std::string { EVENT_PREFIX } + ' ' + service_name_copy + ' ' + newest_event_emitter->pollEvent();
+
+        logger_.trace("Polled event from service {}: {}", newest_event_emitter->name(), *next_event);
+    } else {
+        logger_.trace("No event to retrieve.");
     }
 
     return next_event;
