@@ -61,6 +61,15 @@ public:
      */
     explicit LoggingContext(LogLevel logging_level = LogLevel::INFO);
 
+    /*
+     * Entity class semantic
+     */
+
+    LoggingContext(const LoggingContext&) = delete;
+    LoggingContext& operator=(const LoggingContext&) = delete;
+
+    bool operator==(const LoggingContext&) const = delete;
+
     /**
      * @brief Increments loggers count for given general purpose and retrieve next logger expected UID for this
      * general purpose
