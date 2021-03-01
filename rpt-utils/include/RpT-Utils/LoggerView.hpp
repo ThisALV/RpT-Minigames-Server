@@ -4,7 +4,6 @@
 #include <functional>
 #include <string_view>
 #include <spdlog/logger.h>
-#include <spdlog/spdlog.h>
 #include <RpT-Utils/LoggingContext.hpp>
 
 /**

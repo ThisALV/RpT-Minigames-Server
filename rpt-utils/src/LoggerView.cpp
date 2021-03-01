@@ -35,13 +35,6 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
     refreshLoggingLevel();
     backend_->set_pattern("[%T.%e/%^%L%$] %-20n : %v");
     backend_->set_error_handler(handleError);
-
-    // As each logger of same purpose has an UID, each logger should has an unique name
-    // So there should not be any logger with the same unqiue name, and get() should returns null_ptr
-    assert(!spdlog::get(generic_name_copy + '-' + std::to_string(uid)));
-
-    // Registration to logging backed
-    spdlog::register_logger(backend_);
 }
 
 const std::string& LoggerView::name() const {
