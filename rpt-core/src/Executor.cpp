@@ -88,7 +88,7 @@ bool Executor::run() {
                         if (sr_command_result)
                             io_interface_.outputRequest(event);
                     } catch (const BadServiceRequest& err) { // If command cannot be parsed, replies with error
-                        io_interface_.replyTo(event, Utils::HandlingResult { "" });
+                        io_interface_.replyTo(event, Utils::HandlingResult { err.what() });
                     }
                 } else {
                     throw std::runtime_error { "Unexpected input event" };
