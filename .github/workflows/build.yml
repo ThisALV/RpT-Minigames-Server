@@ -82,7 +82,7 @@ jobs:
         run: sudo ./install.sh
 
       - name: Run server
-        run: rpt-server --game demo_rp --log-level t
+        run: rpt-server --game demo_rp --log-level t --testing
 
   build-mingw:
     runs-on: windows-latest
@@ -138,4 +138,4 @@ jobs:
         run: ./install.sh
 
       - name: Run server
-        run: rpt-server.exe --game demo_rp --log-level t
+        run: rpt-server.exe --game demo_rp --log-level t --testing

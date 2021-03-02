@@ -67,25 +67,20 @@ constexpr int RUNTIME_ERROR { 2 };
  * @return Corresponding `RpT::Core::LogLevel` enum value
  */
 constexpr RpT::Utils::LogLevel parseLogLevel(const std::string_view level) {
-    // Initialization is necessary for constexpr function until C++20
-    RpT::Utils::LogLevel parsed_level { RpT::Utils::LogLevel::INFO };
-
     if (level == "t" || level == "trace")
-        parsed_level = RpT::Utils::LogLevel::TRACE;
+        return RpT::Utils::LogLevel::TRACE;
     else if (level == "d" || level == "debug")
-        parsed_level = RpT::Utils::LogLevel::DEBUG;
+        return RpT::Utils::LogLevel::DEBUG;
     else if (level == "i" || level == "info")
-        parsed_level = RpT::Utils::LogLevel::INFO;
+        return RpT::Utils::LogLevel::INFO;
     else if (level == "w" || level == "warn")
-        parsed_level = RpT::Utils::LogLevel::WARN;
+        return RpT::Utils::LogLevel::WARN;
     else if (level == "e" || level == "error")
-        parsed_level = RpT::Utils::LogLevel::ERROR;
+        return RpT::Utils::LogLevel::ERROR;
     else if (level == "f" || level == "fatal")
-        parsed_level = RpT::Utils::LogLevel::FATAL;
+        return RpT::Utils::LogLevel::FATAL;
     else
         throw std::invalid_argument { "Unable to parse level \"" + std::string { level }+ "\"" };
-
-    return parsed_level;
 }
 
 int main(const int argc, const char** argv) {
@@ -94,7 +89,9 @@ int main(const int argc, const char** argv) {
 
     try {
         // Read and parse command line options
-        const RpT::Utils::CommandLineOptionsParser cmd_line_options { argc, argv, { "game", "log-level" } };
+        const RpT::Utils::CommandLineOptionsParser cmd_line_options {
+            argc, argv, { "game", "log-level", "testing" }
+        };
 
         // Get game name from command line options
         const std::string_view game_name { cmd_line_options.get("game") };
@@ -143,9 +140,20 @@ int main(const int argc, const char** argv) {
         game_resources_path.push_back(std::move(user_path));
         game_resources_path.push_back(std::move(local_path));
 
-        // Create executor with listed resources paths, game name argument and run main loop with simple IO interface
-        // required to build
+        /*
+         * Create executor with listed resources paths, game name argument and run main loop with simple IO interface
+         * required to build
+         */
+
         SimpleIO io { server_logging };
+
+        // For testing if executable is properly launched inside continuous integration, main loop must not continue
+        if (cmd_line_options.has("testing")) {
+            logger.info("Testing mode for CI, server will be immediately closed.");
+
+            io.close();
+        }
+
         RpT::Core::Executor rpt_executor { std::move(game_resources_path), std::string { game_name }, io, server_logging };
         const bool done_successfully { rpt_executor.run() };
 
