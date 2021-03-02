@@ -164,17 +164,17 @@ BOOST_FIXTURE_TEST_SUITE(HandleServiceRequest, SerProtocolWithMinimalServiceFixt
 
 BOOST_AUTO_TEST_CASE(EmptyServiceRequest) {
     // An empty request is ill formed
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", ""), BadServiceRequest);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", ""), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(OneWordServiceRequest) {
     // A request must contains at least two words
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "RANDOM_WORD"), BadServiceRequest);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "RANDOM_WORD"), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(BadPrefixAndServiceName) {
     // Service Request must begins with "REQUEST" prefix
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "BAD_PREFIX ServiceA"), BadServiceRequest);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "BAD_PREFIX ServiceA"), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixAndUnknownServiceName) {

@@ -9,6 +9,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <RpT-Core/Service.hpp>
+#include <RpT-Utils/HandlingResult.hpp>
 #include <RpT-Utils/LoggerView.hpp>
 
 
@@ -39,6 +40,21 @@ public:
 };
 
 /**
+ * @brief Base class for errors about ill-formed Service Request command.
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class BadServiceRequest : public std::logic_error {
+public:
+    /**
+     * @brief Constructs error with custom message
+     *
+     * @param reason Custom error message
+     */
+    explicit BadServiceRequest(const std::string& reason) : std::logic_error { reason } {}
+};
+
+/**
  * @brief Thrown by `ServiceEventRequestProtocol::handleServiceRequest()` if trying to execute SR command for
  * unregistered service
  *
@@ -46,7 +62,7 @@ public:
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class ServiceNotFound : public std::logic_error {
+class ServiceNotFound : public BadServiceRequest {
 public:
     /**
      * @brief Constructs exception with error message including unregistered service name
@@ -54,7 +70,7 @@ public:
      * @param name Name used for trying to access service
      */
     explicit ServiceNotFound(const std::string_view name) :
-            std::logic_error { "Service with name \"" + std::string { name } + "\" not found" } {}
+            BadServiceRequest { "Service with name \"" + std::string { name } + "\" not found" } {}
 };
 
 /**
@@ -65,7 +81,7 @@ public:
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class BadServiceRequest : public std::logic_error {
+class InvalidRequestFormat : public BadServiceRequest {
 public:
     /**
      * @brief Constructs exception with error message including ill formed SR command and bad format reason
@@ -73,8 +89,8 @@ public:
      * @param sr_command SR command that wasn't executed
      * @param reason Reason why SR command is ill formed
      */
-    explicit BadServiceRequest(const std::string_view sr_command, const std::string& reason) :
-            std::logic_error { "SR command \"" + std::string { sr_command } + "\" ill formed: " + reason } {}
+    explicit InvalidRequestFormat(const std::string_view sr_command, const std::string& reason) :
+            BadServiceRequest { "SR command \"" + std::string { sr_command } + "\" ill formed: " + reason } {}
 };
 
 /**
@@ -158,9 +174,10 @@ public:
      * @throws BadServiceRequest if service_request is ill formed
      * @throws ServiceNotFound if service into service_request isn't registered
      *
-     * @returns Optional value, initialized with error message if not handled successfully, uninitialized else
+     * @returns Result for SR command handled by service, equivalent to `true` if done successfully, else contains
+     * error message
      */
-    bool handleServiceRequest(std::string_view actor, std::string_view service_request);
+    Utils::HandlingResult handleServiceRequest(std::string_view actor, std::string_view service_request);
 
     /**
      * @brief Poll next Service Event command in services queue, do nothing if queue is empty

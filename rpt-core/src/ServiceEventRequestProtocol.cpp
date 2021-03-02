@@ -63,8 +63,8 @@ bool ServiceEventRequestProtocol::isRegistered(const std::string_view service) c
     return running_services_.count(service) == 1; // Returns if service name is present among running services
 }
 
-bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view actor,
-                                                       const std::string_view service_request) {
+Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(const std::string_view actor,
+                                                                        const std::string_view service_request) {
 
     logger_.trace("Handling SR command from \"{}\": {}", actor, service_request);
 
@@ -73,11 +73,11 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
 
     // At least two words must be present for SER command prefix and service of request
     if (sr_command_words.size() < 2)
-        throw BadServiceRequest { service_request, "SER command prefix and intended service must be given" };
+        throw InvalidRequestFormat { service_request, "SER command prefix and intended service must be given" };
 
     // First word must corresponds to SR command prefix
     if (sr_command_words.at(0) != REQUEST_PREFIX)
-        throw BadServiceRequest { service_request, "SER command prefix must be REQUEST" };
+        throw InvalidRequestFormat { service_request, "SER command prefix must be REQUEST" };
 
     const std::string_view intended_service_name { sr_command_words.at(1) }; // Retrieve service name from 2nd word
 
@@ -94,7 +94,22 @@ bool ServiceEventRequestProtocol::handleServiceRequest(const std::string_view ac
 
     logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
 
-    return intended_service.handleRequestCommand(actor, command_data_arguments);
+    try {
+        // Give SR command to service
+        const bool successfully_handled {
+            intended_service.handleRequestCommand(actor, command_data_arguments)
+        };
+
+        // Retrieves is SR command handling completed successfully
+        return successfully_handled
+                ? Utils::HandlingResult {}
+                : Utils::HandlingResult { "Service rejected SR command" };
+    } catch (const std::exception& err) {
+        logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
+
+        // Retrieves error result with given caught message
+        return Utils::HandlingResult { err.what() };
+    }
 }
 
 
