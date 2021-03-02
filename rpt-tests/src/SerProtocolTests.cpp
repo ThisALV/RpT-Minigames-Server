@@ -9,8 +9,8 @@ using namespace RpT::Core;
 /*
  * Minimal services for unit testing purpose
  *
- * They set `lastCommandActor()` return value to given request command actor and then return `true` if non-empty
- * command is handled or `false` otherwise. This will allows to check if handler was successfully ran.
+ * They set `lastCommandActor()` return value to given request command actor and then returns successfully if non-empty
+ * command is handled or "Empty" error message otherwise. This will allows to check if handler was successfully ran.
  *
  * When command is handled, an event is emitted, command is the actor name.
  */
@@ -27,12 +27,14 @@ public:
         return last_command_actor_;
     }
 
-    bool handleRequestCommand(const std::string_view actor,
-                              const std::vector<std::string_view>& sr_command_arguments) override {
+    RpT::Utils::HandlingResult handleRequestCommand(std::string_view actor,
+                                               const std::vector<std::string_view>& sr_command_arguments) override {
         emitEvent(std::string { actor });
         last_command_actor_ = actor;
 
-        return !sr_command_arguments.empty();
+        return !sr_command_arguments.empty()
+                ? RpT::Utils::HandlingResult {}
+                : RpT::Utils::HandlingResult { "Empty" };
     }
 };
 
@@ -183,8 +185,8 @@ BOOST_AUTO_TEST_CASE(RightPrefixAndUnknownServiceName) {
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixServiceBEmptyCommand) {
-    // SR command is well formed but empty, so handling should return false
-    BOOST_CHECK(!ser_protocol.handleServiceRequest("Actor1", "REQUEST ServiceB"));
+    // SR command is well formed but empty, so handling should return "Empty" error message
+    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest("Actor1", "REQUEST ServiceB").errorMessage(), "Empty");
     // But service last command actor property should have been updated anyway
     BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), "Actor1");
 }

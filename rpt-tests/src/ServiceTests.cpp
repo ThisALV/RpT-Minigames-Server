@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_SUITE_END()
 /**
  * @brief Basic implementation to build Service class and test its defined methods
  *
- * `name()` returns empty string and `handleRequestCommand()` fires event with actor as event command, then  returns
- * `true`.
+ * `name()` returns empty string and `handleRequestCommand()` fires event with actor as event command, then returns
+ * successfully.
  */
 class TestingService : public Service {
 public:
@@ -33,10 +33,12 @@ public:
         return "";
     }
 
-    bool handleRequestCommand(const std::string_view actor, const std::vector<std::string_view>&) override {
+    RpT::Utils::HandlingResult handleRequestCommand(std::string_view actor,
+                                                    const std::vector<std::string_view>&) override {
+
         emitEvent(std::string { actor });
 
-        return true;
+        return {};
     }
 };
 

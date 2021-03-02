@@ -94,16 +94,10 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(const st
 
     logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
 
+    // Try to handle SR command, catching errors occurring inside handlers
     try {
-        // Give SR command to service
-        const bool successfully_handled {
-            intended_service.handleRequestCommand(actor, command_data_arguments)
-        };
-
-        // Retrieves is SR command handling completed successfully
-        return successfully_handled
-                ? Utils::HandlingResult {}
-                : Utils::HandlingResult { "Service rejected SR command" };
+        // Handles SR command and retrieves result
+        return intended_service.handleRequestCommand(actor, command_data_arguments);
     } catch (const std::exception& err) {
         logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
 

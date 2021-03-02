@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <RpT-Utils/HandlingResult.hpp>
 
 /**
  * @file Service.hpp
@@ -136,10 +137,10 @@ public:
      * @param actor Actor who's trying to execute the given SR command
      * @param sr_command_arguments Service Request command arguments (or command data words)
      *
-     * @returns Boolean which indicates if SR command was successfully handled
+     * @returns Result for command handling, evaluates to `true` is succeeded, else contains an error message
      */
-    virtual bool handleRequestCommand(std::string_view actor,
-                                      const std::vector<std::string_view>& sr_command_arguments) = 0;
+    virtual Utils::HandlingResult handleRequestCommand(std::string_view actor,
+                                                       const std::vector<std::string_view>& sr_command_arguments) = 0;
 };
 
 
