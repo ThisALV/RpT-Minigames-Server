@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <iostream>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
@@ -16,16 +17,29 @@ public:
     : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
 
     RpT::Core::AnyInputEvent waitForInput() override {
-        return RpT::Core::StopEvent { "Server", 0 };
+        std::string input_command;
+        std::cout << "> ";
+        std::getline(std::cin, input_command); // Read a SR command from console
+
+        if (std::cin) { // If input stream isn't closed, then emits input event
+            return RpT::Core::ServiceRequestEvent { "Console", input_command };
+        } else { // Else, input/output interface should be closed
+            return RpT::Core::StopEvent { "Console", 0 };
+        }
     }
 
-    void replyTo(const RpT::Core::ServiceRequestEvent& service_request, const bool success,
-                 const std::optional<std::string>& error_message) override {
+    void replyTo(const RpT::Core::ServiceRequestEvent& service_request,
+                 const RpT::Utils::HandlingResult& sr_command_result) override {
 
-        logger_.info("Reply to {} \"{}\": {}", service_request.actor(), service_request.serviceRequest(), success);
+        const std::string result_message {
+            sr_command_result ? "SUCCESS" : sr_command_result.errorMessage()
+        };
 
-        if (!success)
-            logger_.error("Error: {}", *error_message);
+        logger_.info("Reply to {} \"{}\": {}",
+                     service_request.actor(), service_request.serviceRequest(), result_message);
+
+        if (!sr_command_result)
+            logger_.error("Error: {}", result_message);
     }
 
     void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
