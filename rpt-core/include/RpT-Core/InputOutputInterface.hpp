@@ -3,6 +3,7 @@
 
 #include <boost/variant.hpp>
 #include <RpT-Core/InputEvent.hpp>
+#include <RpT-Utils/HandlingResult.hpp>
 
 /**
  * @file InputOutputInterface.hpp
@@ -67,12 +68,9 @@ public:
      * Allows to inform an actor if a requested succeeded, and if not, what error happened.
      *
      * @param service_request Request which this response is replying to
-     * @param success Was the request successfully handled ?
-     * @param error_message If and only if request wasn't handled successfully, why ?
+     * @param success Request result, evaluates to `true` if succeeded, else contains an error message
      */
-    virtual void replyTo(const ServiceRequestEvent& service_request, bool success,
-                         const std::optional<std::string>& error_message) = 0;
-
+    virtual void replyTo(const ServiceRequestEvent& service_request, const Utils::HandlingResult& sr_command_result) = 0;
 
     /**
      * @brief Dispatch a successfully handled service request to actors who aren't actor of `service_request`
