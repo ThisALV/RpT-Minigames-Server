@@ -23,7 +23,7 @@ class LoggerView; // Need to be referenced by LoggingContext when a LoggerView i
 #endif
 
 /**
- * @brief Available logging levels to use with `LoggingContext::updateLogLevel()`
+ * @brief Available logging levels to use with `LoggingContext::updateLoggingLevel()`
  *
  * @see LoggingContext
  *
