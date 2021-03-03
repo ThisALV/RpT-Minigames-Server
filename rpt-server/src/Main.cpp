@@ -13,7 +13,7 @@ private:
     RpT::Utils::LoggerView logger_;
 
 public:
-    SimpleIO(RpT::Utils::LoggingContext& logger_context)
+    explicit SimpleIO(RpT::Utils::LoggingContext& logger_context)
     : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
 
     RpT::Core::AnyInputEvent waitForInput() override {
@@ -35,7 +35,7 @@ public:
             sr_command_result ? "SUCCESS" : sr_command_result.errorMessage()
         };
 
-        logger_.info("Reply to {} \"{}\": {}",
+        logger_.info("Reply to {} command \"{}\": {}",
                      service_request.actor(), service_request.serviceRequest(), result_message);
 
         if (!sr_command_result)
@@ -43,7 +43,7 @@ public:
     }
 
     void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
-        logger_.info("Request handled for {}: \"{}\"", service_request.actor(), service_request.serviceRequest());
+        logger_.info("Request handled from {}: \"{}\"", service_request.actor(), service_request.serviceRequest());
     }
 
     void outputEvent(const std::string& event) override {
