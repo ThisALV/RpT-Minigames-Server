@@ -36,9 +36,9 @@ BOOST_AUTO_TEST_SUITE(InputEventTests)
 BOOST_AUTO_TEST_SUITE(None)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const NoneEvent event { "Actor" };
+    const NoneEvent event { 42 };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -50,17 +50,17 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(ServiceRequest)
 
 BOOST_AUTO_TEST_CASE(ActorNameAndInvalidRequest) {
-    const ServiceRequestEvent event { "Actor", "A random string" };
+    const ServiceRequestEvent event { 42, "A random string" };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     // InputEvent shouldn't care about request validity
     BOOST_CHECK_EQUAL(event.serviceRequest(), "A random string");
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndValidRequest) {
-    const ServiceRequestEvent event { "Actor", "REQUEST Service command" };
+    const ServiceRequestEvent event { 42, "REQUEST Service command" };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.serviceRequest(), "REQUEST Service command");
 }
 
@@ -73,9 +73,9 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(TimerTrigger)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const TimerEvent event { "Actor" };
+    const TimerEvent event { 42 };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -87,16 +87,16 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(StopRequest)
 
 BOOST_AUTO_TEST_CASE(ActorNameAndSignal0) {
-    const StopEvent event { "Actor", 0 };
+    const StopEvent event { 42, 0 };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.caughtSignal(), 0); // Check for minimal value
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndSignal255) {
-    const StopEvent event { "Actor", 255 };
+    const StopEvent event { 42, 255 };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.caughtSignal(), 255); // Check for maximal value
 }
 
@@ -109,9 +109,9 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(PlayerJoined)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const JoinedEvent event { "Actor" };
+    const JoinedEvent event { 42 };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -123,17 +123,17 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(PlayerLeft)
 
 BOOST_AUTO_TEST_CASE(ActorNameAndCleanDisconnection) {
-    const LeftEvent event { "Actor", LeftEvent::Reason::Clean };
+    const LeftEvent event { 42, LeftEvent::Reason::Clean };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Clean);
     BOOST_CHECK_THROW(event.errorMessage(), NotAnErrorReason); // As DC was clean, there shouldn't be any error msg
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndCrashDisconnectionWithErrorMsg) {
-    const LeftEvent event { "Actor", LeftEvent::Reason::Crash, "A random error" };
+    const LeftEvent event { 42, LeftEvent::Reason::Crash, "A random error" };
 
-    BOOST_CHECK_EQUAL(event.actor(), "Actor");
+    BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Crash);
     BOOST_CHECK_EQUAL(event.errorMessage(), "A random error"); // There should be an error msg with this value
 }

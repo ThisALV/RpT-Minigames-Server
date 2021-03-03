@@ -102,8 +102,8 @@ class ChatService : public Service {
 private:
     bool enabled_;
 
-    static constexpr bool isAdmin(const std::string_view actor) {
-        return actor == "Console";
+    static constexpr bool isAdmin(const std::uint64_t actor) {
+        return actor == 0;
     }
 
     static constexpr bool isToggleCommand(const std::string_view command) {
@@ -117,7 +117,7 @@ public:
         return "Chat";
     }
 
-    Utils::HandlingResult handleRequestCommand(const std::string_view actor,
+    Utils::HandlingResult handleRequestCommand(uint64_t actor,
                                                const std::vector<std::string_view>& sr_command_arguments) override {
 
         if (sr_command_arguments.empty())

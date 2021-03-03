@@ -33,10 +33,10 @@ public:
         return "";
     }
 
-    RpT::Utils::HandlingResult handleRequestCommand(std::string_view actor,
+    RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
                                                     const std::vector<std::string_view>&) override {
 
-        emitEvent(std::string { actor });
+        emitEvent(std::to_string(actor));
 
         return {};
     }
@@ -76,11 +76,11 @@ BOOST_AUTO_TEST_CASE(EmptyQueue) {
 
 BOOST_AUTO_TEST_CASE(OneQueuedEvent) {
     // Triggers one event (see TestingService doc)
-    service.handleRequestCommand("An actor", {});
+    service.handleRequestCommand(42, {});
     // Checks if event was triggered with correct ID
     RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { 0 });
     // Checks if event command is correctly retrieved
-    BOOST_CHECK_EQUAL(service.pollEvent(), "An actor");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "42");
     // There should not be any event still in queue
     BOOST_CHECK(!service.checkEvent().has_value());
 }
@@ -92,14 +92,14 @@ BOOST_AUTO_TEST_CASE(OneQueuedEvent) {
 BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     // Push 3 events
     for (int i { 0 }; i < 3; i++)
-        service.handleRequestCommand("An actor " + std::to_string(i), {});
+        service.handleRequestCommand(i, {});
 
     // Checks for each event in queue
     for (int i { 0 }; i < 3; i++) {
         // Checks for correct order with event ID
         RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { i });
         // Checks for correct event command
-        BOOST_CHECK_EQUAL(service.pollEvent(), "An actor " + std::to_string(i));
+        BOOST_CHECK_EQUAL(service.pollEvent(), std::to_string(i));
     }
 
     // Now, queue should be empty

@@ -12,6 +12,9 @@ class SimpleIO : public RpT::Core::InputOutputInterface {
 private:
     RpT::Utils::LoggerView logger_;
 
+    // Console actor (UID 0 for chat admin)
+    static constexpr std::uint64_t CONSOLE_ACTOR_UID { 0 };
+
 public:
     explicit SimpleIO(RpT::Utils::LoggingContext& logger_context)
     : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
@@ -21,10 +24,10 @@ public:
         std::cout << "> ";
         std::getline(std::cin, input_command); // Read a SR command from console
 
-        if (std::cin) { // If input stream isn't closed, then emits input event
-            return RpT::Core::ServiceRequestEvent { "Console", input_command };
+        if (std::cin) { // If input stream isn't closed, then emits input event with Console actor
+            return RpT::Core::ServiceRequestEvent { CONSOLE_ACTOR_UID, input_command };
         } else { // Else, input/output interface should be closed
-            return RpT::Core::StopEvent { "Console", 0 };
+            return RpT::Core::StopEvent { CONSOLE_ACTOR_UID, 0 };
         }
     }
 

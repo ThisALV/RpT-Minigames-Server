@@ -9,9 +9,9 @@ namespace RpT::Core {
  * Base class
  */
 
-InputEvent::InputEvent(const std::string_view actor) : actor_ { actor } {}
+InputEvent::InputEvent(uint64_t actor) : actor_ { actor } {}
 
-std::string_view InputEvent::actor() const {
+std::uint64_t InputEvent::actor() const {
     return actor_;
 }
 
@@ -19,13 +19,13 @@ std::string_view InputEvent::actor() const {
  * None
  */
 
-NoneEvent::NoneEvent(std::string_view actor) : InputEvent { actor } {}
+NoneEvent::NoneEvent(uint64_t actor) : InputEvent { actor } {}
 
 /*
  * ServiceRequest
  */
 
-ServiceRequestEvent::ServiceRequestEvent(std::string_view actor, std::string service_request) :
+ServiceRequestEvent::ServiceRequestEvent(uint64_t actor, std::string service_request) :
     InputEvent { actor }, service_request_ { std::move(service_request) } {}
 
 const std::string& ServiceRequestEvent::serviceRequest() const {
@@ -36,13 +36,13 @@ const std::string& ServiceRequestEvent::serviceRequest() const {
  * TimerTrigger
  */
 
-TimerEvent::TimerEvent(const std::string_view actor) : InputEvent { actor } {}
+TimerEvent::TimerEvent(uint64_t actor) : InputEvent { actor } {}
 
 /*
  * StopRequest
  */
 
-StopEvent::StopEvent(std::string_view actor, std::uint8_t caught_signal) :
+StopEvent::StopEvent(uint64_t actor, std::uint8_t caught_signal) :
     InputEvent { actor }, caught_signal_ { caught_signal } {}
 
 std::uint8_t StopEvent::caughtSignal() const {
@@ -53,13 +53,13 @@ std::uint8_t StopEvent::caughtSignal() const {
  * PlayerJoined
  */
 
-JoinedEvent::JoinedEvent(std::string_view actor) : InputEvent { actor } {}
+JoinedEvent::JoinedEvent(uint64_t actor) : InputEvent { actor } {}
 
 /*
  * PlayerLeft
  */
 
-LeftEvent::LeftEvent(std::string_view actor, Reason disconnection_reason,
+LeftEvent::LeftEvent(uint64_t actor, Reason disconnection_reason,
                      std::optional<std::string> err_msg) :
     InputEvent { actor }, disconnection_reason_ { disconnection_reason }, error_message_ { std::move(err_msg) } {
 

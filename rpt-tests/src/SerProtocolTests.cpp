@@ -1,5 +1,6 @@
 #include <RpT-Testing/TestingUtils.hpp>
 
+#include <optional>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
 
 
@@ -17,19 +18,19 @@ using namespace RpT::Core;
 
 class MinimalService : public Service {
 private:
-    std::string_view last_command_actor_;
+    std::optional<std::uint64_t> last_command_actor_;
 
 public:
     explicit MinimalService(ServiceContext& run_context) : Service { run_context } {}
 
-    std::string_view lastCommandActor() const {
-        assert(last_command_actor_.data()); // Field must be initialized (at least one call to handleRequestCommand())
-        return last_command_actor_;
+    std::uint64_t lastCommandActor() const {
+        assert(last_command_actor_.has_value()); // Field must be initialized (at least one call to handleRequestCommand())
+        return *last_command_actor_;
     }
 
-    RpT::Utils::HandlingResult handleRequestCommand(std::string_view actor,
-                                               const std::vector<std::string_view>& sr_command_arguments) override {
-        emitEvent(std::string { actor });
+    RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
+                                                    const std::vector<std::string_view>& sr_command_arguments) override {
+        emitEvent(std::to_string(actor));
         last_command_actor_ = actor;
 
         return !sr_command_arguments.empty()
@@ -166,36 +167,36 @@ BOOST_FIXTURE_TEST_SUITE(HandleServiceRequest, SerProtocolWithMinimalServiceFixt
 
 BOOST_AUTO_TEST_CASE(EmptyServiceRequest) {
     // An empty request is ill formed
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", ""), InvalidRequestFormat);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, ""), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(OneWordServiceRequest) {
     // A request must contains at least two words
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "RANDOM_WORD"), InvalidRequestFormat);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, "RANDOM_WORD"), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(BadPrefixAndServiceName) {
     // Service Request must begins with "REQUEST" prefix
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "BAD_PREFIX ServiceA"), InvalidRequestFormat);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, "BAD_PREFIX ServiceA"), InvalidRequestFormat);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixAndUnknownServiceName) {
     // Service must be registered
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest("", "REQUEST NonexistentService"), ServiceNotFound);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, "REQUEST NonexistentService"), ServiceNotFound);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixServiceBEmptyCommand) {
     // SR command is well formed but empty, so handling should return "Empty" error message
-    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest("Actor1", "REQUEST ServiceB").errorMessage(), "Empty");
+    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest(1, "REQUEST ServiceB").errorMessage(), "Empty");
     // But service last command actor property should have been updated anyway
-    BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), "Actor1");
+    BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixServiceBNonemptyCommand) {
     // SR command is well formed and contains arguments, so handling should be done successfully
-    BOOST_CHECK(ser_protocol.handleServiceRequest("Actor1", "REQUEST ServiceB Some random arguments"));
+    BOOST_CHECK(ser_protocol.handleServiceRequest(1, "REQUEST ServiceB Some random arguments"));
     // And last command actor should have been updated
-    BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), "Actor1");
+    BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -213,44 +214,44 @@ BOOST_AUTO_TEST_CASE(NoEvents) {
 
 BOOST_AUTO_TEST_CASE(ManyEventsInSomeQueues) {
     // Emits many events
-    svc_a.handleRequestCommand("Actor 1", {});
-    svc_b.handleRequestCommand("Actor 2", {});
-    svc_a.handleRequestCommand("Actor 3", {});
-    svc_b.handleRequestCommand("Actor 4", {});
+    svc_a.handleRequestCommand(1, {});
+    svc_b.handleRequestCommand(2, {});
+    svc_a.handleRequestCommand(3, {});
+    svc_b.handleRequestCommand(4, {});
 
     // Checks for events polling order, FIFO queue, so should be the same than insertion (or events emission) order
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA Actor 1" });
+                                           std::optional<std::string> { "EVENT ServiceA 1" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB Actor 2" });
+                                           std::optional<std::string> { "EVENT ServiceB 2" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA Actor 3" });
+                                           std::optional<std::string> { "EVENT ServiceA 3" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB Actor 4" });
+                                           std::optional<std::string> { "EVENT ServiceB 4" });
 }
 
 BOOST_AUTO_TEST_CASE(ManyEventsInEveryQueues) {
     // Emits many events
-    svc_a.handleRequestCommand("Actor 1", {});
-    svc_b.handleRequestCommand("Actor 2", {});
-    svc_c.handleRequestCommand("Actor 3", {});
-    svc_a.handleRequestCommand("Actor 4", {});
-    svc_b.handleRequestCommand("Actor 5", {});
-    svc_c.handleRequestCommand("Actor 6", {});
+    svc_a.handleRequestCommand(1, {});
+    svc_b.handleRequestCommand(2, {});
+    svc_c.handleRequestCommand(3, {});
+    svc_a.handleRequestCommand(4, {});
+    svc_b.handleRequestCommand(5, {});
+    svc_c.handleRequestCommand(6, {});
 
     // Checks for events polling order, FIFO queue, so should be the same than insertion (or events emission) order
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA Actor 1" });
+                                           std::optional<std::string> { "EVENT ServiceA 1" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB Actor 2" });
+                                           std::optional<std::string> { "EVENT ServiceB 2" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceC Actor 3" });
+                                           std::optional<std::string> { "EVENT ServiceC 3" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA Actor 4" });
+                                           std::optional<std::string> { "EVENT ServiceA 4" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB Actor 5" });
+                                           std::optional<std::string> { "EVENT ServiceB 5" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceC Actor 6" });
+                                           std::optional<std::string> { "EVENT ServiceC 6" });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

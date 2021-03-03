@@ -63,8 +63,8 @@ bool ServiceEventRequestProtocol::isRegistered(const std::string_view service) c
     return running_services_.count(service) == 1; // Returns if service name is present among running services
 }
 
-Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(const std::string_view actor,
-                                                                        const std::string_view service_request) {
+Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t actor,
+                                                                        std::string_view service_request) {
 
     logger_.trace("Handling SR command from \"{}\": {}", actor, service_request);
 

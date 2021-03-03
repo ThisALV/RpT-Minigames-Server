@@ -29,6 +29,10 @@ using AnyInputEvent = boost::variant<NoneEvent, StopEvent, ServiceRequestEvent, 
  * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. This might
  * either be a service request which was successfully handled or an event emitted by a service.
  *
+ * An IO interface might have its own protocol over SER Protocol. This custom protocol usually manages server
+ * relative features, like name for players associated with specific UID, or players who are (dis)connecting from/to
+ * server.
+ *
  * @note Interface is NOT automatically closed at destruction.
  *
  * @author ThisALV, https://github.com/ThisALV

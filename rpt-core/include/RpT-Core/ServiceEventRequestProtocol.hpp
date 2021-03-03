@@ -168,7 +168,7 @@ public:
      *
      * Find appropriate service, and make it handle the given SR command with actor executor.
      *
-     * @param actor Actor who's trying to execute that SR command
+     * @param actor UID for actor who's trying to execute that SR command
      * @param sr_command Service Request command to handle
      *
      * @throws BadServiceRequest if service_request is ill formed
@@ -177,7 +177,7 @@ public:
      * @returns Result for SR command handled by service, equivalent to `true` if done successfully, else contains
      * error message
      */
-    Utils::HandlingResult handleServiceRequest(std::string_view actor, std::string_view service_request);
+    Utils::HandlingResult handleServiceRequest(std::uint64_t actor, std::string_view service_request);
 
     /**
      * @brief Poll next Service Event command in services queue, do nothing if queue is empty

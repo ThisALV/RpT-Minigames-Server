@@ -134,12 +134,12 @@ public:
     /**
      * @brief Tries to handle a given command executed by a given actor
      *
-     * @param actor Actor who's trying to execute the given SR command
+     * @param actor UID for actor who's trying to execute the given SR command
      * @param sr_command_arguments Service Request command arguments (or command data words)
      *
      * @returns Result for command handling, evaluates to `true` is succeeded, else contains an error message
      */
-    virtual Utils::HandlingResult handleRequestCommand(std::string_view actor,
+    virtual Utils::HandlingResult handleRequestCommand(std::uint64_t actor,
                                                        const std::vector<std::string_view>& sr_command_arguments) = 0;
 };
 

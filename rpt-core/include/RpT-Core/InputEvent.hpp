@@ -21,23 +21,26 @@ namespace RpT::Core {
  * Represents any kind of input event which can occur at IO interface level, returned by
  * `InputOutputInterface::waitForInput()`.
  *
- * An input event is defined by an actor which has emitted event.
- * Each event type might provides more informations about input event. Should be used using visitor pattern to access
+ * Each event type might provides more informations about input event. Should be visited using visitor pattern to access
  * those informations.
+ *
+ * Events are received and emitted by actors. An actor is a connected client who can interferes with server
+ * execution, by sending Service Request command, as an example. Each actor is identified with UID, a 64bits unsigned
+ * integer.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
 class InputEvent {
 private:
-    std::string_view actor_;
+    std::uint64_t actor_;
 
 public:
     /**
-     * @brief Base constructor for initializing actor's name
+     * @brief Base constructor for initializing emitted UID
      *
-     * @param actor Actor's name access
+     * @param actor UID for actor emitting input event
      */
-    explicit InputEvent(std::string_view actor);
+    explicit InputEvent(std::uint64_t actor);
 
     // Necessary for correct deletion of subclasses instances
     virtual ~InputEvent() = default;
@@ -45,15 +48,15 @@ public:
     /**
      * @brief Get actor who emitted this event
      *
-     * @returns Actor's name
+     * @returns Actor UID
      */
-    std::string_view actor() const;
+    std::uint64_t actor() const;
 };
 
 /// Event emitted if interface is closed
 class NoneEvent : public InputEvent {
 public:
-    explicit NoneEvent(std::string_view actor);
+    explicit NoneEvent(std::uint64_t actor);
 
 };
 
@@ -68,10 +71,10 @@ public:
      *
      * Learn more about Service Event Request Protocol at `ServiceEventRequestProtocol` class doc.
      *
-     * @param actor Actor's name access
+     * @param actor Actor UID
      * @param service_request Received SER request
      */
-    ServiceRequestEvent(std::string_view actor, std::string service_request);
+    ServiceRequestEvent(std::uint64_t actor, std::string service_request);
 
     /**
      * @brief Get received service request using SR command format
@@ -84,7 +87,7 @@ public:
 /// Event emitted when a timer is timed out
 class TimerEvent : public InputEvent {
 public:
-    explicit TimerEvent(std::string_view actor);
+    explicit TimerEvent(std::uint64_t actor);
 };
 
 /// Event emitted when server stop is requested by a caughtSignal / a console ctrl
@@ -96,10 +99,10 @@ public:
     /**
      * @brief Constructs stop request event with given caught caughtSignal
      * 
-     * @param actor Actor's name access
+     * @param actor Actor UID
      * @param signal Integer value for caught caughtSignal
      */
-    StopEvent(std::string_view actor, std::uint8_t caught_signal);
+    StopEvent(std::uint64_t actor, std::uint8_t caught_signal);
 
     /**
      * @brief Gets caught Posix stop caughtSignal
@@ -112,7 +115,7 @@ public:
 /// Event emitted when any new actor joins the server
 class JoinedEvent : public InputEvent {
 public:
-    explicit JoinedEvent(std::string_view actor);
+    explicit JoinedEvent(std::uint64_t actor);
 };
 
 
@@ -150,11 +153,11 @@ public:
      *
      * @see LeftEvent::Reason
      *
-     * @param actor Actor's name access
+     * @param actor Actor UID
      * @param disconnection_reason The disconnectionReason for which the player disconnected
      * @param err_msg Optional error message, only accepted if disconnectionReason is `Reason::Crash`
      */
-    LeftEvent(std::string_view actor, Reason disconnection_reason, std::optional<std::string> err_msg = {});
+    LeftEvent(std::uint64_t actor, Reason disconnection_reason, std::optional<std::string> err_msg = {});
 
     /**
      * @brief Get disconnection disconnectionReason
