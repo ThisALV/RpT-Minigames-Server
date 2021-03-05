@@ -85,7 +85,7 @@ protected:
      *
      * @throws ParsedIndexOutOfRange if index is superior or equal to current words count
      */
-    std::string_view getParsedWord(std::size_t i);
+    std::string_view getParsedWord(std::size_t i) const;
 
     /**
      * @brief Retrieve unparsed substring

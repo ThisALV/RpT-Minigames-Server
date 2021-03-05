@@ -45,7 +45,7 @@ TextProtocolParser::TextProtocolParser(const std::string_view protocol_command,
     unparsed_words_ = protocol_command.substr(unparsed_words_begin_i);
 }
 
-std::string_view TextProtocolParser::getParsedWord(std::size_t i) {
+std::string_view TextProtocolParser::getParsedWord(std::size_t i) const {
     try { // Tries to retrieve word for given index...
         return parsed_words_.at(i);
     } catch (const std::out_of_range&) { // ...and if index is out of range, throw custom exception class
