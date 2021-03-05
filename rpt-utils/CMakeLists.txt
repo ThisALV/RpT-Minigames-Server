@@ -4,13 +4,15 @@ set(RPT_UTILS_HEADERS
         "${RPT_UTILS_HEADERS_DIR}/CommandLineOptionsParser.hpp"
         "${RPT_UTILS_HEADERS_DIR}/LoggingContext.hpp"
         "${RPT_UTILS_HEADERS_DIR}/LoggerView.hpp"
-        "${RPT_UTILS_HEADERS_DIR}/HandlingResult.hpp")
+        "${RPT_UTILS_HEADERS_DIR}/HandlingResult.hpp"
+        "${RPT_UTILS_HEADERS_DIR}/TextProtocolParser.hpp")
 
 set(RPT_UTILS_SOURCES
         "src/CommandLineOptionsParser.cpp"
         "src/LoggingContext.cpp"
         "src/LoggerView.cpp"
-        "src/HandlingResult.cpp")
+        "src/HandlingResult.cpp"
+        "src/TextProtocolParser.cpp")
 
 find_package(spdlog CONFIG)
 
