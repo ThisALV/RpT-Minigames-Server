@@ -69,6 +69,10 @@ protected:
     /**
      * @brief Constructs parser which will try to parse given words count. Remaining will stay unparsed.
      *
+     * Sequences of multiple words separators are treated as one unique merged words separator.
+     * Separator at string begin is trimmed, exactly like the ones before and after parsed words.
+     * Separator between and after unparsed words will NOT be trimmed.
+     *
      * @param protocol_command Protocol text command to parse
      * @param expected_words Number of words to parse, and minimum words count expected inside command
      *

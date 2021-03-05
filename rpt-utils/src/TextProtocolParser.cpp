@@ -10,39 +10,43 @@ namespace RpT::Utils {
 TextProtocolParser::TextProtocolParser(const std::string_view protocol_command,
                                        const unsigned int expected_words) {
 
-    // Begin and end constant iterators for SR command string
+    // Iterators to non-trimmed begin and end of command string
     const auto cmd_begin { protocol_command.cbegin() };
     const auto cmd_end { protocol_command.cend() };
 
-    // Starts string parsing from the first word
-    auto word_begin { cmd_begin };
-    auto word_end { std::find(cmd_begin, cmd_end, ' ') };
+    std::ptrdiff_t word_begin_i { 0 }; // Currently parsed word begin index
+    std::size_t word_length { 0 }; // Currently parsed word length
 
-    // While entire string hasn't be parsed (while word begin isn't at string end) and required words count hasn't
-    // been reached
-    while (parsed_words_.size() != expected_words && word_begin != word_end) {
-        // Calculate index for word begin, and next word size
-        const auto word_begin_i { word_begin - cmd_begin };
-        const auto word_length { word_end - word_begin };
+    auto char_it { cmd_begin }; // Parsing begins at command begin
 
-        // Add currently parsed word to words
-        parsed_words_.push_back(protocol_command.substr(word_begin_i, word_length ));
+    // Iterates over all chars until command string end, or until expected parsed words count has been reached
+    while (char_it != cmd_end && parsed_words_.size() < expected_words) {
+        const char current_char { *char_it };
 
-        word_begin = word_end; // Parsing goes to next word
+        if (current_char == ' ') { // When separator is met
+            if (word_length != 0) { // If word is currently parsed, push it into parsed words
+                const std::string_view current_parsed_word { protocol_command.substr(word_begin_i, word_length) };
 
-        if (word_end != cmd_end) { // Is the string end reached ?
-            word_begin++; // Then, move word begin after previously found space
-            word_end = std::find(word_begin, cmd_end, ' '); // And find next word end starting from next word begin
+                parsed_words_.push_back(current_parsed_word);
+
+                word_length = 0; // No word is currently into parsing stage
+            }
+        } else { // If iterator is inside any word
+            if (word_length == 0) // If new word enters into parsing stage, new word begin position must be saved
+                word_begin_i = char_it - cmd_begin;
+
+            word_length++; // Parsing stage word is one char longer after this iteration
         }
 
-        assert(word_begin == cmd_end || *word_begin != ' '); // Word begin must be alphanum char (1st word char)
-        assert(word_end == cmd_end || *word_end == ' '); // Word end must be space or command end (last word char + 1)
-        assert(std::find(word_begin, word_end, ' ') == cmd_end); // Current word must NOT contain any space char
+        char_it++; // Parsing goes forward to next char
     }
 
-    // Where the next word should have begin is unparsed partition begin
-    const auto unparsed_words_begin_i { word_begin - cmd_begin };
-    unparsed_words_ = protocol_command.substr(unparsed_words_begin_i);
+    // Trims after last parsed word
+    while (char_it != cmd_end && *char_it == ' ')
+        char_it++;
+
+    const std::ptrdiff_t unparsed_words_begin_i { char_it - cmd_begin }; // Index for unparsed substring begin
+    unparsed_words_ = protocol_command.substr(unparsed_words_begin_i); // Push unparsed words into instance
 }
 
 std::string_view TextProtocolParser::getParsedWord(std::size_t i) const {
