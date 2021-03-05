@@ -22,8 +22,8 @@ std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::stri
     // While entire string hasn't be parsed (while word begin isn't at string end)
     while (word_begin != word_end) {
         // Calculate index for word begin, and next word size
-        const long word_begin_i { word_begin - cmd_begin };
-        const long word_length { (word_end - word_begin) };
+        const auto word_begin_i { word_begin - cmd_begin };
+        const auto word_length { word_end - word_begin };
 
         parsed_words.push_back(sr_command.substr(word_begin_i, word_length )); // Add currently parsed word to words
 
