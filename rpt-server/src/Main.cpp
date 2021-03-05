@@ -2,6 +2,7 @@
 #include <iostream>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
+#include <RpT-Network/BeastWebsocketBackend.hpp>
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
 
 

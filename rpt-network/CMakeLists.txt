@@ -1,10 +1,12 @@
 set(RPT_NETWORK_HEADERS_DIR "include/RpT-Network")
 
 set(RPT_NETWORK_HEADERS
-        "${RPT_NETWORK_HEADERS_DIR}/BeastWebsocketBackend.hpp")
+        "${RPT_NETWORK_HEADERS_DIR}/BeastWebsocketBackend.hpp"
+        "${RPT_NETWORK_HEADERS_DIR}/NetworkBackend.hpp")
 
 set(RPT_NETWORK_SOURCES
-        "src/BeastWebsocketBackend.cpp")
+        "src/BeastWebsocketBackend.cpp"
+        "src/NetworkBackend.cpp")
 
 find_package(Boost REQUIRED)
 
