@@ -129,5 +129,15 @@ std::optional<Core::AnyInputEvent> NetworkBackend::pollInputEvent() {
     return polled_event;
 }
 
+Core::AnyInputEvent NetworkBackend::waitForInput() {
+    // Checks for events inside queue before waiting for new input events
+    std::optional<Core::AnyInputEvent> last_input_event { pollInputEvent() };
+    if (last_input_event.has_value())
+        return *last_input_event;
+
+    // If queue is empty, new input event must be waited for by NetworkBackend implementation
+    return waitForEvent();
+}
+
 
 }

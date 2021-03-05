@@ -66,7 +66,17 @@ private:
     std::unordered_map<std::uint64_t, std::string> logged_in_actors_;
     std::queue<Core::AnyInputEvent> input_events_queue_;
 
+    /**
+     * @brief If input events queue isn't empty, take and retrive next event to handle
+     *
+     * Called at `waitForInput()` beginning to poll any queued event before waiting for another to be triggered.
+     *
+     * @returns Next triggered input event if any, uninitialized otherwise
+     */
+    std::optional<Core::AnyInputEvent> pollInputEvent();
+
 protected:
+
     /**
      * @brief Parses received handshake and registers new actor
      *
@@ -98,15 +108,6 @@ protected:
     void pushInputEvent(Core::AnyInputEvent input_event);
 
     /**
-     * @brief If input events queue isn't empty, take and retrive next event to handle
-     *
-     * Called at `waitForInput()` beginning to poll any queued event before waiting for another to be triggered.
-     *
-     * @returns Next triggered input event if any, uninitialized otherwise
-     */
-    std::optional<Core::AnyInputEvent> pollInputEvent();
-
-    /**
      * @brief Wait for external input event to happen
      *
      * Called by `waitForInput()` when events queue is empty implementation, must be overridden by `NetworkBackend`
@@ -115,6 +116,16 @@ protected:
      * @returns Input event triggered by external cause
      */
     virtual Core::AnyInputEvent waitForEvent() = 0;
+
+public:
+    /**
+     * @brief If any, poll input event inside queue. If queue is empty, wait until input event is triggered.
+     *
+     * The input event waiting stage, if queue is empty, is implementation-specific.
+     *
+     * @returns Last triggered input event
+     */
+    Core::AnyInputEvent waitForInput() override;
 };
 
 
