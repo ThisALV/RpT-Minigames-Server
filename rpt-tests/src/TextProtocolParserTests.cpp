@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(ExpectedTwoWords) {
 }
 
 BOOST_AUTO_TEST_CASE(ExpectedThreeWords) {
-    const SimpleParser parser { "Command Arg1 Arg2", 2 };
+    const SimpleParser parser { "Command Arg1 Arg2", 3 };
 
     // All trimmed words should have been parsed
     BOOST_CHECK_EQUAL(parser.wordAt(0), "Command");
@@ -199,7 +199,7 @@ BOOST_AUTO_TEST_CASE(ExpectedTwoWords) {
 }
 
 BOOST_AUTO_TEST_CASE(ExpectedThreeWords) {
-    const SimpleParser parser { "  Command   Arg1  Arg2   ", 2 };
+    const SimpleParser parser { "  Command   Arg1  Arg2   ", 3 };
 
     // All trimmed words should have been parsed
     BOOST_CHECK_EQUAL(parser.wordAt(0), "Command");
