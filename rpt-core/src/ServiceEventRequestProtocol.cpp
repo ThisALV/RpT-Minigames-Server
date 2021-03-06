@@ -7,6 +7,22 @@
 namespace RpT::Core {
 
 
+ServiceEventRequestProtocol::ServiceRequestCommandParser::ServiceRequestCommandParser(
+        const std::string_view sr_command) : Utils::TextProtocolParser { sr_command, 2 } {}
+
+bool ServiceEventRequestProtocol::ServiceRequestCommandParser::isValidRequest() const {
+    return getParsedWord(0) == REQUEST_PREFIX;
+}
+
+std::string_view ServiceEventRequestProtocol::ServiceRequestCommandParser::intendedServiceName() const {
+    return getParsedWord(1);
+}
+
+std::string_view ServiceEventRequestProtocol::ServiceRequestCommandParser::commandData() const {
+    return unparsedWords();
+}
+
+
 std::vector<std::string_view> ServiceEventRequestProtocol::getWordsFor(std::string_view sr_command) {
     // Begin and end constant iterators for SR command string
     const auto cmd_begin { sr_command.cbegin() };
@@ -68,36 +84,30 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t
 
     logger_.trace("Handling SR command from \"{}\": {}", actor, service_request);
 
-    // Get all parsed words into SR command
-    const std::vector<std::string_view> sr_command_words { getWordsFor(service_request) };
+    std::string_view intended_service_name;
+    std::string_view command_data;
+    try { // Tries to parse received SR command
+        const ServiceRequestCommandParser sr_command_parser { service_request }; // Parsing
 
-    // At least two words must be present for SER command prefix and service of request
-    if (sr_command_words.size() < 2)
-        throw InvalidRequestFormat { service_request, "SER command prefix and intended service must be given" };
+        if (!sr_command_parser.isValidRequest()) // Checks for SER command prefix, must be REQUEST for a SR command
+            throw InvalidRequestFormat { service_request, "Expected SER command prefix \"REQUEST\" for SR command" };
 
-    // First word must corresponds to SR command prefix
-    if (sr_command_words.at(0) != REQUEST_PREFIX)
-        throw InvalidRequestFormat { service_request, "SER command prefix must be REQUEST" };
+        // Set given parameters to corresponding parsed (or not) arguments
+        intended_service_name = sr_command_parser.intendedServiceName();
+        command_data = sr_command_parser.commandData();
+    } catch (const Utils::NotEnoughWords& err) { // Catches error if SER command format is invalid
+        throw InvalidRequestFormat { service_request, "Expected SER command prefix and request service name" };
+    }
 
-    const std::string_view intended_service_name { sr_command_words.at(1) }; // Retrieve service name from 2nd word
-
-    // Service must be registered
-    if (!isRegistered(intended_service_name))
-        throw ServiceNotFound { intended_service_name };
-
+    assert(!intended_service_name.empty()); // Service name must be initialized if try statement passed successfully
     Service& intended_service { running_services_.at(intended_service_name).get() };
-
-    // Execute given command contained in command data arguments, and returns service execution result
-    const std::vector<std::string_view> command_data_arguments { // Extract SR command words which are command arguments
-        sr_command_words.cbegin() + 2, sr_command_words.cend()
-    };
 
     logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
 
     // Try to handle SR command, catching errors occurring inside handlers
     try {
         // Handles SR command and retrieves result
-        return intended_service.handleRequestCommand(actor, command_data_arguments);
+        return intended_service.handleRequestCommand(actor, std::vector<std::string_view> { command_data });
     } catch (const std::exception& err) {
         logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
 

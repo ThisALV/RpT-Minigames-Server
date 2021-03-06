@@ -11,6 +11,7 @@
 #include <RpT-Core/Service.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 #include <RpT-Utils/LoggerView.hpp>
+#include <RpT-Utils/TextProtocolParser.hpp>
 
 
 /**
@@ -127,6 +128,26 @@ private:
     static constexpr std::string_view RESPONSE_PREFIX { "RESPONSE" };
     // Prefix for Service Event (SE) commands
     static constexpr std::string_view EVENT_PREFIX { "EVENT" };
+
+    /**
+     * @brief Parses given SR command prefix and intended service's name
+     *
+     * @author ThisALV, https://github.com/ThisALV
+     */
+    class ServiceRequestCommandParser : public Utils::TextProtocolParser {
+    public:
+        /// Constructs parser for given command, will parse exactly 2 words for prefix and service name
+        explicit ServiceRequestCommandParser(std::string_view sr_command);
+
+        /// Checks if SR command begins with correct prefix
+        bool isValidRequest() const;
+
+        /// Retrieve intended service name
+        std::string_view intendedServiceName() const;
+
+        /// Retrieves command that will be passed to Service handler
+        std::string_view commandData() const;
+    };
 
     /**
      * @brief Get list of words inside given Service Request command, separated by char ' '
