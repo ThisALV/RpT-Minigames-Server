@@ -36,7 +36,7 @@ function extractGitHubSource() {
   log "Extract downloaded sources to $dest_dir..." && \
   tar -xzf "$download_dir/$archive" -C "$dest_dir" && \
   log "Extracting done for $dep_full_name." || \
-  error "Error : unable to extract sources for $dep_full_name."
+  error "Error: unable to extract sources for $dep_full_name."
 }
 
 
@@ -56,7 +56,7 @@ function tryAptGet() {
     log "Successfully get $name."
   else
     failure=1
-    error "Error : unable to get $name." >&2
+    error "Error: unable to get $name." >&2
   fi
 
   return $failure
@@ -98,7 +98,7 @@ function tryHeaderOnlyGet() {
   cmake --install . && \
   log "Successfully get $dep_full_name." && \
   failure=0 || \
-  error "Error : unable to get $dep_full_name."
+  error "Error: unable to get $dep_full_name."
 
   log "Back to $caller_dir..."
   cd "$caller_dir" || exit 2 # Script cannot continue normally if working dir cannot be restored
@@ -153,7 +153,7 @@ function trySourceGet() {
   cmake --install . && \
   log "Successfully get $dep_full_name." && \
   failure=0 || \
-  error "Error : unable to get $dep_full_name."
+  error "Error: unable to get $dep_full_name."
 
   log "Back to $caller_dir..."
   cd "$caller_dir" || exit 2 # Script cannot continue normally if working dir cannot be restored
@@ -185,6 +185,8 @@ failure= # Set if any of install try actually fails
 # Boost MPI dependency libxnvctrl0 is broken for non-updated 20.04 ubuntu distros
 # Because of this, and for performance reasons, only required Boost modules are downloaded/installed
 
+# As dependencies MIGHT be available even if get-deps script failed, installation failure should NOT
+# interrupts script
 tryAptGet libboost-dev || failure=1
 tryAptGet libboost-filesystem-dev || failure=1
 tryAptGet libboost-test-dev || failure=1
@@ -194,6 +196,7 @@ tryHeaderOnlyGet ThePhD sol2 main || failure=1
 trySourceGet gabime spdlog v1.x spdlog-1.x || failure=1
 
 if [ $failure ]; then # If any error occurred...
+  error "Error: some dependencies haven't been installed successfully by this script, build.sh might fails."
   exit 1 # ...the script hasn't complete successfully
 fi
 
