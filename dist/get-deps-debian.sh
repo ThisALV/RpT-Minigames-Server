@@ -182,7 +182,12 @@ echo -e "$RESET"
 
 failure= # Set if any of install try actually fails
 
-tryAptGet libboost-all-dev || failure=1
+# Boost MPI dependency libxnvctrl0 is broken for non-updated 20.04 ubuntu distros
+# Because of this, and for performance reasons, only required Boost modules are downloaded/installed
+
+tryAptGet libboost-dev || failure=1
+tryAptGet libboost-filesystem-dev || failure=1
+tryAptGet libboost-test-dev || failure=1
 tryAptGet liblua5.3-dev || failure=1
 tryHeaderOnlyGet nlohmann json master || failure=1
 tryHeaderOnlyGet ThePhD sol2 main || failure=1
