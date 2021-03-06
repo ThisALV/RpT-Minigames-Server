@@ -30,7 +30,8 @@ register_test(utils
         "src/UtilsTests.cpp"
         "src/CommandLineOptionsParserTests.cpp"
         "src/LoggingContextTests.cpp"
-        "src/HandlingResultTests.cpp")
+        "src/HandlingResultTests.cpp"
+        "src/TextProtocolParserTests.cpp")
 target_link_libraries(${utils_EXEC} PRIVATE rpt-utils)
 
 register_test(core
