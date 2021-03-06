@@ -41,6 +41,13 @@ TextProtocolParser::TextProtocolParser(const std::string_view protocol_command,
         char_it++; // Parsing goes forward to next char
     }
 
+    // Checks for word in parsing stage when end of string was met
+    if (word_length != 0) { // If there is one, push it into parsed words
+        const std::string_view current_parsed_word { protocol_command.substr(word_begin_i, word_length) };
+
+        parsed_words_.push_back(current_parsed_word);
+    }
+
     // Checks for expected minimum words count
     if (parsed_words_.size() < expected_words)
         throw NotEnoughWords { static_cast<unsigned int>(parsed_words_.size()), expected_words };
