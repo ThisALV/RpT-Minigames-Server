@@ -100,15 +100,29 @@ Executor::Executor(std::vector<boost::filesystem::path> game_resources_path, std
  */
 class ChatService : public Service {
 private:
-    bool enabled_;
-
     static constexpr bool isAdmin(const std::uint64_t actor) {
         return actor == 0;
     }
 
-    static constexpr bool isToggleCommand(const std::string_view command) {
-        return command == "/toggle";
-    }
+    /// Parses chat message, checks if it's a /toggle command, and checks if there are no extra argument given to cmd
+    class ChatCommandParser : public Utils::TextProtocolParser {
+    public:
+        /// Parse first word, needs to check if it is a command
+        explicit ChatCommandParser(const std::string_view chat_msg)
+        : Utils::TextProtocolParser { chat_msg, 1 } {}
+
+        /// Is message starting with /toggle ?
+        bool isToggle() const {
+            return getParsedWord(0) == "/toggle";
+        }
+
+        /// Are there extra unparsed arguments in addition to command ?
+        bool extraArgs() const {
+            return !unparsedWords().empty();
+        }
+    };
+
+    bool enabled_;
 
 public:
     explicit ChatService(ServiceContext& run_context) : Service { run_context }, enabled_ { true } {}
@@ -118,29 +132,30 @@ public:
     }
 
     Utils::HandlingResult handleRequestCommand(uint64_t actor,
-                                               const std::vector<std::string_view>& sr_command_arguments) override {
+                                               std::string_view sr_command_data) override {
 
-        if (sr_command_arguments.empty())
+        try { // If message is empty, parsing will fail. A chat message should NOT be empty
+            const ChatCommandParser chat_msg_parser { sr_command_data }; // Parsing message for potential command
+
+            if (chat_msg_parser.isToggle()) { // If message begins with "/toggle"
+                if (chat_msg_parser.extraArgs()) // This command hasn't any arguments
+                    return Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
+
+                if (!isAdmin(actor)) // Player using this command should be admin
+                    return Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
+
+                enabled_ = !enabled_;
+
+                emitEvent("TOGGLED " + std::string { enabled_ ? "true" : "false" });
+
+                return {}; // State was successfully changed
+            } else if (enabled_) { // Checks for chat being enabled or not
+                return {}; // Message should be sent to all players if chat is enabled
+            } else { // If it isn't, message can't be sent
+                return Utils::HandlingResult { "Chat disabled by admin." };
+            }
+        } catch (const Utils::NotEnoughWords&) { // If there is not at least one word to parse (message is empty)
             return Utils::HandlingResult { "Message cannot be empty" };
-
-        const std::string_view first_word { sr_command_arguments.at(0) }; // Might be command
-
-        if (isToggleCommand(first_word)) { // If message begins with "/toggle"
-            if (sr_command_arguments.size() > 1) // This command hasn't any arguments
-                return Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
-
-            if (!isAdmin(actor)) // Player using this command should be admin
-                return Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
-
-            enabled_ = !enabled_;
-
-            emitEvent("TOGGLED " + std::string { enabled_ ? "true" : "false" });
-
-            return {}; // State was successfully changed
-        } else if (enabled_) {
-            return {}; // Message should be sent to all players if chat is enabled
-        } else {
-            return Utils::HandlingResult { "Chat disabled by admin." }; // If it isn't, message can't be sent
         }
     }
 };

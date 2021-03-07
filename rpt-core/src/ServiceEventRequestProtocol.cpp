@@ -65,7 +65,7 @@ ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const std::string_view service_name { service_ref.get().name() };
 
         if (isRegistered(service_name)) // Service name must be unique among running services
-            throw ServiceNameAlreadyRegistered { service_ref.get().name() };
+            throw ServiceNameAlreadyRegistered { service_name };
 
         const auto service_registration_result { running_services_.insert({ service_name, service_ref }) };
         // Must be sure that service has been successfully registered, this is why insertion result is saved
@@ -112,7 +112,7 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t
     // Try to handle SR command, catching errors occurring inside handlers
     try {
         // Handles SR command and retrieves result
-        return intended_service.handleRequestCommand(actor, std::vector<std::string_view> { command_data });
+        return intended_service.handleRequestCommand(actor, command_data);
     } catch (const std::exception& err) {
         logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
 

@@ -29,11 +29,11 @@ public:
     }
 
     RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
-                                                    const std::vector<std::string_view>& sr_command_arguments) override {
+                                                    const std::string_view sr_command_data) override {
         emitEvent(std::to_string(actor));
         last_command_actor_ = actor;
 
-        return !sr_command_arguments.empty()
+        return !sr_command_data.empty()
                 ? RpT::Utils::HandlingResult {}
                 : RpT::Utils::HandlingResult { "Empty" };
     }
