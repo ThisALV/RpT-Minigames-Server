@@ -100,6 +100,11 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t
     }
 
     assert(!intended_service_name.empty()); // Service name must be initialized if try statement passed successfully
+
+    // Checks for intended service registration
+    if (!isRegistered(intended_service_name))
+        throw ServiceNotFound { intended_service_name };
+
     Service& intended_service { running_services_.at(intended_service_name).get() };
 
     logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
