@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <RpT-Core/InputOutputInterface.hpp>
+#include <RpT-Utils/TextProtocolParser.hpp>
 
 /**
  * @file NetworkBackend.hpp
@@ -43,7 +44,7 @@ public:
  * registered, it can send messages to server, which are following format: `<RPTL_command> <args>...`
  *
  * RPTL Protocol (after connection began):
- * - Handshake: `LOGIN <name>`, must NOT be registered
+ * - Handshake: `LOGIN <uid> <name>`, must NOT be registered
  * - Log out (clean way): `LOGOUT`, must BE registered
  * - Send Service Request command: `SERVICE <SR_command>` (see `RpT::Core::ServiceEventRequestProtocol`), must BE
  * registered
@@ -62,7 +63,43 @@ private:
     static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
     static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
 
-    std::uint64_t uid_count_;
+    /// Parser for RPTL Protocol command, only parsing command name
+    class RptlCommandParser : public Utils::TextProtocolParser {
+    public:
+        explicit RptlCommandParser(std::string_view rptl_command);
+
+        /// Retrieves invoked command name
+        std::string_view invokedCommandName() const;
+
+        /// Retrieves invoked command arguments
+        std::string_view invokedCommandArgs() const;
+
+        /// Checks if command is an handshake for actor registering
+        bool isHandshake() const;
+    };
+
+    /// Parser for RPTL `HANDSHAKE` command arguments
+    class HandshakeParser : public Utils::TextProtocolParser {
+    private:
+        std::uint64_t parsed_actor_uid_;
+
+    public:
+        /**
+         * @brief Parses handshake args from given parsed RPTL command
+         *
+         * @throws BadClientMessage if parsed actor UID isn't a valid unsigned integer of 64bits, or if extra args
+         * are given
+         * @throws NotEnoughWords if arguments are missing
+         */
+        explicit HandshakeParser(const RptlCommandParser& parsed_rptl_command);
+
+        /// Retrieves new actor UID
+        std::uint64_t actorUID() const;
+
+        /// Retrieves new actor name
+        std::string_view actorName() const;
+    };
+
     std::unordered_map<std::uint64_t, std::string> logged_in_actors_;
     std::queue<Core::AnyInputEvent> input_events_queue_;
 
@@ -76,13 +113,14 @@ private:
     std::optional<Core::AnyInputEvent> pollInputEvent();
 
 protected:
-
     /**
      * @brief Parses received handshake and registers new actor
      *
      * @param client_handshake Handshake data received from connected client
      *
      * @returns Input triggered by handshake, means that it was handled successfully, and actor has been registered
+     *
+     * @throws BadClientMessage if invoked command isn't valid connection handshake, or if new actor UID isn't available
      */
     Core::JoinedEvent handleHandshake(const std::string& client_handshake);
 
@@ -126,6 +164,15 @@ public:
      * @returns Last triggered input event
      */
     Core::AnyInputEvent waitForInput() override;
+
+    /**
+     * @brief Checks if an actor with given UID is already registered or not
+     *
+     * @param actor_uid UID to check for
+     *
+     * @returns `true` if any actor is registered with given UID, `false` otherwise
+     */
+    bool isRegistered(std::uint64_t actor_uid) const;
 };
 
 
