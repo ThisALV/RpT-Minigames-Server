@@ -114,8 +114,23 @@ public:
 
 /// Event emitted when any new actor joins the server
 class JoinedEvent : public InputEvent {
+private:
+    std::string_view new_actor_name_;
 public:
-    explicit JoinedEvent(std::uint64_t actor);
+    /**
+     * @brief Constructs player joined event with given player informations
+     *
+     * @param new_actor_uid New player UID
+     * @param new_actor_name New player name
+     */
+    explicit JoinedEvent(std::uint64_t new_actor_uid, std::string_view new_actor_name);
+
+    /**
+     * @brief Gets joined player's name
+     *
+     * @returns Name for new player
+     */
+    std::string_view playerName() const;
 };
 
 

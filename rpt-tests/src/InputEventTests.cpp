@@ -109,9 +109,10 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(PlayerJoined)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const JoinedEvent event { 42 };
+    const JoinedEvent event { 42, "NewActor" };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
+    BOOST_CHECK_EQUAL(event.playerName(), "NewActor");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

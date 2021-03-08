@@ -72,14 +72,14 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
             throw BadClientMessage { "Actor UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
 
-        // Must be copied to be registered into logged in actors
-        std::string new_actor_name { handshake_parser.actorName() };
-
-        const auto insertion_result { logged_in_actors_.insert({ new_actor_uid, std::move(new_actor_name) }) };
+        const auto insertion_result { // Insert new actor's name into registry, copy string from parsed argument
+            logged_in_actors_.insert({ new_actor_uid, std::string { handshake_parser.actorName() } })
+        };
         // Must be sure that actor has been successfully registered, this is why insertion result is saved
         assert(insertion_result.second);
 
-        return Core::JoinedEvent { new_actor_uid }; // Returns event triggered by actor registration
+        // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
+        return Core::JoinedEvent { new_actor_uid, logged_in_actors_.at(new_actor_uid) };
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
         throw BadClientMessage { "RPTL command must NOT be empty" };
     }

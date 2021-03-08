@@ -53,7 +53,12 @@ std::uint8_t StopEvent::caughtSignal() const {
  * PlayerJoined
  */
 
-JoinedEvent::JoinedEvent(uint64_t actor) : InputEvent { actor } {}
+JoinedEvent::JoinedEvent(const std::uint64_t new_actor_uid, const std::string_view new_actor_name) :
+InputEvent { new_actor_uid }, new_actor_name_ { new_actor_name } {}
+
+std::string_view JoinedEvent::playerName() const {
+    return new_actor_name_;
+}
 
 /*
  * PlayerLeft
