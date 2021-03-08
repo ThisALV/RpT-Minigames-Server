@@ -34,17 +34,9 @@ NetworkBackend::HandshakeParser::HandshakeParser(const NetworkBackend::RptlComma
     try {
         const std::string actor_uid_copy { getParsedWord(0) }; // Required for conversion to unsigned integer
 
-        /*
-         * Critical check :
-         *
-         * Explicitly asking stoul to converts into uint64_t is not possible, function returns an `unsigned long`,
-         * BUT size of unsigned long might be different from 64 bits, so it's necessary to check for return type to
-         * be 64 bits unsigned long, else received UID which is 64 bits unsigned long may not be parsed and assigned
-         * properly to actor UID.
-         */
-        static_assert(sizeof(decltype(std::stoul(actor_uid_copy))) == sizeof(std::uint64_t));
-
-        parsed_actor_uid_ = std::stoul(actor_uid_copy);
+        // `unsigned long long` return type, which is ALWAYS 64 bits large
+        // See: https://en.cppreference.com/w/cpp/language/types
+        parsed_actor_uid_ = std::stoull(actor_uid_copy);
     } catch (const std::invalid_argument&) { // If parsed actor UID argument isn't a valid unsigned integer
         throw BadClientMessage { "Actor UID must be an unsigned integer of 64 bits" };
     }
