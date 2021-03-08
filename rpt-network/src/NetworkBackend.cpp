@@ -29,7 +29,7 @@ NetworkBackend::HandshakeParser::HandshakeParser(const NetworkBackend::RptlComma
     assert(parsed_rptl_command.isHandshake()); // Parsed handshake must be an handshake command
 
     if (!unparsedWords().empty()) // Checks for syntax, there must NOT be any remaining argument
-        throw BadClientMessage { "Too many arguments given to handshaking RPTL command" };
+        throw TooManyArguments { parsed_rptl_command.invokedCommandName() };
 
     try {
         const std::string actor_uid_copy { getParsedWord(0) }; // Required for conversion to unsigned integer
@@ -59,6 +59,18 @@ std::string_view NetworkBackend::HandshakeParser::actorName() const {
 }
 
 
+NetworkBackend::ServiceCommandParser::ServiceCommandParser(
+        const NetworkBackend::RptlCommandParser& parsed_rptl_command)
+        : Utils::TextProtocolParser { parsed_rptl_command.invokedCommandArgs(), 0 } {
+
+    assert(parsed_rptl_command.invokedCommandName() == SERVICE_COMMAND); // Parsed command must be `SERVICE`
+}
+
+std::string_view NetworkBackend::ServiceCommandParser::serviceRequest() const {
+    return unparsedWords(); // SR command parsing left to SER Protocol
+}
+
+
 Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_handshake) {
     try { // Tries to parse received RPTL command, will fail if command is empty
         const RptlCommandParser command_parser { client_handshake };
@@ -81,55 +93,41 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
         return Core::JoinedEvent { new_actor_uid, logged_in_actors_.at(new_actor_uid) };
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
-        throw BadClientMessage { "RPTL command must NOT be empty" };
+        throw EmptyRptlCommand {};
     }
 }
 
 Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint64_t client_actor,
                                                                 const std::string& client_message) {
 
-    // Iterators to begin and end of client message string
-    const auto client_message_begin { client_message.cbegin() };
-    const auto client_message_end { client_message.cend() };
+    try { // Tries to parse received RPTL command, will fail if command is empty
+        const RptlCommandParser command_parser { client_message };
 
-    // First space char found (or if not, end of string) determines end of RPTL protocol command invoked by client
-    const auto rptl_command_end { std::find(client_message_begin, client_message_end, ' ') };
-    // Necessary to access client_message first word substring without copying data
-    const std::string_view client_message_view { client_message };
-    // View to first word inside string, is invoked command
-    const std::string_view rptl_invoked_command {
-        client_message_view.substr(0, rptl_command_end - client_message_begin)
-    };
+        const std::string_view invoked_command_name { command_parser.invokedCommandName() };
 
-    // Testing invoked command for each available RPTL command
-    if (rptl_invoked_command == SERVICE_COMMAND) {
-        // Part of command string which have NOT been parsed yet
-        const std::string_view not_evaluated_chars {
-                client_message_view.substr(rptl_command_end - client_message_begin)
-        };
+        // Checks for each available command name if it is invoked by received RPTL message
+        if (invoked_command_name == SERVICE_COMMAND) {
+            const ServiceCommandParser service_command_parser { command_parser }; // Parse specific SERVICE command
 
-        // If there isn't any argument, then Service Request command contained inside RPTL command is ill-formed
-        if (not_evaluated_chars.empty())
-            throw BadClientMessage { "Expected SR command as argument for RPTL command \"SERVICE\"" };
+            // Copy required to be moved as string inside emitted event
+            std::string sr_command_copy { service_command_parser.serviceRequest() };
 
-        const std::string_view sr_command { // SR command argument, begins after separator following RPTL command
-                not_evaluated_chars.substr(1)
-        };
+            // Returns input event triggered by received Service Request command from given actor with new SR command
+            return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
+        } else if (invoked_command_name == LOGOUT_COMMAND) {
+            // Logging out actor who sent LOGOUT command
+            const std::size_t removed_actors_count { logged_in_actors_.erase(client_actor) };
 
-        std::string sr_command_copy { sr_command }; // Required to pass received SR command into input event
+            assert(removed_actors_count == 1); // Checks for actors being unregistered
 
-        // Ready to trigger ServiceRequest input event with given Service Request command
-        return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
-    } else if (rptl_invoked_command == LOGOUT_COMMAND) {
-        // Logged out, must be removed from known client actors UID
-        logged_in_actors_.erase(client_actor);
-
-        // Clean disconnection requested by client
-        return Core::LeftEvent { client_actor, Core::LeftEvent::Reason::Clean };
-    } else { // If invoked command doesn't exist, then client RPTL message is ill-formed
-        const std::string invoked_command_copy { rptl_invoked_command }; // Required for error message concatenation
-
-        throw BadClientMessage { "This RPTL command doesn't exist: " + invoked_command_copy };
+            // Returns input event triggered by player disconnection (or unregistration)
+            // RPTL command way disconnection, clean
+            return Core::LeftEvent { client_actor, Core::LeftEvent::Reason::Clean };
+        } else { // If none of available commands is being invoked, then invoked command is unknown
+            throw BadClientMessage { "Unknown RPTL command: " + std::string { invoked_command_name } };
+        }
+    } catch (const Utils::NotEnoughWords&) { // If there isn't any word to parse (if command is empty)
+        throw EmptyRptlCommand {};
     }
 }
 

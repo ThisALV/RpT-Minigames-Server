@@ -19,7 +19,8 @@ namespace RpT::Network {
 
 
 /**
- * @brief Thrown by `NetworkBackend::handleMessage()` if received client RPTL message is ill-formed.
+ * @brief Thrown by `NetworkBackend::handleMessage()` and `NetworkBackend::handleMessage()` if received client RPTL
+ * message is ill-formed.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -31,6 +32,35 @@ public:
      * @param reason Custom error message describing why client RPTL message is ill-formed
      */
     explicit BadClientMessage(const std::string& reason) : std::logic_error { reason } {}
+};
+
+/**
+ * @brief Thrown when tried to parse empty RPTL command
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class EmptyRptlCommand : public BadClientMessage {
+public:
+    /**
+     * @brief Constructs exception with basic error message
+     */
+    EmptyRptlCommand() : BadClientMessage { "RPTL command must NOT be empty" } {}
+};
+
+/**
+ * @brief Thrown when too many arguments are given to specific RPTL command
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class TooManyArguments : public BadClientMessage {
+public:
+    /**
+     * @brief Constructs basic error message for given command
+     *
+     * @param rptl_command Invoked command which is throwing error
+     */
+    explicit TooManyArguments(const std::string_view rptl_command)
+    : BadClientMessage { "Too many arguments given to command: " + std::string { rptl_command } } {}
 };
 
 
@@ -87,6 +117,8 @@ private:
         /**
          * @brief Parses handshake args from given parsed RPTL command
          *
+         * @param parsed_rptl_command Parsed RPTL `LOGIN` command
+         *
          * @throws BadClientMessage if parsed actor UID isn't a valid unsigned integer of 64bits, or if extra args
          * are given
          * @throws NotEnoughWords if arguments are missing
@@ -98,6 +130,20 @@ private:
 
         /// Retrieves new actor name
         std::string_view actorName() const;
+    };
+
+    /// Parser for RPTL `SERVICE` command arguments
+    class ServiceCommandParser : public Utils::TextProtocolParser {
+    public:
+        /**
+         * @brief Parses service request args from given parsed RPTL command
+         *
+         * @param parsed_rptl_command Parsed RPTL `SERVICE` command
+         */
+        explicit ServiceCommandParser(const RptlCommandParser& parsed_rptl_command);
+
+        /// Retrieves received Service Request command
+        std::string_view serviceRequest() const;
     };
 
     std::unordered_map<std::uint64_t, std::string> logged_in_actors_;
