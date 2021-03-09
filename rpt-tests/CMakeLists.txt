@@ -40,3 +40,8 @@ register_test(core
         "src/ServiceTests.cpp"
         "src/SerProtocolTests.cpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
+
+register_test(network
+        "src/NetworkTests.cpp"
+        "src/NetworkBackendTests.cpp")
+target_link_libraries(${network_EXEC} PRIVATE rpt-network)
