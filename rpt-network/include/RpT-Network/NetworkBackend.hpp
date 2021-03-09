@@ -65,10 +65,28 @@ public:
 
 
 /**
+ * @brief Thrown by `NetworkBackend::handleHandshake()` if handshaking is valid but actor hasn't been registered
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class InternalError : public std::runtime_error {
+public:
+    /**
+     * @brief Constructs exception with custom error message
+     *
+     * @param reason Custom error message to explain internal error which occurred
+     */
+    explicit InternalError(const std::string& reason) : std::runtime_error { "Registration failed: " + reason } {}
+};
+
+
+/**
  * @brief Base class for `RpT::Core::InputOutputInterface` implementations based on networking protocol.
  *
  * Implements a common protocol (RPTL, or RpT Login Protocol) which is managing who is connected or disconnected, and
  * which is associating player informations (like name) with corresponding actor UID.
+ *
+ * Actors registration implementation is left to inheriting class.
  *
  * RPTL protocol can receive handshake from unregistered client connections to register them. When a client is
  * registered, it can send messages to server, which are following format: `<RPTL_command> <args>...`
@@ -166,12 +184,14 @@ protected:
      *
      * @returns Input triggered by handshake, means that it was handled successfully, and actor has been registered
      *
-     * @throws BadClientMessage if invoked command isn't valid connection handshake, or if new actor UID isn't available
+     * @throws BadClientMessage if invoked command isn't valid connection handshake (client message fault)
+     * @throws InternalError if invoked command is valid connection handshake but registration hasn't been done
+     * (server internal state fault, example: unavaiable UID)
      */
     Core::JoinedEvent handleHandshake(const std::string& client_handshake);
 
     /**
-     * @brief Handles given received RPTL message from client with associated registered actor UID and retrieves
+     * @brief Parses given received RPTL message from client with associated registered actor UID and retrieves
      * triggered input event.
      *
      * @param client_actor UID for actor representing this client
@@ -201,6 +221,43 @@ protected:
      */
     virtual Core::AnyInputEvent waitForEvent() = 0;
 
+    /**
+     * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for
+     * registration validity.
+     *
+     * @param actor_uid UID to check for availability
+     *
+     * @returns `true` is given actor UID is available, `false` otherwise
+     */
+    virtual bool isRegistered(std::uint64_t actor_uid) const = 0;
+
+    /**
+     * @brief Must register actor after valid handshaking message was received (called by superclass).
+     *
+     * It is guaranteed that `isRegistered(uid)` returns `false` before this call.
+     *
+     * Method implementation must offer following guarantees :
+     * - If it throws exception, `isRegistered(uid)` will returns `false` after this call
+     * - Else, `isRegistered(uid)` will returns `true` after this call
+     *
+     * @param uid New actor UID
+     * @param name New actor name
+     */
+    virtual void registerActor(std::uint64_t uid, std::string_view name) = 0;
+
+    /**
+     * @brief Must unregister actor after valid logout message was received (called by superclass) OR after client
+     * error occurred (might be called by subclass implementation).
+     *
+     * It is guaranteed that `isRegistered(uid)` returns `true` before this call.
+     *
+     * Method implementation CANNOT throws exception, and must guarantees that after this call, `isRegistered(uid)`
+     * will returns `false`.
+     *
+     * @param uid UID for registered actor to logout
+     */
+    virtual void unregisterActor(std::uint64_t uid) = 0;
+
 public:
     /**
      * @brief If any, poll input event inside queue. If queue is empty, wait until input event is triggered.
@@ -209,16 +266,7 @@ public:
      *
      * @returns Last triggered input event
      */
-    Core::AnyInputEvent waitForInput() override;
-
-    /**
-     * @brief Checks if an actor with given UID is already registered or not
-     *
-     * @param actor_uid UID to check for
-     *
-     * @returns `true` if any actor is registered with given UID, `false` otherwise
-     */
-    bool isRegistered(std::uint64_t actor_uid) const;
+    Core::AnyInputEvent waitForInput() final;
 };
 
 

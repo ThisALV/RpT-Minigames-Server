@@ -74,16 +74,25 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         const std::uint64_t new_actor_uid { handshake_parser.actorUID() };
 
         if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
-            throw BadClientMessage { "Actor UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
+            throw InternalError { "Player UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
 
-        const auto insertion_result { // Insert new actor's name into registry, copy string from parsed argument
-            logged_in_actors_.insert({ new_actor_uid, std::string { handshake_parser.actorName() } })
-        };
-        // Must be sure that actor has been successfully registered, this is why insertion result is saved
-        assert(insertion_result.second);
+        const std::string_view new_actor_name { handshake_parser.actorName() };
+
+        try { // Tries to register actor, implementation registration may fail
+            registerActor(new_actor_uid, new_actor_name);
+
+            // If registration hasn't been done at this point, this is an implementation error
+            assert(isRegistered(new_actor_uid));
+        } catch (const std::exception& err) { // It it fails, then registration must NOT have been done
+            // If registration is still active at this point, this is an implementation error and server must stop
+            assert(!isRegistered(new_actor_uid));
+
+            // Handshaking is valid, but server is currently unable to register actor
+            throw InternalError { err.what() };
+        }
 
         // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
-        return Core::JoinedEvent { new_actor_uid, logged_in_actors_.at(new_actor_uid) };
+        return Core::JoinedEvent { new_actor_uid, new_actor_name };
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
         throw EmptyRptlCommand {};
     }
@@ -107,10 +116,13 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
             // Returns input event triggered by received Service Request command from given actor with new SR command
             return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
         } else if (invoked_command_name == LOGOUT_COMMAND) {
-            // Logging out actor who sent LOGOUT command
-            const std::size_t removed_actors_count { logged_in_actors_.erase(client_actor) };
+            // If tried to handle unregistered client message as non-handshake message, it is an implementation error
+            assert(isRegistered(client_actor));
 
-            assert(removed_actors_count == 1); // Checks for actors being unregistered
+            unregisterActor(client_actor);
+
+            // If actor is still registered, it is an implementation error
+            assert(!isRegistered(client_actor));
 
             // Returns input event triggered by player disconnection (or unregistration)
             // RPTL command way disconnection, clean
@@ -149,10 +161,6 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
 
     // If queue is empty, new input event must be waited for by NetworkBackend implementation
     return waitForEvent();
-}
-
-bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
-    return logged_in_actors_.count(actor_uid) == 1;
 }
 
 
