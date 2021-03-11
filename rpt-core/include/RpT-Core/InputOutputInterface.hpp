@@ -87,11 +87,12 @@ public:
     virtual void outputEvent(const std::string& event) = 0;
 
     /**
-     * @brief Closes pipeline with given actor so it no longer can emit input events
+     * @brief Closes pipeline with given actor and shutdown reason so it no longer can emit input events
      *
      * @param actor UID for actor to close pipeline with
+     * @param clean_shutdown Used to determine what caused pipeline closing
      */
-    virtual void closePipelineWith(std::uint64_t actor) = 0;
+    virtual void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) = 0;
 
     /**
      * @brief Free interface IO ressources and mark it as closed

@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <RpT-Core/InputOutputInterface.hpp>
+#include <RpT-Utils/HandlingResult.hpp>
 #include <RpT-Utils/TextProtocolParser.hpp>
 
 /**
@@ -255,8 +256,9 @@ protected:
      * will returns `false`.
      *
      * @param uid UID for registered actor to logout
+     * @param disconnection_reason Message for error which caused disconnection, if any
      */
-    virtual void unregisterActor(std::uint64_t uid) = 0;
+    virtual void unregisterActor(std::uint64_t uid, const Utils::HandlingResult& disconnection_reason) = 0;
 
 public:
     /**
@@ -272,8 +274,9 @@ public:
      * @brief Shutdown connection with given actor and unregisters it
      *
      * @param actor UID which will has it's connection closed
+     * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
      */
-    void closePipelineWith(std::uint64_t actor) final;
+    void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) final;
 };
 
 

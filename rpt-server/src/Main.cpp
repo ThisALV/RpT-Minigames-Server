@@ -41,10 +41,13 @@ public:
         logger_.info("Event triggered: \"{}\"", event);
     }
 
-    void closePipelineWith(const std::uint64_t actor) override {
-        input_.setstate(std::ios_base::eofbit);
+    void closePipelineWith(const std::uint64_t actor, const RpT::Utils::HandlingResult& clean_shutdown) override {
+        input_.setstate(std::ios_base::eofbit); // Pipeline is closed, no more inputs allowed
 
         logger_.info("Closed pipeline for actor {}.", actor);
+
+        if (!clean_shutdown) // Prints error if disconnection is due to handling error
+            logger_.error("Console actor unexpected disconnection.");
     }
 };
 

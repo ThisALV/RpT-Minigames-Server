@@ -58,8 +58,9 @@ public:
             // Replies to actor with command handling result
             io_interface_.replyTo(actor_uid, sr_command_response);
         } catch (const BadServiceRequest& err) { // If command cannot be parsed, SRR cannot be sent, pipeline broken
-            // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline
-            io_interface_.closePipelineWith(actor_uid);
+            // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline with thrown
+            // exception message
+            io_interface_.closePipelineWith(actor_uid, Utils::HandlingResult { err.what() });
 
             logger_.error("SER Protocol broken for actor {}: {}. Closing pipeline...", actor_uid, err.what());
         }
@@ -69,12 +70,12 @@ public:
         logger_.debug("Timer end, continuing...");
     }
 
-    void operator()(const JoinedEvent&) {
-        throw std::runtime_error { "JoinedEvent handling not implemented yet." };
+    void operator()(const JoinedEvent& event) {
+        logger_.info("Player \"{}\" joined server as actor {}.", event.playerName(), event.actor());
     }
 
-    void operator()(const LeftEvent&) {
-        throw std::runtime_error { "LeftEvent handling not implemented yet." };
+    void operator()(const LeftEvent& event) {
+        logger_.info("Actor {} left server.", event.actor());
     }
 };
 

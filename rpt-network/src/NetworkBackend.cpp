@@ -119,7 +119,7 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
             // If tried to handle unregistered client message as non-handshake message, it is an implementation error
             assert(isRegistered(client_actor));
 
-            unregisterActor(client_actor);
+            unregisterActor(client_actor, {});
 
             // If actor is still registered, it is an implementation error
             assert(!isRegistered(client_actor));
@@ -163,12 +163,17 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
     return waitForEvent();
 }
 
-void NetworkBackend::closePipelineWith(const std::uint64_t actor) {
-    // Server must be notified by disconnection
-    pushInputEvent(Core::LeftEvent { actor, Core::LeftEvent::Reason::Crash });
+void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
+
+
+    // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
+    pushInputEvent(Core::LeftEvent {
+        actor,
+        clean_shutdown ? Core::LeftEvent::Reason::Clean : Core::LeftEvent::Reason::Crash
+    });
 
     // Actor is no longer connected, removes it from register
-    unregisterActor(actor);
+    unregisterActor(actor, Utils::HandlingResult());
 }
 
 
