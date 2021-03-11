@@ -130,19 +130,25 @@ private:
     static constexpr std::string_view EVENT_PREFIX { "EVENT" };
 
     /**
-     * @brief Parses given SR command prefix and intended service's name
+     * @brief Parses given SR command prefix, request UID and intended service's name
      *
      * @author ThisALV, https://github.com/ThisALV
      */
     class ServiceRequestCommandParser : public Utils::TextProtocolParser {
+    private:
+        std::uint64_t parsed_ruid_;
+
     public:
-        /// Constructs parser for given command, will parse exactly 2 words for prefix and service name
+        /// Constructs parser for given command, will parse exactly 3 words for prefix, RUID conversion and service name
         explicit ServiceRequestCommandParser(std::string_view sr_command);
 
         /// Checks if SR command begins with correct prefix
         bool isValidRequest() const;
 
-        /// Retrieve intended service name
+        /// Retrieves RUID
+        std::uint64_t ruid() const;
+
+        /// Retrieves intended service name
         std::string_view intendedServiceName() const;
 
         /// Retrieves command that will be passed to Service handler
@@ -195,10 +201,9 @@ public:
      * @throws BadServiceRequest if service_request is ill formed
      * @throws ServiceNotFound if service into service_request isn't registered
      *
-     * @returns Result for SR command handled by service, equivalent to `true` if done successfully, else contains
-     * error message
+     * @returns Service Request Response (SRR) which has to sent to SR actor
      */
-    Utils::HandlingResult handleServiceRequest(std::uint64_t actor, std::string_view service_request);
+    std::string handleServiceRequest(std::uint64_t actor, std::string_view service_request);
 
     /**
      * @brief Poll next Service Event command in services queue, do nothing if queue is empty

@@ -8,14 +8,29 @@ namespace RpT::Core {
 
 
 ServiceEventRequestProtocol::ServiceRequestCommandParser::ServiceRequestCommandParser(
-        const std::string_view sr_command) : Utils::TextProtocolParser { sr_command, 2 } {}
+        const std::string_view sr_command) : Utils::TextProtocolParser { sr_command, 3 } {
+
+    try {
+        const std::string ruid_copy { getParsedWord(1) }; // Required for conversion to unsigned integer
+
+        // `unsigned long long` return type, which is ALWAYS 64 bits large
+        // See: https://en.cppreference.com/w/cpp/language/types
+        parsed_ruid_ = std::stoull(ruid_copy);
+    } catch (const std::invalid_argument&) { // If parsed actor UID argument isn't a valid unsigned integer
+        throw BadServiceRequest { "Request UID must be an unsigned integer of 64 bits" };
+    }
+}
 
 bool ServiceEventRequestProtocol::ServiceRequestCommandParser::isValidRequest() const {
     return getParsedWord(0) == REQUEST_PREFIX;
 }
 
+std::uint64_t ServiceEventRequestProtocol::ServiceRequestCommandParser::ruid() const {
+    return parsed_ruid_;
+}
+
 std::string_view ServiceEventRequestProtocol::ServiceRequestCommandParser::intendedServiceName() const {
-    return getParsedWord(1);
+    return getParsedWord(2);
 }
 
 std::string_view ServiceEventRequestProtocol::ServiceRequestCommandParser::commandData() const {
@@ -79,11 +94,12 @@ bool ServiceEventRequestProtocol::isRegistered(const std::string_view service) c
     return running_services_.count(service) == 1; // Returns if service name is present among running services
 }
 
-Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t actor,
-                                                                        std::string_view service_request) {
+std::string ServiceEventRequestProtocol::handleServiceRequest(const std::uint64_t actor,
+                                                              const std::string_view service_request) {
 
     logger_.trace("Handling SR command from \"{}\": {}", actor, service_request);
 
+    std::uint64_t request_uid;
     std::string_view intended_service_name;
     std::string_view command_data;
     try { // Tries to parse received SR command
@@ -94,6 +110,7 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t
 
         // Set given parameters to corresponding parsed (or not) arguments
         intended_service_name = sr_command_parser.intendedServiceName();
+        request_uid = sr_command_parser.ruid();
         command_data = sr_command_parser.commandData();
     } catch (const Utils::NotEnoughWords& err) { // Catches error if SER command format is invalid
         throw InvalidRequestFormat { service_request, "Expected SER command prefix and request service name" };
@@ -109,15 +126,25 @@ Utils::HandlingResult ServiceEventRequestProtocol::handleServiceRequest(uint64_t
 
     logger_.trace("SR command successfully parsed, handled by service: {}", intended_service_name);
 
+    // SRR beginning is always `RESPONSE <RUID>`
+    const std::string sr_response_prefix {
+        std::string { RESPONSE_PREFIX } + ' ' + std::to_string(request_uid) + ' '
+    };
+
     // Try to handle SR command, catching errors occurring inside handlers
     try {
-        // Handles SR command and retrieves result
-        return intended_service.handleRequestCommand(actor, command_data);
-    } catch (const std::exception& err) {
+        // Handles SR command and saves result
+        const Utils::HandlingResult command_result { intended_service.handleRequestCommand(actor, command_data) };
+
+        if (command_result) // If command was successfully handled, must retrieves OK Service Request Response
+            return sr_response_prefix + "OK";
+        else // Else, command failed and KO response must be retrieved
+            return sr_response_prefix + "KO " + command_result.errorMessage();
+    } catch (const std::exception& err) { // If exception is thrown by intended service
         logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
 
-        // Retrieves error result with given caught message
-        return Utils::HandlingResult { err.what() };
+        // Retrieves error Service Request Response with given caught message `RESPONSE <RUID> KO <ERR_MSG>`
+        return sr_response_prefix + std::to_string(request_uid) + " KO " + err.what();
     }
 }
 
