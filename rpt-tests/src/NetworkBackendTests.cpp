@@ -35,7 +35,7 @@ protected:
     }
 
     /// Erase UID from dictionary
-    void unregisterActor(const std::uint64_t uid) override {
+    void unregisterActor(std::uint64_t uid, const RpT::Utils::HandlingResult& disconnection_reason) override {
         const std::size_t removed_count { actors_registry_.erase(uid) };
 
         assert(removed_count == 1); // Checks for deletion to be successfully done
@@ -59,6 +59,6 @@ public:
 
 BOOST_AUTO_TEST_SUITE(NetworkBackendTests)
 
-
+BOOST_AUTO_TEST_CASE(Nothing) {}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -182,19 +182,20 @@ BOOST_AUTO_TEST_CASE(BadPrefixAndServiceName) {
 
 BOOST_AUTO_TEST_CASE(RightPrefixAndUnknownServiceName) {
     // Service must be registered
-    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, "REQUEST NonexistentService"), ServiceNotFound);
+    BOOST_CHECK_THROW(ser_protocol.handleServiceRequest(0, "REQUEST 2 NonexistentService"), ServiceNotFound);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixServiceBEmptyCommand) {
-    // SR command is well formed but empty, so handling should return "Empty" error message
-    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest(1, "REQUEST ServiceB").errorMessage(), "Empty");
+    // SR command is well formed but empty, so handling should return KO response with "Empty" error message
+    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest(1, "REQUEST 1 ServiceB"), "RESPONSE 1 KO Empty");
     // But service last command actor property should have been updated anyway
     BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(RightPrefixServiceBNonemptyCommand) {
     // SR command is well formed and contains arguments, so handling should be done successfully
-    BOOST_CHECK(ser_protocol.handleServiceRequest(1, "REQUEST ServiceB Some random arguments"));
+    BOOST_CHECK_EQUAL(ser_protocol.handleServiceRequest(1, "REQUEST 0 ServiceB Some random arguments"),
+                      "RESPONSE 0 OK");
     // And last command actor should have been updated
     BOOST_CHECK_EQUAL(svc_b.lastCommandActor(), 1);
 }
