@@ -1,7 +1,5 @@
 #include <RpT-Core/InputEvent.hpp>
 
-#include <cassert>
-
 
 namespace RpT::Core {
 
@@ -64,23 +62,11 @@ std::string_view JoinedEvent::playerName() const {
  * PlayerLeft
  */
 
-LeftEvent::LeftEvent(uint64_t actor, Reason disconnection_reason,
-                     std::optional<std::string> err_msg) :
-    InputEvent { actor }, disconnection_reason_ { disconnection_reason }, error_message_ { std::move(err_msg) } {
-
-    // Error message must be present IF AND ONLY IF disconnection disconnectionReason is a crash
-    assert((disconnection_reason_ == Reason::Crash) == error_message_.has_value());
-}
+LeftEvent::LeftEvent(const std::uint64_t actor, const LeftEvent::Reason reason) :
+InputEvent { actor }, disconnection_reason_ { reason } {}
 
 LeftEvent::Reason LeftEvent::disconnectionReason() const {
     return disconnection_reason_;
-}
-
-const std::string& LeftEvent::errorMessage() const {
-    if (!error_message_) // Disconnection reason must be an error if error_message_ is accessed
-        throw NotAnErrorReason {};
-
-    return *error_message_; // If it an error, retrieves message
 }
 
 

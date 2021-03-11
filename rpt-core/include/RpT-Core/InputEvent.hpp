@@ -134,19 +134,6 @@ public:
 };
 
 
-/**
- * @brief Thrown by `LeftEvent::errorMessage()` if disconnection wasn't an error
- *
- * @author ThisALV, https://github.com/ThisALV
- */
-class NotAnErrorReason : public std::logic_error {
-public:
-    /**
-     * @brief Constructs error with basic error message
-     */
-    NotAnErrorReason() : std::logic_error { "Disconnection disconnectionReason wasn't an error" } {}
-};
-
 /// Event emitted when any actor leaves the server
 class LeftEvent : public InputEvent {
 public: // Required by private fields, so publicly declared before
@@ -160,19 +147,17 @@ public: // Required by private fields, so publicly declared before
 
 private:
     Reason disconnection_reason_;
-    std::optional<std::string> error_message_;
 
 public:
     /**
-     * @brief Constructs player disconnection event with given disconnection disconnectionReason.
+     * @brief Constructs player disconnection event with given reason
      *
      * @see LeftEvent::Reason
      *
-     * @param actor Actor UID
-     * @param disconnection_reason The disconnectionReason for which the player disconnected
-     * @param err_msg Optional error message, only accepted if disconnectionReason is `Reason::Crash`
+     * @param actor UID for disconnected actor
+     * @param reason Reason for player disconnection
      */
-    LeftEvent(std::uint64_t actor, Reason disconnection_reason, std::optional<std::string> err_msg = {});
+    LeftEvent(std::uint64_t actor, LeftEvent::Reason reason);
 
     /**
      * @brief Get disconnection disconnectionReason
@@ -181,14 +166,6 @@ public:
      */
     Reason disconnectionReason() const;
 
-    /**
-     * @brief Get error message for `Reason::Crash` disconnection disconnectionReason
-     *
-     * @returns Error message
-     *
-     * @throws NotAnErrorReason if `disconnectionReason()` doesn't return `Reason::Crash`
-     */
-    const std::string& errorMessage() const;
 };
 
 
