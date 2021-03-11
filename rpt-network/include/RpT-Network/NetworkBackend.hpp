@@ -267,6 +267,13 @@ public:
      * @returns Last triggered input event
      */
     Core::AnyInputEvent waitForInput() final;
+
+    /**
+     * @brief Shutdown connection with given actor and unregisters it
+     *
+     * @param actor UID which will has it's connection closed
+     */
+    void closePipelineWith(std::uint64_t actor) final;
 };
 
 

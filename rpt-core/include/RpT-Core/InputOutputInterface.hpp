@@ -26,12 +26,15 @@ using AnyInputEvent = boost::variant<NoneEvent, StopEvent, ServiceRequestEvent, 
  * Input events refers to any event that affects `Executor` runtime and state, and which are external to the main
  * loop. Example : timer trigger, received service request, stop request...
  *
- * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. This might
- * either be a service request which was successfully handled or an event emitted by a service.
+ * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. It basically
+ * is Service Events emitted by SER Protocol instance.
  *
  * An IO interface might have its own protocol over SER Protocol. This custom protocol usually manages server
  * relative features, like name for players associated with specific UID, or players who are (dis)connecting from/to
  * server.
+ *
+ * IO interface instance can be closed so input events are no longer received and server stop.
+ * Pipeline with actor can also be individually closed if broken using `closePipelineWith()` method.
  *
  * @note Interface is NOT automatically closed at destruction.
  *
@@ -84,6 +87,13 @@ public:
     virtual void outputEvent(const std::string& event) = 0;
 
     /**
+     * @brief Closes pipeline with given actor so it no longer can emit input events
+     *
+     * @param actor UID for actor to close pipeline with
+     */
+    virtual void closePipelineWith(std::uint64_t actor) = 0;
+
+    /**
      * @brief Free interface IO ressources and mark it as closed
      *
      * After call, `closed()` must return `true`.
@@ -93,7 +103,7 @@ public:
     /**
      * @brief Returns if IO interface was closed
      *
-     * @return `true` if `close()` has been called
+     * @returns `true` if `close()` has been called
      */
     bool closed() const;
 };

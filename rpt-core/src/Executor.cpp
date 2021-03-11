@@ -48,6 +48,7 @@ public:
     void operator()(const ServiceRequestEvent& event) {
         logger_.debug("Service Request command received from player \"{}\".", event.actor());
 
+        const std::uint64_t actor_uid { event.actor() };
         try { // Tries to parse SR command
             // Give SR command to parse and execute by SER Protocol
             const std::string sr_command_response {
@@ -55,10 +56,12 @@ public:
             };
 
             // Replies to actor with command handling result
-            io_interface_.replyTo(event.actor(), sr_command_response);
-        } catch (const BadServiceRequest& err) { // If command cannot be parsed, replies with error
-            // TODO RUID wasn't received, connection with actor is broken
-            logger_.error("SER Protocol broken for actor {}: {}. Shutdown connection...", event.actor(), err.what());
+            io_interface_.replyTo(actor_uid, sr_command_response);
+        } catch (const BadServiceRequest& err) { // If command cannot be parsed, SRR cannot be sent, pipeline broken
+            // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline
+            io_interface_.closePipelineWith(actor_uid);
+
+            logger_.error("SER Protocol broken for actor {}: {}. Closing pipeline...", actor_uid, err.what());
         }
     }
 

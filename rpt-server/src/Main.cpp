@@ -12,20 +12,21 @@
 class SimpleIO : public RpT::Core::InputOutputInterface {
 private:
     RpT::Utils::LoggerView logger_;
+    std::istream& input_;
 
     // Console actor (UID 0 for chat admin)
     static constexpr std::uint64_t CONSOLE_ACTOR_UID { 0 };
 
 public:
-    explicit SimpleIO(RpT::Utils::LoggingContext& logger_context)
-    : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
+    explicit SimpleIO(RpT::Utils::LoggingContext& logger_context, std::istream& input)
+    : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context }, input_ { input } {}
 
     RpT::Core::AnyInputEvent waitForInput() override {
         std::string input_command;
         std::cout << "> ";
-        std::getline(std::cin, input_command); // Read a SR command from console
+        std::getline(input_, input_command); // Read a SR command from console
 
-        if (std::cin) { // If input stream isn't closed, then emits input event with Console actor
+        if (input_) { // If input stream isn't closed, then emits input event with Console actor
             return RpT::Core::ServiceRequestEvent { CONSOLE_ACTOR_UID, input_command };
         } else { // Else, input/output interface should be closed
             return RpT::Core::StopEvent { CONSOLE_ACTOR_UID, 0 };
@@ -38,6 +39,12 @@ public:
 
     void outputEvent(const std::string& event) override {
         logger_.info("Event triggered: \"{}\"", event);
+    }
+
+    void closePipelineWith(const std::uint64_t actor) override {
+        input_.setstate(std::ios_base::eofbit);
+
+        logger_.info("Closed pipeline for actor {}.", actor);
     }
 };
 
@@ -135,7 +142,7 @@ int main(const int argc, const char** argv) {
          * required to build
          */
 
-        SimpleIO io { server_logging };
+        SimpleIO io { server_logging, std::cin };
 
         // For testing if executable is properly launched inside continuous integration, main loop must not continue
         if (cmd_line_options.has("testing")) {

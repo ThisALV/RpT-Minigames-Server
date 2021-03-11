@@ -163,5 +163,13 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
     return waitForEvent();
 }
 
+void NetworkBackend::closePipelineWith(const std::uint64_t actor) {
+    // Server must be notified by disconnection
+    pushInputEvent(Core::LeftEvent { actor, Core::LeftEvent::Reason::Crash });
+
+    // Actor is no longer connected, removes it from register
+    unregisterActor(actor);
+}
+
 
 }
