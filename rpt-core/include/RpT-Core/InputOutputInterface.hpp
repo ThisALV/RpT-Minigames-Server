@@ -77,13 +77,6 @@ public:
     virtual void replyTo(std::uint64_t sr_actor, const std::string& sr_response) = 0;
 
     /**
-     * @brief Dispatch a successfully handled service request to actors who aren't actor of `service_request`
-     *
-     * @param service_request Successfully handled request to dispatch. Will not be dispatched to its own actor.
-     */
-    virtual void outputRequest(const ServiceRequestEvent& service_request) = 0;
-
-    /**
      * @brief Dispatch an event emitted by a service to all actors
      *
      * @param event Event string representation based on SER Protocol (see `ServiceEventRequestProtocol` doc)

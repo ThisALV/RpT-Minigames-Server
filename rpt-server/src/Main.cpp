@@ -36,10 +36,6 @@ public:
         logger_.info("Reply to {} command: {}", sr_actor, sr_response);
     }
 
-    void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
-        logger_.info("Request handled from {}: \"{}\"", service_request.actor(), service_request.serviceRequest());
-    }
-
     void outputEvent(const std::string& event) override {
         logger_.info("Event triggered: \"{}\"", event);
     }

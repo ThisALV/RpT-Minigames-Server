@@ -94,28 +94,31 @@ public:
             BadServiceRequest { "SR command \"" + std::string { sr_command } + "\" ill formed: " + reason } {}
 };
 
+
 /**
  * @brief Communication protocol for Event/Request based services
  *
  * Runs a list of named services, learn more about services at `Service` class doc.
  *
- * Each service can receives request from actors and emits event to actors. Service Request (SR) and Service Event
- * (SE) both contain command data which describe what action is performed by service.
+ * Each service can receives request from actors and emits event to actors.
  *
- * A request is an action that any actor want to perform with a service. The service request command is handled
- * into protocol and the service tries ot handle it. If it was successfully handled, service sends response
- * `OK` to actor and the request must be dispatched across all other actors, else, it sends response `KO` to actor.
+ * Service Requests (SR) commands are received from actors, containing Request UID (RUID), intended service name and
+ * command handled by this named service. When SR command is handled by SER Protocol instance, it's contained
+ * service command will be handled by targeted named service.
+ * A service may returns successfully or with an error message in case of errors during command handling. Service
+ * Request Response (SRR) is sent to SR command actor so it can know about its requests result. This SRR will contain
+ * SR command RUID so it can be properly identified.
+ * SR commands are used by actors to interact with server features.
  *
- * Each sent request must come with a request UID (or RUID) to identify itself among other requests when replying to
- * it. RUID must 64bits hexadecimal represented value to avoid possible clashes.
+ * RUID format is unsigned integer of 64 bits.
  *
- * An event is an action performed by a service itself that must be dispatched across all the actors.
+ * Service Events (SR) commands are sent to actors by services in the same order they were emitted by them. SE
+ * commands are used by services to notify state changes which could be caused by an actor request or not.
  *
  * SER Protocol:
  *
  * - Service Request command (SR) : `REQUEST <RUID> <SERVICE_NAME> <command_data>`
- * - Service Request Response (SRR) : `RESPONSE <RUID> <OK>` or `RESPONSE <RUID> <KO> <ERR_MSG>`
- * - Service Request Dispatch (SRD) : `REQUEST_FROM <actor> <SERVICE_NAME> <command_data>`
+ * - Service Request Response (SRR) : `RESPONSE <RUID> OK` or `RESPONSE <RUID> KO <ERR_MSG>`
  * - Service Event command (SE) : `EVENT <SERVICE_NAME> <command_data>`
  *
  * @author ThisALV, https://github.com/ThisALV
@@ -197,9 +200,6 @@ public:
      *
      * @param actor UID for actor who's trying to execute that SR command
      * @param sr_command Service Request command to handle
-     *
-     * @throws BadServiceRequest if service_request is ill formed
-     * @throws ServiceNotFound if service into service_request isn't registered
      *
      * @returns Service Request Response (SRR) which has to sent to SR actor
      */

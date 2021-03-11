@@ -50,18 +50,15 @@ public:
 
         try { // Tries to parse SR command
             // Give SR command to parse and execute by SER Protocol
-            const Utils::HandlingResult sr_command_result {
+            const std::string sr_command_response {
                     ser_protocol_.handleServiceRequest(event.actor(), event.serviceRequest())
             };
 
             // Replies to actor with command handling result
-            io_interface_.replyTo(event, sr_command_result);
-
-            // If command was handled successfully, it must be transmitted across actors
-            if (sr_command_result)
-                io_interface_.outputRequest(event);
+            io_interface_.replyTo(event.actor(), sr_command_response);
         } catch (const BadServiceRequest& err) { // If command cannot be parsed, replies with error
-            io_interface_.replyTo(event, Utils::HandlingResult { err.what() });
+            // TODO RUID wasn't received, connection with actor is broken
+            logger_.error("SER Protocol broken for actor {}: {}. Shutdown connection...", event.actor(), err.what());
         }
     }
 
