@@ -32,18 +32,8 @@ public:
         }
     }
 
-    void replyTo(const RpT::Core::ServiceRequestEvent& service_request,
-                 const RpT::Utils::HandlingResult& sr_command_result) override {
-
-        const std::string result_message {
-            sr_command_result ? "SUCCESS" : sr_command_result.errorMessage()
-        };
-
-        logger_.info("Reply to {} command \"{}\": {}",
-                     service_request.actor(), service_request.serviceRequest(), result_message);
-
-        if (!sr_command_result)
-            logger_.error("Error: {}", result_message);
+    void replyTo(const std::uint64_t sr_actor, const std::string& sr_response) override {
+        logger_.info("Reply to {} command: {}", sr_actor, sr_response);
     }
 
     void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {

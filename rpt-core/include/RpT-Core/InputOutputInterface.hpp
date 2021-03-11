@@ -71,10 +71,10 @@ public:
      *
      * Allows to inform an actor if a requested succeeded, and if not, what error happened.
      *
-     * @param service_request Request which this response is replying to
-     * @param success Request result, evaluates to `true` if succeeded, else contains an error message
+     * @param sr_actor Actor for SR command that this SRR is replying for
+     * @param sr_response SRR for received SR command
      */
-    virtual void replyTo(const ServiceRequestEvent& service_request, const Utils::HandlingResult& sr_command_result) = 0;
+    virtual void replyTo(std::uint64_t sr_actor, const std::string& sr_response) = 0;
 
     /**
      * @brief Dispatch a successfully handled service request to actors who aren't actor of `service_request`
