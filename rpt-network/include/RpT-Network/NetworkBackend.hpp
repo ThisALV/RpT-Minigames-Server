@@ -198,8 +198,8 @@ protected:
      * @param client_actor UID for actor representing this client
      * @param client_message Received client message (received network data) to handle
      *
-     * @returns Event triggered by message, must be `Core::JoinedEvent`, `Core::LeftEvent` or
-     * `Core::ServiceRequestEvent`, as only these events can be triggered by a registered actor
+     * @returns Event triggered by message, must be `Core::LeftEvent` or `Core::ServiceRequestEvent`, as only these
+     * events can be triggered by a registered actor
      *
      * @throws BadClientMessage if given client message is ill-formed (missing args, unknown command...)
      */
