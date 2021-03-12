@@ -29,7 +29,7 @@ NetworkBackend::HandshakeParser::HandshakeParser(const NetworkBackend::RptlComma
     assert(parsed_rptl_command.isHandshake()); // Parsed handshake must be an handshake command
 
     if (!unparsedWords().empty()) // Checks for syntax, there must NOT be any remaining argument
-        throw TooManyArguments { parsed_rptl_command.invokedCommandName() };
+        throw TooManyArguments { HANDSHAKE_COMMAND };
 
     try {
         const std::string actor_uid_copy { getParsedWord(0) }; // Required for conversion to unsigned integer
@@ -116,6 +116,9 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
             // Returns input event triggered by received Service Request command from given actor with new SR command
             return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
         } else if (invoked_command_name == LOGOUT_COMMAND) {
+            if (!command_parser.invokedCommandArgs().empty()) // If any extra arg detected, command call is ill-formed
+                throw TooManyArguments { LOGOUT_COMMAND };
+
             // If tried to handle unregistered client message as non-handshake message, it is an implementation error
             assert(isRegistered(client_actor));
 
