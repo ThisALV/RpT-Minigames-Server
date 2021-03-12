@@ -107,14 +107,14 @@ public:
     /// Initializes backend with client actor 0 for `waitForEvent()` return value
     SimpleNetworkBackend() : actors_registry_ { { 0, "Console" } } {}
 
-    /// Handles given command as handshake from new client
+    /// Handles given command as handshake from new client and push emitted event into queue
     void clientConnection(const std::string& handshake_command) {
-        handleHandshake(handshake_command);
+        pushInputEvent(handleHandshake(handshake_command));
     }
 
-    /// Handles given command as message from given client
+    /// Handles given command as message from given client and push emitted event into queue
     void clientCommand(const std::uint64_t client_actor_uid, const std::string& command) {
-        handleMessage(client_actor_uid, command);
+        pushInputEvent(handleMessage(client_actor_uid, command));
     }
 
     /// Push given event directly into queue, trivial access to pushInputEvent() for testing purpose
