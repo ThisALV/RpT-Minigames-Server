@@ -239,6 +239,10 @@ BOOST_AUTO_TEST_CASE(Crash) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
+/*
+ * handleHandshake() unit tests
+ */
+
 BOOST_AUTO_TEST_SUITE(HandleHandshake)
 
 BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
@@ -292,6 +296,10 @@ BOOST_AUTO_TEST_CASE(UnavailableUid) {
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * handleMessage() unit tests
+ */
 
 BOOST_AUTO_TEST_SUITE(HandleMessage)
 
