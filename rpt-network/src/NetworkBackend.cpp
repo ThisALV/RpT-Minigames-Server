@@ -92,7 +92,7 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         }
 
         // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
-        return Core::JoinedEvent { new_actor_uid, new_actor_name };
+        return Core::JoinedEvent { new_actor_uid, std::string { new_actor_name }};
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
         throw EmptyRptlCommand {};
     }
