@@ -310,8 +310,13 @@ BOOST_AUTO_TEST_CASE(ServiceCommandAnyRequest) {
 BOOST_AUTO_TEST_CASE(ServiceCommandNoRequest) {
     SimpleNetworkBackend io_interface;
 
-    // Send SERVICE command without Service Request, which is an ill-formed message
-    BOOST_CHECK_THROW(io_interface.clientCommand(0, "SERVICE"), BadClientMessage);
+    // Send empty Service Request event with SERVICE command, NetworkBackend doesn't care about SER Protocol validity
+    io_interface.clientCommand(0, "SERVICE");
+
+    // Service Request event should have been emitted by NetworkBackend
+    const auto event { requireEventType<RpT::Core::ServiceRequestEvent>(io_interface.waitForInput()) };
+    BOOST_CHECK_EQUAL(event.actor(), 0); // Emitted by actor 0
+    BOOST_CHECK_EQUAL(event.serviceRequest(), ""); // With "Any SR command" args
 }
 
 BOOST_AUTO_TEST_CASE(LogoutCommandNoArgs) {
