@@ -244,7 +244,7 @@ protected:
      * @param uid New actor UID
      * @param name New actor name
      */
-    virtual void registerActor(std::uint64_t uid, std::string_view name) = 0;
+    virtual void registerActor(std::uint64_t uid, std::string name) = 0;
 
     /**
      * @brief Must unregister actor after valid logout message was received (called by superclass) OR after client

@@ -76,7 +76,7 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
             throw InternalError { "Player UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
 
-        const std::string_view new_actor_name { handshake_parser.actorName() };
+        std::string new_actor_name { handshake_parser.actorName() };
 
         try { // Tries to register actor, implementation registration may fail
             registerActor(new_actor_uid, new_actor_name);
@@ -92,7 +92,7 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         }
 
         // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
-        return Core::JoinedEvent { new_actor_uid, std::string { new_actor_name }};
+        return Core::JoinedEvent { new_actor_uid, std::move(new_actor_name) };
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
         throw EmptyRptlCommand {};
     }

@@ -90,8 +90,8 @@ protected:
     }
 
     /// Insert UID and name pair into dictionary
-    void registerActor(const std::uint64_t uid, const std::string_view name) override {
-        const auto insertion_result { actors_registry_.insert({ uid, std::string { name } }) };
+    void registerActor(const std::uint64_t uid, std::string name) override {
+        const auto insertion_result { actors_registry_.insert({ uid, std::move(name) }) };
 
         assert(insertion_result.second); // Checks for insertion to be successfully done
     }
