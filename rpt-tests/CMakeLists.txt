@@ -30,7 +30,8 @@ register_test(utils
         "src/UtilsTests.cpp"
         "src/CommandLineOptionsParserTests.cpp"
         "src/LoggingContextTests.cpp"
-        "src/HandlingResultTests.cpp")
+        "src/HandlingResultTests.cpp"
+        "src/TextProtocolParserTests.cpp")
 target_link_libraries(${utils_EXEC} PRIVATE rpt-utils)
 
 register_test(core
@@ -39,3 +40,8 @@ register_test(core
         "src/ServiceTests.cpp"
         "src/SerProtocolTests.cpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
+
+register_test(network
+        "src/NetworkTests.cpp"
+        "src/NetworkBackendTests.cpp")
+target_link_libraries(${network_EXEC} PRIVATE rpt-network)

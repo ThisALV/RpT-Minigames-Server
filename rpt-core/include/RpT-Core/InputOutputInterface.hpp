@@ -26,12 +26,15 @@ using AnyInputEvent = boost::variant<NoneEvent, StopEvent, ServiceRequestEvent, 
  * Input events refers to any event that affects `Executor` runtime and state, and which are external to the main
  * loop. Example : timer trigger, received service request, stop request...
  *
- * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. This might
- * either be a service request which was successfully handled or an event emitted by a service.
+ * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. It basically
+ * is Service Events emitted by SER Protocol instance.
  *
  * An IO interface might have its own protocol over SER Protocol. This custom protocol usually manages server
  * relative features, like name for players associated with specific UID, or players who are (dis)connecting from/to
  * server.
+ *
+ * IO interface instance can be closed so input events are no longer received and server stop.
+ * Pipeline with actor can also be individually closed if broken using `closePipelineWith()` method.
  *
  * @note Interface is NOT automatically closed at destruction.
  *
@@ -71,17 +74,10 @@ public:
      *
      * Allows to inform an actor if a requested succeeded, and if not, what error happened.
      *
-     * @param service_request Request which this response is replying to
-     * @param success Request result, evaluates to `true` if succeeded, else contains an error message
+     * @param sr_actor Actor for SR command that this SRR is replying for
+     * @param sr_response SRR for received SR command
      */
-    virtual void replyTo(const ServiceRequestEvent& service_request, const Utils::HandlingResult& sr_command_result) = 0;
-
-    /**
-     * @brief Dispatch a successfully handled service request to actors who aren't actor of `service_request`
-     *
-     * @param service_request Successfully handled request to dispatch. Will not be dispatched to its own actor.
-     */
-    virtual void outputRequest(const ServiceRequestEvent& service_request) = 0;
+    virtual void replyTo(std::uint64_t sr_actor, const std::string& sr_response) = 0;
 
     /**
      * @brief Dispatch an event emitted by a service to all actors
@@ -89,6 +85,14 @@ public:
      * @param event Event string representation based on SER Protocol (see `ServiceEventRequestProtocol` doc)
      */
     virtual void outputEvent(const std::string& event) = 0;
+
+    /**
+     * @brief Closes pipeline with given actor and shutdown reason so it no longer can emit input events
+     *
+     * @param actor UID for actor to close pipeline with
+     * @param clean_shutdown Used to determine what caused pipeline closing
+     */
+    virtual void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) = 0;
 
     /**
      * @brief Free interface IO ressources and mark it as closed
@@ -100,7 +104,7 @@ public:
     /**
      * @brief Returns if IO interface was closed
      *
-     * @return `true` if `close()` has been called
+     * @returns `true` if `close()` has been called
      */
     bool closed() const;
 };

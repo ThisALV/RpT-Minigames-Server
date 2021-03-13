@@ -33,8 +33,8 @@ public:
         return "";
     }
 
-    RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
-                                                    const std::vector<std::string_view>&) override {
+    RpT::Utils::HandlingResult handleRequestCommand(uint64_t actor,
+                                                    std::string_view) override {
 
         emitEvent(std::to_string(actor));
 

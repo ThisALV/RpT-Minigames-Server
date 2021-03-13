@@ -1,113 +1,140 @@
 #include <RpT-Network/NetworkBackend.hpp>
 
 #include <algorithm>
+#include <cassert>
 
 
 namespace RpT::Network {
 
 
+NetworkBackend::RptlCommandParser::RptlCommandParser(const std::string_view rptl_command)
+: Utils::TextProtocolParser { rptl_command, 1 } {}
+
+std::string_view NetworkBackend::RptlCommandParser::invokedCommandName() const {
+    return getParsedWord(0);
+}
+
+std::string_view NetworkBackend::RptlCommandParser::invokedCommandArgs() const {
+    return unparsedWords();
+}
+
+bool NetworkBackend::RptlCommandParser::isHandshake() const {
+    return invokedCommandName() == HANDSHAKE_COMMAND;
+}
+
+
+NetworkBackend::HandshakeParser::HandshakeParser(const NetworkBackend::RptlCommandParser& parsed_rptl_command)
+: Utils::TextProtocolParser { parsed_rptl_command.invokedCommandArgs(), 2 } {
+
+    assert(parsed_rptl_command.isHandshake()); // Parsed handshake must be an handshake command
+
+    if (!unparsedWords().empty()) // Checks for syntax, there must NOT be any remaining argument
+        throw TooManyArguments { HANDSHAKE_COMMAND };
+
+    try {
+        const std::string actor_uid_copy { getParsedWord(0) }; // Required for conversion to unsigned integer
+
+        // `unsigned long long` return type, which is ALWAYS 64 bits large
+        // See: https://en.cppreference.com/w/cpp/language/types
+        parsed_actor_uid_ = std::stoull(actor_uid_copy);
+    } catch (const std::invalid_argument&) { // If parsed actor UID argument isn't a valid unsigned integer
+        throw BadClientMessage { "Actor UID must be an unsigned integer of 64 bits" };
+    }
+}
+
+std::uint64_t NetworkBackend::HandshakeParser::actorUID() const {
+    return parsed_actor_uid_;
+}
+
+std::string_view NetworkBackend::HandshakeParser::actorName() const {
+    return getParsedWord(1);
+}
+
+
+NetworkBackend::ServiceCommandParser::ServiceCommandParser(
+        const NetworkBackend::RptlCommandParser& parsed_rptl_command)
+        : Utils::TextProtocolParser { parsed_rptl_command.invokedCommandArgs(), 0 } {
+
+    assert(parsed_rptl_command.invokedCommandName() == SERVICE_COMMAND); // Parsed command must be `SERVICE`
+}
+
+std::string_view NetworkBackend::ServiceCommandParser::serviceRequest() const {
+    return unparsedWords(); // SR command parsing left to SER Protocol
+}
+
+
 Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_handshake) {
-    // Necessary to access client_handshake first word substring without copying data
-    const std::string_view client_handshake_view { client_handshake };
+    try { // Tries to parse received RPTL command, will fail if command is empty
+        const RptlCommandParser command_parser { client_handshake };
 
-    // Iterators to begin and end of client message string
-    const auto client_handshake_begin { client_handshake_view.cbegin() };
-    const auto client_handshake_end { client_handshake_view.cend() };
+        if (!command_parser.isHandshake()) // Checks for invoked command, must be handshake command
+            throw BadClientMessage { "Invoked command for connection handshaking must be \"HANDSHAKE\"" };
 
-    // First space char found (or if not, end of string) determines end of RPTL protocol command invoked by client
-    const auto rptl_command_end { std::find(client_handshake_begin, client_handshake_end, ' ') };
-    // View to first word inside string, is invoked command
-    const std::string_view rptl_invoked_command {
-            client_handshake_view.substr(0, rptl_command_end - client_handshake_begin)
-    };
+        const HandshakeParser handshake_parser { command_parser };
+        const std::uint64_t new_actor_uid { handshake_parser.actorUID() };
 
-    if (rptl_invoked_command != HANDSHAKE_COMMAND) // Handshake stage, only LOGIN command is accepted
-        throw BadClientMessage { "Message is handshake as actor isn't registered yet, command \"LOGIN\" expected" };
+        if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
+            throw InternalError { "Player UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
 
-    // Part of command string which have NOT been parsed yet
-    const std::string_view not_evaluated_chars {
-            client_handshake_view.substr(rptl_command_end - client_handshake_end)
-    };
+        std::string new_actor_name { handshake_parser.actorName() };
 
-    // If there isn't any argument, then arguments following RPTL handshaking command are ill-formed
-    if (not_evaluated_chars.empty())
-        throw BadClientMessage { "Expected at least name argument for RPTL command \"LOGIN\"" };
+        try { // Tries to register actor, implementation registration may fail
+            registerActor(new_actor_uid, new_actor_name);
 
-    // Find next argument end, which is either ' ' or string end
-    const auto name_argument_end { // Search begins after RPTL command separator
-        std::find(not_evaluated_chars.cbegin() + 1, not_evaluated_chars.cend(), ' ')
-    };
+            // If registration hasn't been done at this point, this is an implementation error
+            assert(isRegistered(new_actor_uid));
+        } catch (const std::exception& err) { // It it fails, then registration must NOT have been done
+            // If registration is still active at this point, this is an implementation error and server must stop
+            assert(!isRegistered(new_actor_uid));
 
-    // Name argument position, one separator after RPTL command
-    const auto name_argument_i { rptl_command_end - client_handshake_begin + 1 };
-    // Name argument length = index for name argument end - index for name argument begin
-    const auto name_argument_len { (name_argument_end - client_handshake_begin) - name_argument_i };
-    const std::string_view name_argument { // Substring beginning after RPTL command separator, ending at arg's end
-        client_handshake_view.substr(name_argument_i, name_argument_len)
-    };
+            // Handshaking is valid, but server is currently unable to register actor
+            throw InternalError { err.what() };
+        }
 
-    if (name_argument.empty()) // Name must NOT be empty
-        throw BadClientMessage { "Actor name must NOT be empty" };
-
-    // Following arguments are ignored for now. TODO: read optional UID argument (when Protocol class released)
-
-    // New actor UID generated from UIDs counter, which is incremented
-    const std::uint64_t new_client_actor { uid_count_ };
-    // Required to be registered with corresponding UID
-    std::string name_copy { name_argument };
-
-    // Logged in, must be registered with name
-    logged_in_actors_.insert({ new_client_actor, std::move(name_copy) });
-
-    // Returns ready to be triggered input event
-    return Core::JoinedEvent { new_client_actor };
+        // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
+        return Core::JoinedEvent { new_actor_uid, std::move(new_actor_name) };
+    } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
+        throw EmptyRptlCommand {};
+    }
 }
 
 Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint64_t client_actor,
                                                                 const std::string& client_message) {
 
-    // Iterators to begin and end of client message string
-    const auto client_message_begin { client_message.cbegin() };
-    const auto client_message_end { client_message.cend() };
+    try { // Tries to parse received RPTL command, will fail if command is empty
+        const RptlCommandParser command_parser { client_message };
 
-    // First space char found (or if not, end of string) determines end of RPTL protocol command invoked by client
-    const auto rptl_command_end { std::find(client_message_begin, client_message_end, ' ') };
-    // Necessary to access client_message first word substring without copying data
-    const std::string_view client_message_view { client_message };
-    // View to first word inside string, is invoked command
-    const std::string_view rptl_invoked_command {
-        client_message_view.substr(0, rptl_command_end - client_message_begin)
-    };
+        const std::string_view invoked_command_name { command_parser.invokedCommandName() };
 
-    // Testing invoked command for each available RPTL command
-    if (rptl_invoked_command == SERVICE_COMMAND) {
-        // Part of command string which have NOT been parsed yet
-        const std::string_view not_evaluated_chars {
-                client_message_view.substr(rptl_command_end - client_message_begin)
-        };
+        // Checks for each available command name if it is invoked by received RPTL message
+        if (invoked_command_name == SERVICE_COMMAND) {
+            const ServiceCommandParser service_command_parser { command_parser }; // Parse specific SERVICE command
 
-        // If there isn't any argument, then Service Request command contained inside RPTL command is ill-formed
-        if (not_evaluated_chars.empty())
-            throw BadClientMessage { "Expected SR command as argument for RPTL command \"SERVICE\"" };
+            // Copy required to be moved as string inside emitted event
+            std::string sr_command_copy { service_command_parser.serviceRequest() };
 
-        const std::string_view sr_command { // SR command argument, begins after separator following RPTL command
-                not_evaluated_chars.substr(1)
-        };
+            // Returns input event triggered by received Service Request command from given actor with new SR command
+            return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
+        } else if (invoked_command_name == LOGOUT_COMMAND) {
+            if (!command_parser.invokedCommandArgs().empty()) // If any extra arg detected, command call is ill-formed
+                throw TooManyArguments { LOGOUT_COMMAND };
 
-        std::string sr_command_copy { sr_command }; // Required to pass received SR command into input event
+            // If tried to handle unregistered client message as non-handshake message, it is an implementation error
+            assert(isRegistered(client_actor));
 
-        // Ready to trigger ServiceRequest input event with given Service Request command
-        return Core::ServiceRequestEvent { client_actor, std::move(sr_command_copy) };
-    } else if (rptl_invoked_command == LOGOUT_COMMAND) {
-        // Logged out, must be removed from known client actors UID
-        logged_in_actors_.erase(client_actor);
+            unregisterActor(client_actor, {});
 
-        // Clean disconnection requested by client
-        return Core::LeftEvent { client_actor, Core::LeftEvent::Reason::Clean };
-    } else { // If invoked command doesn't exist, then client RPTL message is ill-formed
-        const std::string invoked_command_copy { rptl_invoked_command }; // Required for error message concatenation
+            // If actor is still registered, it is an implementation error
+            assert(!isRegistered(client_actor));
 
-        throw BadClientMessage { "This RPTL command doesn't exist: " + invoked_command_copy };
+            // Returns input event triggered by player disconnection (or unregistration)
+            // RPTL command way disconnection, clean
+            return Core::LeftEvent { client_actor, Core::LeftEvent::Reason::Clean };
+        } else { // If none of available commands is being invoked, then invoked command is unknown
+            throw BadClientMessage { "Unknown RPTL command: " + std::string { invoked_command_name } };
+        }
+    } catch (const Utils::NotEnoughWords&) { // If there isn't any word to parse (if command is empty)
+        throw EmptyRptlCommand {};
     }
 }
 
@@ -137,6 +164,19 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
 
     // If queue is empty, new input event must be waited for by NetworkBackend implementation
     return waitForEvent();
+}
+
+void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
+
+
+    // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
+    pushInputEvent(Core::LeftEvent {
+        actor,
+        clean_shutdown ? Core::LeftEvent::Reason::Clean : Core::LeftEvent::Reason::Crash
+    });
+
+    // Actor is no longer connected, removes it from register
+    unregisterActor(actor, Utils::HandlingResult());
 }
 
 

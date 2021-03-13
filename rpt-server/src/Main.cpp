@@ -1,55 +1,154 @@
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
+#include <unordered_map>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
-#include <RpT-Network/BeastWebsocketBackend.hpp>
+#include <RpT-Network/NetworkBackend.hpp>
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
 
 
 /**
- * @brief Tests purposes IO interface, should be deleted in further build
+ * @brief Tests purposes networking backend, using given input stream as source for RPTL command and given output to
+ * prompt commands
+ *
+ * Dictionary associating actors UID with theirs respective name is used as actors registry.
  */
-class SimpleIO : public RpT::Core::InputOutputInterface {
+class ConsoleIO : public RpT::Network::NetworkBackend {
 private:
-    RpT::Utils::LoggerView logger_;
-
     // Console actor (UID 0 for chat admin)
     static constexpr std::uint64_t CONSOLE_ACTOR_UID { 0 };
 
-public:
-    explicit SimpleIO(RpT::Utils::LoggingContext& logger_context)
-    : RpT::Core::InputOutputInterface {}, logger_ { "IO-Events", logger_context } {}
+    /// Thrown if command line syntax is invalid for ConsoleIO
+    class BadConsoleInput : public std::logic_error {
+    public:
+        explicit BadConsoleInput(const std::string& reason) : std::logic_error { reason } {};
+    };
 
-    RpT::Core::AnyInputEvent waitForInput() override {
-        std::string input_command;
-        std::cout << "> ";
-        std::getline(std::cin, input_command); // Read a SR command from console
+    /// Parser for input stream (console) commands, gets command actor UID with 1st argument (must be UID or *)
+    class ConsoleInputParser : public RpT::Utils::TextProtocolParser {
+    private:
+        std::optional<std::uint64_t> client_uid_; // Uninitialized of not registered
 
-        if (std::cin) { // If input stream isn't closed, then emits input event with Console actor
-            return RpT::Core::ServiceRequestEvent { CONSOLE_ACTOR_UID, input_command };
-        } else { // Else, input/output interface should be closed
-            return RpT::Core::StopEvent { CONSOLE_ACTOR_UID, 0 };
+    public:
+        /// Throws `BadConsoleInput` if doesn't begin with UID or *
+        ConsoleInputParser(const std::string_view input_line)
+                : RpT::Utils::TextProtocolParser { input_line, 1 } {
+            const std::string_view client_uid_arg { getParsedWord(0) };
+
+            if (client_uid_arg != "*") {
+                try {
+                    client_uid_ = std::stoull(std::string { client_uid_arg });
+                } catch (const std::logic_error&) {
+                    throw BadConsoleInput { "Client UID isn't an unsigned integer of 64bits" };
+                }
+            }
+        }
+
+        /// Checks if client sending RPTL command is registered or not
+        bool isRegisteredClient() const {
+            return client_uid_.has_value();
+        }
+
+        /// Retrieves UID for registered client sending RPTL command
+        std::uint64_t clientUID() const {
+            return *client_uid_;
+        }
+
+        /// Retrieves sent client message (as copied string, handle*() NetworkBackend takes const string refs)
+        std::string clientMessage() const {
+            return std::string { unparsedWords() };
+        }
+    };
+
+    RpT::Utils::LoggerView logger_;
+    std::istream& input_;
+    std::ostream& output_;
+    std::unordered_map<std::uint64_t, std::string> actors_registry_; // UID for each actor name
+
+protected:
+    /// Pushes UID / name pair into dictionary
+    void registerActor(const std::uint64_t uid, std::string name) override {
+        const auto insertion_result { actors_registry_.insert({ uid, std::move(name) }) };
+        assert(insertion_result.second); // Checks for insert operation result
+    }
+
+    /// Removes UID from dictionary, disabling Console actor registration
+    void unregisterActor(const std::uint64_t uid, const RpT::Utils::HandlingResult&) override {
+        const std::size_t removed_count { actors_registry_.erase(uid) };
+        assert(removed_count == 1); // Checks for erase operation result
+
+        // Automatically register Console actor if unregistered during client RPTL message handling
+        if (!isRegistered(CONSOLE_ACTOR_UID)) {
+            initConsole();
+            pushInputEvent(RpT::Core::JoinedEvent { CONSOLE_ACTOR_UID, "Console" });
         }
     }
 
-    void replyTo(const RpT::Core::ServiceRequestEvent& service_request,
-                 const RpT::Utils::HandlingResult& sr_command_result) override {
-
-        const std::string result_message {
-            sr_command_result ? "SUCCESS" : sr_command_result.errorMessage()
-        };
-
-        logger_.info("Reply to {} command \"{}\": {}",
-                     service_request.actor(), service_request.serviceRequest(), result_message);
-
-        if (!sr_command_result)
-            logger_.error("Error: {}", result_message);
+    /// Checks for UID key inside dictionary
+    bool isRegistered(const std::uint64_t actor_uid) const override {
+        return actors_registry_.count(actor_uid) == 1;
     }
 
-    void outputRequest(const RpT::Core::ServiceRequestEvent& service_request) override {
-        logger_.info("Request handled from {}: \"{}\"", service_request.actor(), service_request.serviceRequest());
+public:
+    /// Initializes logger, input/output stream references
+    explicit ConsoleIO(RpT::Utils::LoggingContext& logger_context, std::istream& input, std::ostream& output)
+    : logger_ { "IO-Events", logger_context }, input_ { input }, output_ { output } {}
+
+    /// Register default Console actor with UID 0
+    void initConsole() {
+        registerActor(CONSOLE_ACTOR_UID, "Console");
     }
 
+    /// Reads next command from input stream (console). Depending on current actor UID, command will be treated as
+    /// client message or client handshake for registration.
+    RpT::Core::AnyInputEvent waitForEvent() override {
+        std::string rptl_command;
+        output_ << "> ";
+        std::getline(input_, rptl_command); // Read RPTL command from input stream
+
+        if (!input_) // If input stream is closed, no more events will be emitted, server can stop
+            return RpT::Core::StopEvent { CONSOLE_ACTOR_UID, 0 };
+
+        std::optional<RpT::Core::AnyInputEvent> event_from_client; // Variant not default constructible in that case
+        try { // Tries to parse console line input into RPTL command for specified actor, if any
+            const ConsoleInputParser console_parser { rptl_command };
+
+            // RPTL command handling depends on actor which is sending it
+            if (console_parser.isRegisteredClient()) { // Specified actor UID
+                const std::uint64_t actor_client_uid { console_parser.clientUID() };
+
+                if (!isRegistered(actor_client_uid)) // Checks for current actor client registration
+                    throw BadConsoleInput { "Actor client " + std::to_string(actor_client_uid) + " unknown" };
+
+                try { // Tries to handle message, disconnect actor if it fails
+                    event_from_client = handleMessage(actor_client_uid, console_parser.clientMessage());
+                } catch (const RpT::Network::BadClientMessage& err) { // Message handling failed, client left event
+                    closePipelineWith(actor_client_uid,
+                                      RpT::Utils::HandlingResult { err.what() });
+
+                    // Unable to get event from RPTL command, console input is not valid
+                    throw;
+                }
+            } else { // "*" actor UID, for unregistered actor
+                event_from_client = handleHandshake(console_parser.clientMessage());
+            }
+        } catch (const std::logic_error& err) { // Console line input parsing failed
+            logger_.error("Unable to get event from console input: {}", err.what());
+            event_from_client = RpT::Core::NoneEvent { CONSOLE_ACTOR_UID }; // Console input invalid, skip event waiting
+        }
+
+        assert(event_from_client.has_value()); // Must have input event to return
+        return *event_from_client;
+    }
+
+    /// Logs SR Responses into backend logger
+    void replyTo(const std::uint64_t sr_actor, const std::string& sr_response) override {
+        logger_.info("Reply to {} command: {}", sr_actor, sr_response);
+    }
+
+    /// Logs SE into backend logger
     void outputEvent(const std::string& event) override {
         logger_.info("Event triggered: \"{}\"", event);
     }
@@ -149,7 +248,8 @@ int main(const int argc, const char** argv) {
          * required to build
          */
 
-        SimpleIO io { server_logging };
+        ConsoleIO io { server_logging, std::cin, std::cout };
+        io.initConsole(); // Required for Console actor to exist
 
         // For testing if executable is properly launched inside continuous integration, main loop must not continue
         if (cmd_line_options.has("testing")) {

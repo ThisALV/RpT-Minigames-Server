@@ -109,9 +109,10 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(PlayerJoined)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const JoinedEvent event { 42 };
+    const JoinedEvent event { 42, "NewActor" };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
+    BOOST_CHECK_EQUAL(event.playerName(), "NewActor");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -127,15 +128,13 @@ BOOST_AUTO_TEST_CASE(ActorNameAndCleanDisconnection) {
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Clean);
-    BOOST_CHECK_THROW(event.errorMessage(), NotAnErrorReason); // As DC was clean, there shouldn't be any error msg
 }
 
 BOOST_AUTO_TEST_CASE(ActorNameAndCrashDisconnectionWithErrorMsg) {
-    const LeftEvent event { 42, LeftEvent::Reason::Crash, "A random error" };
+    const LeftEvent event { 42, LeftEvent::Reason::Crash };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
     BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Crash);
-    BOOST_CHECK_EQUAL(event.errorMessage(), "A random error"); // There should be an error msg with this value
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,9 +1,11 @@
 #ifndef RPTOGETHER_SERVER_SERVICEEVENTREQUESTPROTOCOL_HPP
 #define RPTOGETHER_SERVER_SERVICEEVENTREQUESTPROTOCOL_HPP
 
+#include <deque>
 #include <functional>
 #include <initializer_list>
 #include <optional>
+#include <queue>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -11,6 +13,7 @@
 #include <RpT-Core/Service.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 #include <RpT-Utils/LoggerView.hpp>
+#include <RpT-Utils/TextProtocolParser.hpp>
 
 
 /**
@@ -93,28 +96,31 @@ public:
             BadServiceRequest { "SR command \"" + std::string { sr_command } + "\" ill formed: " + reason } {}
 };
 
+
 /**
  * @brief Communication protocol for Event/Request based services
  *
  * Runs a list of named services, learn more about services at `Service` class doc.
  *
- * Each service can receives request from actors and emits event to actors. Service Request (SR) and Service Event
- * (SE) both contain command data which describe what action is performed by service.
+ * Each service can receives request from actors and emits event to actors.
  *
- * A request is an action that any actor want to perform with a service. The service request command is handled
- * into protocol and the service tries ot handle it. If it was successfully handled, service sends response
- * `OK` to actor and the request must be dispatched across all other actors, else, it sends response `KO` to actor.
+ * Service Requests (SR) commands are received from actors, containing Request UID (RUID), intended service name and
+ * command handled by this named service. When SR command is handled by SER Protocol instance, it's contained
+ * service command will be handled by targeted named service.
+ * A service may returns successfully or with an error message in case of errors during command handling. Service
+ * Request Response (SRR) is sent to SR command actor so it can know about its requests result. This SRR will contain
+ * SR command RUID so it can be properly identified.
+ * SR commands are used by actors to interact with server features.
  *
- * Each sent request must come with a request UID (or RUID) to identify itself among other requests when replying to
- * it. RUID must 64bits hexadecimal represented value to avoid possible clashes.
+ * RUID format is unsigned integer of 64 bits.
  *
- * An event is an action performed by a service itself that must be dispatched across all the actors.
+ * Service Events (SR) commands are sent to actors by services in the same order they were emitted by them. SE
+ * commands are used by services to notify state changes which could be caused by an actor request or not.
  *
  * SER Protocol:
  *
  * - Service Request command (SR) : `REQUEST <RUID> <SERVICE_NAME> <command_data>`
- * - Service Request Response (SRR) : `RESPONSE <RUID> <OK>` or `RESPONSE <RUID> <KO> <ERR_MSG>`
- * - Service Request Dispatch (SRD) : `REQUEST_FROM <actor> <SERVICE_NAME> <command_data>`
+ * - Service Request Response (SRR) : `RESPONSE <RUID> OK` or `RESPONSE <RUID> KO <ERR_MSG>`
  * - Service Event command (SE) : `EVENT <SERVICE_NAME> <command_data>`
  *
  * @author ThisALV, https://github.com/ThisALV
@@ -129,16 +135,55 @@ private:
     static constexpr std::string_view EVENT_PREFIX { "EVENT" };
 
     /**
-     * @brief Get list of words inside given Service Request command, separated by char ' '
+     * @brief Parses given SR command prefix, request UID and intended service's name
      *
-     * @param sr_command Service Request command to parse
-     *
-     * @returns String views to each separated word contained inside `sr_command`
+     * @author ThisALV, https://github.com/ThisALV
      */
-    static std::vector<std::string_view> getWordsFor(std::string_view sr_command);
+    class ServiceRequestCommandParser : public Utils::TextProtocolParser {
+    private:
+        std::uint64_t parsed_ruid_;
+
+    public:
+        /// Constructs parser for given command, will parse exactly 3 words for prefix, RUID conversion and service name
+        explicit ServiceRequestCommandParser(std::string_view sr_command);
+
+        /// Checks if SR command begins with correct prefix
+        bool isValidRequest() const;
+
+        /// Retrieves RUID
+        std::uint64_t ruid() const;
+
+        /// Retrieves intended service name
+        std::string_view intendedServiceName() const;
+
+        /// Retrieves command that will be passed to Service handler
+        std::string_view commandData() const;
+    };
+
+    /// Data structure holding cached Service Event emitter inside queue
+    struct CachedServiceEventEmitter {
+        std::size_t emittedEventId;
+        Service* queuedEmitter; // Holds pointer as only constant access to top element is allowed inside priority_queue
+
+        /// Priority emitter holds event with the highest priority (lowest emitted event ID)
+        bool operator>(const CachedServiceEventEmitter& rhs) const;
+        /// Required for `std::less`
+        bool operator<(const CachedServiceEventEmitter& rhs) const;
+    };
 
     Utils::LoggerView logger_;
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
+    std::priority_queue<CachedServiceEventEmitter, std::deque<CachedServiceEventEmitter>> latest_se_emitters_cache_;
+
+    /**
+     * @brief Poll ref to Service that we know is holding Service Event with the highest priority (the lowest
+     * event ID)
+     *
+     * @note Emitters cache must NOT be empty when called.
+     *
+     * @returns Reference to Service holding the next event that must be polled by SER Protocol instance
+     */
+    Service& latestEventEmitter();
 
 public:
     /**
@@ -171,13 +216,9 @@ public:
      * @param actor UID for actor who's trying to execute that SR command
      * @param sr_command Service Request command to handle
      *
-     * @throws BadServiceRequest if service_request is ill formed
-     * @throws ServiceNotFound if service into service_request isn't registered
-     *
-     * @returns Result for SR command handled by service, equivalent to `true` if done successfully, else contains
-     * error message
+     * @returns Service Request Response (SRR) which has to sent to SR actor
      */
-    Utils::HandlingResult handleServiceRequest(std::uint64_t actor, std::string_view service_request);
+    std::string handleServiceRequest(std::uint64_t actor, std::string_view service_request);
 
     /**
      * @brief Poll next Service Event command in services queue, do nothing if queue is empty

@@ -48,20 +48,21 @@ public:
     void operator()(const ServiceRequestEvent& event) {
         logger_.debug("Service Request command received from player \"{}\".", event.actor());
 
+        const std::uint64_t actor_uid { event.actor() };
         try { // Tries to parse SR command
             // Give SR command to parse and execute by SER Protocol
-            const Utils::HandlingResult sr_command_result {
+            const std::string sr_command_response {
                     ser_protocol_.handleServiceRequest(event.actor(), event.serviceRequest())
             };
 
             // Replies to actor with command handling result
-            io_interface_.replyTo(event, sr_command_result);
+            io_interface_.replyTo(actor_uid, sr_command_response);
+        } catch (const BadServiceRequest& err) { // If command cannot be parsed, SRR cannot be sent, pipeline broken
+            // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline with thrown
+            // exception message
+            io_interface_.closePipelineWith(actor_uid, Utils::HandlingResult { err.what() });
 
-            // If command was handled successfully, it must be transmitted across actors
-            if (sr_command_result)
-                io_interface_.outputRequest(event);
-        } catch (const BadServiceRequest& err) { // If command cannot be parsed, replies with error
-            io_interface_.replyTo(event, Utils::HandlingResult { err.what() });
+            logger_.error("SER Protocol broken for actor {}: {}. Closing pipeline...", actor_uid, err.what());
         }
     }
 
@@ -69,12 +70,12 @@ public:
         logger_.debug("Timer end, continuing...");
     }
 
-    void operator()(const JoinedEvent&) {
-        throw std::runtime_error { "JoinedEvent handling not implemented yet." };
+    void operator()(const JoinedEvent& event) {
+        logger_.info("Player \"{}\" joined server as actor {}.", event.playerName(), event.actor());
     }
 
-    void operator()(const LeftEvent&) {
-        throw std::runtime_error { "LeftEvent handling not implemented yet." };
+    void operator()(const LeftEvent& event) {
+        logger_.info("Actor {} left server.", event.actor());
     }
 };
 
@@ -100,15 +101,29 @@ Executor::Executor(std::vector<boost::filesystem::path> game_resources_path, std
  */
 class ChatService : public Service {
 private:
-    bool enabled_;
-
     static constexpr bool isAdmin(const std::uint64_t actor) {
         return actor == 0;
     }
 
-    static constexpr bool isToggleCommand(const std::string_view command) {
-        return command == "/toggle";
-    }
+    /// Parses chat message, checks if it's a /toggle command, and checks if there are no extra argument given to cmd
+    class ChatCommandParser : public Utils::TextProtocolParser {
+    public:
+        /// Parse first word, needs to check if it is a command
+        explicit ChatCommandParser(const std::string_view chat_msg)
+        : Utils::TextProtocolParser { chat_msg, 1 } {}
+
+        /// Is message starting with /toggle ?
+        bool isToggle() const {
+            return getParsedWord(0) == "/toggle";
+        }
+
+        /// Are there extra unparsed arguments in addition to command ?
+        bool extraArgs() const {
+            return !unparsedWords().empty();
+        }
+    };
+
+    bool enabled_;
 
 public:
     explicit ChatService(ServiceContext& run_context) : Service { run_context }, enabled_ { true } {}
@@ -117,30 +132,33 @@ public:
         return "Chat";
     }
 
-    Utils::HandlingResult handleRequestCommand(uint64_t actor,
-                                               const std::vector<std::string_view>& sr_command_arguments) override {
+    Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
+                                               const std::string_view sr_command_data) override {
 
-        if (sr_command_arguments.empty())
+        try { // If message is empty, parsing will fail. A chat message should NOT be empty
+            const ChatCommandParser chat_msg_parser { sr_command_data }; // Parsing message for potential command
+
+            if (chat_msg_parser.isToggle()) { // If message begins with "/toggle"
+                if (chat_msg_parser.extraArgs()) // This command hasn't any arguments
+                    return Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
+
+                if (!isAdmin(actor)) // Player using this command should be admin
+                    return Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
+
+                enabled_ = !enabled_;
+
+                emitEvent(enabled_ ? "ENABLED" : "DISABLED");
+
+                return {}; // State was successfully changed
+            } else if (enabled_) { // Checks for chat being enabled or not
+                emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + std::string { sr_command_data });
+
+                return {}; // Message should be sent to all players if chat is enabled
+            } else { // If it isn't, message can't be sent
+                return Utils::HandlingResult { "Chat disabled by admin." };
+            }
+        } catch (const Utils::NotEnoughWords&) { // If there is not at least one word to parse (message is empty)
             return Utils::HandlingResult { "Message cannot be empty" };
-
-        const std::string_view first_word { sr_command_arguments.at(0) }; // Might be command
-
-        if (isToggleCommand(first_word)) { // If message begins with "/toggle"
-            if (sr_command_arguments.size() > 1) // This command hasn't any arguments
-                return Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
-
-            if (!isAdmin(actor)) // Player using this command should be admin
-                return Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
-
-            enabled_ = !enabled_;
-
-            emitEvent("TOGGLED " + std::string { enabled_ ? "true" : "false" });
-
-            return {}; // State was successfully changed
-        } else if (enabled_) {
-            return {}; // Message should be sent to all players if chat is enabled
-        } else {
-            return Utils::HandlingResult { "Chat disabled by admin." }; // If it isn't, message can't be sent
         }
     }
 };
