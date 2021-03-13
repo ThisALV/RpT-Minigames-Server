@@ -33,7 +33,7 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
 
     // Logger settings
     refreshLoggingLevel();
-    backend_->set_pattern("[%T.%e/%^%L%$] %-20n : %v");
+    backend_->set_pattern("[%T.%e/%^%L%$] %-15n : %v");
     backend_->set_error_handler(handleError);
 }
 
