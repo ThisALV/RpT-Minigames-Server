@@ -16,6 +16,7 @@ Table of Contents
       * [Requirements](#requirements)
       * [Install steps](#install-steps)
   * [Run](#run)
+  * [Special credits](#special-credits)
 
 ## Roleplay-Together project
 
@@ -73,3 +74,7 @@ rpt-server.exe --game <game_name> # for Windows MinGW users
 ./dist/install/bin/rpt-server --game <game_name> # for Linux users
 ./dist/install/bin/rpt-server.exe --game <game_name> # for Windows MinGW users
 ```
+
+## Special credits
+
+Doxygen doc-style directory is [forked](https://github.com/ThisALV/doxygen-dark-theme) from [MaJerle repo](https://github.com/MaJerle/doxygen-dark-theme) adjusting some color settings like for menus or links.
