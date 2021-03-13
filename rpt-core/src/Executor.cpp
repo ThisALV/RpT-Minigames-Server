@@ -132,8 +132,8 @@ public:
         return "Chat";
     }
 
-    Utils::HandlingResult handleRequestCommand(uint64_t actor,
-                                               std::string_view sr_command_data) override {
+    Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
+                                               const std::string_view sr_command_data) override {
 
         try { // If message is empty, parsing will fail. A chat message should NOT be empty
             const ChatCommandParser chat_msg_parser { sr_command_data }; // Parsing message for potential command
@@ -147,10 +147,12 @@ public:
 
                 enabled_ = !enabled_;
 
-                emitEvent("TOGGLED " + std::string { enabled_ ? "true" : "false" });
+                emitEvent(enabled_ ? "ENABLED" : "DISABLED");
 
                 return {}; // State was successfully changed
             } else if (enabled_) { // Checks for chat being enabled or not
+                emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + std::string { sr_command_data });
+
                 return {}; // Message should be sent to all players if chat is enabled
             } else { // If it isn't, message can't be sent
                 return Utils::HandlingResult { "Chat disabled by admin." };
