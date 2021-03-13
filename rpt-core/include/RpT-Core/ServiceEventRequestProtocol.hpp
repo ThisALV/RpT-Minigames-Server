@@ -1,9 +1,11 @@
 #ifndef RPTOGETHER_SERVER_SERVICEEVENTREQUESTPROTOCOL_HPP
 #define RPTOGETHER_SERVER_SERVICEEVENTREQUESTPROTOCOL_HPP
 
+#include <deque>
 #include <functional>
 #include <initializer_list>
 #include <optional>
+#include <queue>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -158,17 +160,30 @@ private:
         std::string_view commandData() const;
     };
 
-    /**
-     * @brief Get list of words inside given Service Request command, separated by char ' '
-     *
-     * @param sr_command Service Request command to parse
-     *
-     * @returns String views to each separated word contained inside `sr_command`
-     */
-    static std::vector<std::string_view> getWordsFor(std::string_view sr_command);
+    /// Data structure holding cached Service Event emitter inside queue
+    struct CachedServiceEventEmitter {
+        std::size_t emittedEventId;
+        Service* queuedEmitter; // Holds pointer as only constant access to top element is allowed inside priority_queue
+
+        /// Priority emitter holds event with the highest priority (lowest emitted event ID)
+        bool operator>(const CachedServiceEventEmitter& rhs) const;
+        /// Required for `std::less`
+        bool operator<(const CachedServiceEventEmitter& rhs) const;
+    };
 
     Utils::LoggerView logger_;
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
+    std::priority_queue<CachedServiceEventEmitter, std::deque<CachedServiceEventEmitter>> latest_se_emitters_cache_;
+
+    /**
+     * @brief Poll ref to Service that we know is holding Service Event with the highest priority (the lowest
+     * event ID)
+     *
+     * @note Emitters cache must NOT be empty when called.
+     *
+     * @returns Reference to Service holding the next event that must be polled by SER Protocol instance
+     */
+    Service& latestEventEmitter();
 
 public:
     /**
