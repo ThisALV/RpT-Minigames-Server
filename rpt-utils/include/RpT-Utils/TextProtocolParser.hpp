@@ -14,7 +14,7 @@ namespace RpT::Utils {
  *
  * @author ThisALV, https://github.com/ThisALV
  */
-class NotEnoughWords : std::logic_error {
+class NotEnoughWords : public std::logic_error {
 public:
     /**
      * @brief Constructs error with basic error message
