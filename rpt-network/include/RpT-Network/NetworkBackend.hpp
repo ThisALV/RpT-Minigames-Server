@@ -271,7 +271,7 @@ public:
     Core::AnyInputEvent waitForInput() final;
 
     /**
-     * @brief Shutdown connection with given actor and unregisters it
+     * @brief Shutdowns connection with given actor, unregisters it and emits input event for player disconnection
      *
      * @param actor UID which will has it's connection closed
      * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
