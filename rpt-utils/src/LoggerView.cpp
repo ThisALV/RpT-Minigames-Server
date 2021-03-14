@@ -22,7 +22,7 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
     };
 
     // Signal backend logger to context and retrieve next available UID
-    const std::size_t uid { context_.get().newLoggerFor(generic_name, *this) };
+    const std::size_t uid { context_.get().newLoggerFor(generic_name) };
     // Required for concatenation when creating unique logger name
     const std::string generic_name_copy { generic_name };
 

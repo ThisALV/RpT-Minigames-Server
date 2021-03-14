@@ -51,8 +51,6 @@ private:
     std::unordered_map<std::string_view, std::size_t> logging_backend_records_;
     // Logging level for registered loggers
     LogLevel logging_level_;
-    // Loggers that will be notified for logging level changes
-    std::vector<std::reference_wrapper<LoggerView>> registered_loggers_;
     // Logging can be disabled at any moment
     bool enabled_;
 
@@ -79,14 +77,13 @@ public:
      * general purpose
      *
      * @param generic_name General purpose for created logger
-     * @param created_logger Logger to register, logging
      *
      * @returns Expected UID for created logger
      */
-    std::size_t newLoggerFor(std::string_view generic_name, LoggerView& created_logger);
+    std::size_t newLoggerFor(std::string_view generic_name);
 
     /**
-     * @brief Update default logging level for later created and currently running loggers backend
+     * @brief Update logging level for all loggers in this context
      *
      * @param default_logging_level New logging level applied
      */

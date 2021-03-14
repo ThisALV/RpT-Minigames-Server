@@ -165,9 +165,13 @@ BOOST_AUTO_TEST_CASE(LoggersRegisteredBefore) {
     LoggingContext logging_context;
 
     // Registering new loggers into context before update
-    const LoggerView logger_a { "LoggerA", logging_context };
-    const LoggerView logger_b { "LoggerB", logging_context };
+    LoggerView logger_a { "LoggerA", logging_context };
+    LoggerView logger_b { "LoggerB", logging_context };
     logging_context.updateLoggingLevel(LogLevel::WARN); // Updating current logging level
+
+    // Refresh logging level from context for each API logger
+    logger_a.refreshLoggingLevel();
+    logger_b.refreshLoggingLevel();
 
     // Logging level should be set to WARN for all running loggers inside context
     BOOST_CHECK_EQUAL(logger_a.loggingLevel(), LogLevel::WARN);
@@ -178,13 +182,17 @@ BOOST_AUTO_TEST_CASE(LoggersRegisteredBeforeAndAfter) {
     LoggingContext logging_context;
 
     // Registering new loggers into context before update
-    const LoggerView logger_a { "LoggerA", logging_context };
-    const LoggerView logger_b { "LoggerB", logging_context };
+    LoggerView logger_a { "LoggerA", logging_context };
+    LoggerView logger_b { "LoggerB", logging_context };
     // Updating current logging level
     logging_context.updateLoggingLevel(LogLevel::WARN);
     // Registering new loggers into context after update
     const LoggerView logger_c { "LoggerC", logging_context };
     const LoggerView logger_d { "LoggerD", logging_context };
+
+    // Refresh logging level from context for each API logger created before context level updating
+    logger_a.refreshLoggingLevel();
+    logger_b.refreshLoggingLevel();
 
     // Logging level should be set to WARN for all running loggers inside context
     BOOST_CHECK_EQUAL(logger_a.loggingLevel(), LogLevel::WARN);

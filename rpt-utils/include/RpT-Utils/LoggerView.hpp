@@ -96,6 +96,8 @@ private:
     /**
      * @brief Logs message if and only if logging is enabled inside current context
      *
+     * Backend logging level is updated from current `LoggingContext` each time method is called,
+     *
      * @tparam message_level Message priority level
      * @tparam Args Formatter arguments type
      *
@@ -104,6 +106,8 @@ private:
      */
     template<LogLevel message_level, typename... Args>
     void log(const std::string_view fmt, Args&& ...args) {
+        refreshLoggingLevel(); // Automatically refresh logging level before
+
         if (context_.get().isEnabled()) { // Should be logged only if logging is enabled inside this context
             constexpr spdlog::level::level_enum backend_message_level { apiToBackendLevel(message_level) };
 
@@ -136,6 +140,8 @@ public:
 
     /**
      * @brief Update backend logger to follow current context logging level
+     *
+     * @note Automatically called before each message logging.
      */
     void refreshLoggingLevel();
 
