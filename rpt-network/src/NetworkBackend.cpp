@@ -122,7 +122,7 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
             // If tried to handle unregistered client message as non-handshake message, it is an implementation error
             assert(isRegistered(client_actor));
 
-            unregisterActor(client_actor, {});
+            unregisterActor(client_actor);
 
             // If actor is still registered, it is an implementation error
             assert(!isRegistered(client_actor));
@@ -166,9 +166,43 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
     return waitForEvent();
 }
 
+void NetworkBackend::registerActor(const std::uint64_t client_token, const std::uint64_t actor_uid, std::string name) {
+    // Checks over all actors for UID availability, it must already exists inside actors registry
+    for (const auto& client : connected_clients_) {
+        const std::optional<Actor>& client_actor { client.second };
+
+        // Only checks for initialized actors
+        if (client_actor.has_value()) {
+            if (client_actor->uid == actor_uid) // First, checks for UID
+                throw std::invalid_argument { "Actor UID " + std::to_string(actor_uid) + " unavailable" };
+
+            if (client_actor->name == name) // Then, checks for name
+                throw std::invalid_argument { "Actor name \"" + name + "\" unavailable" };
+        }
+    }
+
+    // Initializes actor for given client
+    connected_clients_.at(client_token) = { actor_uid, std::move(name) };
+    // Inserts initialized actor UID into registry
+    const auto uid_insert_result { actors_registry_.insert({ actor_uid, client_token }) };
+
+    assert(uid_insert_result.second); // Checks for UID insertion
+}
+
+void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) noexcept {
+    // Find actor UID entry with owner client token
+    const auto uid_entry { actors_registry_.find(actor_uid) };
+    // Reset actor object to uninitialized associated with owner client token
+    connected_clients_.at(uid_entry->second).reset();
+    // Remove actor UID from registry, as it is no longer owned by any client
+    actors_registry_.erase(uid_entry);
+}
+
+bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
+    return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
+}
+
 void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
-
-
     // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
     pushInputEvent(Core::LeftEvent {
         actor,
@@ -176,7 +210,7 @@ void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResu
     });
 
     // Actor is no longer connected, removes it from register
-    unregisterActor(actor, Utils::HandlingResult());
+    unregisterActor(actor);
 }
 
 

@@ -84,21 +84,60 @@ public:
 /**
  * @brief Base class for `RpT::Core::InputOutputInterface` implementations based on networking protocol.
  *
- * Implements a common protocol (RPTL, or RpT Login Protocol) which is managing who is connected or disconnected, and
- * which is associating player informations (like name) with corresponding actor UID.
+ * Implements a networking protocol (RPTL, or RpT Login Protocol) which is managing players list, connecting and
+ * disconnecting players and storing players common data (like name, or actor UID). Protocol made to exist under SER
+ * layer so it can transmits received SR commands to `Core::ServiceEventRequestProtocol` and transmits SE commands
+ * and SRR to actors client.
  *
- * Actors registration implementation is left to inheriting class.
+ * This class only implements synchronous server state and server logic operations for RPTL protocol. ALl
+ * asynchronous IO operations used to sync clients state and server state are defined by implementation (subclass).
  *
- * RPTL protocol can receive handshake from unregistered client connections to register them. When a client is
- * registered, it can send messages to server, which are following format: `<RPTL_command> <args>...`
+ * Every triggered input event is pushed into an events queue checked each time
+ * `waitForInput()` is called. If queue is empty, `waitForEvent()` (defined by implementation) waits for IO
+ * operations handled to push at least one input event into queue.
  *
- * RPTL Protocol (after connection began):
+ * @RPTL
+ *
+ * Text-based protocol specifications:
+ *
+ * Each RPTL frame is a message. Messages can be received by client from server, or by server from client. Each
+ * message must follow that syntax: `<RPTL_command> [args]...` and <RPTL_command> must NOT be empty.
+ *
+ * A client connection will be in one of the following modes: registered or unregistered. Each new client (newly
+ * opened connection) begins with unregistered state. When a client connects with server, server internally use new
+ * client token so it identifies created connection among already existing ones. This token is an implementation
+ * detail, it isn't visible outside %NetworkBackend.
+ *
+ * After connection established successfully, server waits for client to send handshaking message (client to server
+ * message using handshaking RPTL command). This handshaking message contains actor UID and name which will be
+ * associated with client token. Then, a client will go to registered mode, having an associated actor so it can
+ * interact with other clients and services.
+ *
+ * If any error occurres at RPTL / SER level, client connection is closed by server using RPTL command interrupts,
+ * providing disconnection reason if any available. Interrupt message is the same for registered and unregistered
+ * connected clients.
+ *
+ * Messages from server to clients can take two forms : private message or broadcast message. Private messages are
+ * sent to a specific registered or not client token while broadcast messages are sent to all registered clients.
+ *
+ * Commands summary:
+ *
+ * Client to server:
  * - Handshake: `LOGIN <uid> <name>`, must NOT be registered
  * - Log out (clean way): `LOGOUT`, must BE registered
  * - Send Service Request command: `SERVICE <SR_command>` (see `RpT::Core::ServiceEventRequestProtocol`), must BE
  * registered
  *
- * An events queue is internally used for handling case of many input events triggered between `waitForInput()` calls.
+ * Server to client, private:
+ * - Registration confirmation: `REGISTRATION OK [<uid_1> <actor_1>]...` or `REGISTRATION KO <ERR_MSG>`, must NOT be
+ * registered
+ * - Connection closed: `INTERRUPT [ERR_MSG]`, might be registered OR not
+ * - Service Request Response: `SERVICE <SRR>`, must BE registered, see `Core::ServiceEventRequestProtocol` for SRR doc
+ *
+ * Server to clients, broadcast, must BE registered:
+ * - Logged in actor: `LOGGED_IN <uid> <name>`
+ * - Logged out actor: `LOGGED_OUT <uid>`
+ * - Service Event command: `SERVICE <SE_command>`
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -111,6 +150,15 @@ private:
     static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
     static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
     static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
+
+    /*
+     * Prefixes for RPTL protocol commands invoked and formatted by server
+     */
+
+    static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
+    static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
+    static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
+    static constexpr std::string_view LOGGED_OUT_COMMAND { "LOGGED_OUT" };
 
     /// Parser for RPTL Protocol command, only parsing command name
     class RptlCommandParser : public Utils::TextProtocolParser {
@@ -165,7 +213,14 @@ private:
         std::string_view serviceRequest() const;
     };
 
-    std::unordered_map<std::uint64_t, std::string> logged_in_actors_;
+    /// Registered client actor has an UID and a name
+    struct Actor {
+        std::uint64_t uid;
+        std::string name;
+    };
+
+    std::unordered_map<std::uint64_t, std::optional<Actor>> connected_clients_; // Value uninitialized if unregistered
+    std::unordered_map<std::uint64_t, std::uint64_t> actors_registry_; // Actor UID with its owner client token
     std::queue<Core::AnyInputEvent> input_events_queue_;
 
     /**
@@ -177,6 +232,24 @@ private:
      */
     std::optional<Core::AnyInputEvent> pollInputEvent();
 
+    /**
+     * @brief Initializes actor associated with given client using UID and name parameters
+     *
+     * @param client_token Client to initialize actor with given data
+     * @param actor_uid New actor UID
+     * @param name New actor name
+     *
+     * @throws std::invalid_argument if given UID or name is unavailable
+     */
+    void registerActor(std::uint64_t client_token, std::uint64_t actor_uid, std::string name);
+
+    /**
+     * @brief Remove actor using given UID, `noexcept` as called inside critical error handling code
+     *
+     * @param actor_uid UID for registered actor to logout
+     */
+    void unregisterActor(std::uint64_t actor_uid) noexcept;
+
 protected:
     /**
      * @brief Parses received handshake and registers new actor
@@ -187,7 +260,7 @@ protected:
      *
      * @throws BadClientMessage if invoked command isn't valid connection handshake (client message fault)
      * @throws InternalError if invoked command is valid connection handshake but registration hasn't been done
-     * (server internal state fault, example: unavaiable UID)
+     * (server internal state fault, example: unavailable UID)
      */
     Core::JoinedEvent handleHandshake(const std::string& client_handshake);
 
@@ -224,41 +297,13 @@ protected:
 
     /**
      * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for
-     * registration validity.
+     * registration validity and determines client connection current mode (registered/unregistered).s
      *
      * @param actor_uid UID to check for availability
      *
      * @returns `true` is given actor UID is available, `false` otherwise
      */
-    virtual bool isRegistered(std::uint64_t actor_uid) const = 0;
-
-    /**
-     * @brief Must register actor after valid handshaking message was received (called by superclass).
-     *
-     * It is guaranteed that `isRegistered(uid)` returns `false` before this call.
-     *
-     * Method implementation must offer following guarantees :
-     * - If it throws exception, `isRegistered(uid)` will returns `false` after this call
-     * - Else, `isRegistered(uid)` will returns `true` after this call
-     *
-     * @param uid New actor UID
-     * @param name New actor name
-     */
-    virtual void registerActor(std::uint64_t uid, std::string name) = 0;
-
-    /**
-     * @brief Must unregister actor after valid logout message was received (called by superclass) OR after client
-     * error occurred (might be called by subclass implementation).
-     *
-     * It is guaranteed that `isRegistered(uid)` returns `true` before this call.
-     *
-     * Method implementation CANNOT throws exception, and must guarantees that after this call, `isRegistered(uid)`
-     * will returns `false`.
-     *
-     * @param uid UID for registered actor to logout
-     * @param disconnection_reason Message for error which caused disconnection, if any
-     */
-    virtual void unregisterActor(std::uint64_t uid, const Utils::HandlingResult& disconnection_reason) = 0;
+    bool isRegistered(std::uint64_t actor_uid) const;
 
 public:
     /**
@@ -271,7 +316,7 @@ public:
     Core::AnyInputEvent waitForInput() final;
 
     /**
-     * @brief Shutdowns connection with given actor, unregisters it and emits input event for player disconnection
+     * @brief Unregisters actor using given UID and emits input event for player disconnection
      *
      * @param actor UID which will has it's connection closed
      * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
