@@ -409,6 +409,9 @@ public:
      * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
      */
     void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) final;
+
+    /// Required to be virtual (overriding) for polymorphism avoiding memory leaks
+    ~NetworkBackend() override = default;
 };
 
 
