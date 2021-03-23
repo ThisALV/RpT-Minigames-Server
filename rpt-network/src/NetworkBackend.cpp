@@ -256,12 +256,21 @@ void NetworkBackend::removeClient(const std::uint64_t old_token) {
     assert(removed_clients == 1); // Must have removed exactly one connected client
 }
 
-void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
+void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
     // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
     pushInputEvent(Core::LeftEvent {
         actor,
         clean_shutdown ? Core::LeftEvent::Reason::Clean : Core::LeftEvent::Reason::Crash
     });
+
+    // Checks for actor to be registered
+    if (!isRegistered(actor))
+        throw UnknownActorUID { actor };
+
+    // Client who was owning this actor UID
+    const std::uint64_t old_owner { actors_registry_.at(actor) };
+    // Client owning actor is no longer alive
+    connected_clients_.at(old_owner).first = false;
 
     // Actor is no longer connected, removes it from register
     unregisterActor(actor);

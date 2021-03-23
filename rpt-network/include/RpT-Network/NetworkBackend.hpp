@@ -134,6 +134,23 @@ public:
 
 
 /**
+ * @brief Thrown by `NetworkBackend::closePipelineWith()` if given toke is already in use
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class UnknownActorUID : public std::logic_error {
+public:
+    /**
+     * @brief Constructs basic error message for given UID
+     *
+     * @param invalid_uid UID not used by any registered actor
+     */
+    explicit UnknownActorUID(const std::uint64_t invalid_uid)
+    : std::logic_error { "No register actor with UID " + std::to_string(invalid_uid) } {}
+};
+
+
+/**
  * @brief Base class for `RpT::Core::InputOutputInterface` implementations based on networking protocol.
  *
  * Implements a networking protocol (RPTL, or RpT Login Protocol) which is managing players list, connecting and
@@ -407,6 +424,8 @@ public:
      *
      * @param actor UID which will has it's connection closed
      * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
+     *
+     * @throws UnknownActorUID if given actor UID isn't registered
      */
     void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) final;
 
