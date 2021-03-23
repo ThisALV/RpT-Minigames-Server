@@ -82,6 +82,18 @@ public:
 
 
 /**
+ * @brief Thrown by `NetworkBackend::isAlive()` if given client to check status for doesn't exist
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class UnknownClientToken : public std::logic_error {
+public:
+    explicit UnknownClientToken(const std::uint64_t invalid_token)
+    : std::logic_error { "Client with token " + std::to_string(invalid_token) + " doesn't exist" } {}
+};
+
+
+/**
  * @brief Base class for `RpT::Core::InputOutputInterface` implementations based on networking protocol.
  *
  * Implements a networking protocol (RPTL, or RpT Login Protocol) which is managing players list, connecting and
@@ -96,9 +108,7 @@ public:
  * `waitForInput()` is called. If queue is empty, `waitForEvent()` (defined by implementation) waits for IO
  * operations handled to push at least one input event into queue.
  *
- * @RPTL
- *
- * Text-based protocol specifications:
+ * RPTL, text-based protocol specifications:
  *
  * Each RPTL frame is a message. Messages can be received by client from server, or by server from client. Each
  * message must follow that syntax: `<RPTL_command> [args]...` and <RPTL_command> must NOT be empty.
@@ -116,6 +126,9 @@ public:
  * If any error occurres at RPTL / SER level, client connection is closed by server using RPTL command interrupts,
  * providing disconnection reason if any available. Interrupt message is the same for registered and unregistered
  * connected clients.
+ *
+ * When client is unregistered after having been registered (pipeline closed, interrupted, logout command...) client
+ * is no longer alive. Implementation can checks for each client if it's alive or not. If not, connection can be closed.
  *
  * Messages from server to clients can take two forms : private message or broadcast message. Private messages are
  * sent to a specific registered or not client token while broadcast messages are sent to all registered clients.
@@ -219,8 +232,11 @@ private:
         std::string name;
     };
 
-    std::unordered_map<std::uint64_t, std::optional<Actor>> connected_clients_; // Value uninitialized if unregistered
-    std::unordered_map<std::uint64_t, std::uint64_t> actors_registry_; // Actor UID with its owner client token
+    // First value for client alive or not status; Second value uninitialized if unregistered
+    std::unordered_map<std::uint64_t, std::pair<bool, std::optional<Actor>>> connected_clients_;
+    // Actor UID with its owner client token
+    std::unordered_map<std::uint64_t, std::uint64_t> actors_registry_;
+    // Input events emitted waiting to be handled
     std::queue<Core::AnyInputEvent> input_events_queue_;
 
     /**
@@ -233,7 +249,7 @@ private:
     std::optional<Core::AnyInputEvent> pollInputEvent();
 
     /**
-     * @brief Initializes actor associated with given client using UID and name parameters
+     * @brief Initializes alive actor associated with given client using UID and name parameters
      *
      * @param client_token Client to initialize actor with given data
      * @param actor_uid New actor UID
@@ -252,8 +268,9 @@ private:
 
 protected:
     /**
-     * @brief Parses received handshake and registers new actor
+     * @brief Parses received handshake and registers new actor for given client
      *
+     * @param client_token Client to be passed into registered mode
      * @param client_handshake Handshake data received from connected client
      *
      * @returns Input triggered by handshake, means that it was handled successfully, and actor has been registered
@@ -262,7 +279,7 @@ protected:
      * @throws InternalError if invoked command is valid connection handshake but registration hasn't been done
      * (server internal state fault, example: unavailable UID)
      */
-    Core::JoinedEvent handleHandshake(const std::string& client_handshake);
+    Core::JoinedEvent handleHandshake(std::uint64_t client_token, const std::string& client_handshake);
 
     /**
      * @brief Parses given received RPTL message from client with associated registered actor UID and retrieves
@@ -295,6 +312,8 @@ protected:
      */
     virtual Core::AnyInputEvent waitForEvent() = 0;
 
+
+
     /**
      * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for
      * registration validity and determines client connection current mode (registered/unregistered).s
@@ -304,6 +323,17 @@ protected:
      * @returns `true` is given actor UID is available, `false` otherwise
      */
     bool isRegistered(std::uint64_t actor_uid) const;
+
+    /**
+     * @brief Checks if given client is alive or if its connection can be closed by implementation
+     *
+     * @param client_token Client token to check status for
+     *
+     * @returns `true` if status is alive, `false` otherwise
+     *
+     * @throws UnknownClientToken if given client doesn't exist
+     */
+    bool isAlive(std::uint64_t client_token) const;
 
 public:
     /**

@@ -63,7 +63,9 @@ std::string_view NetworkBackend::ServiceCommandParser::serviceRequest() const {
 }
 
 
-Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_handshake) {
+Core::JoinedEvent NetworkBackend::handleHandshake(const std::uint64_t client_token,
+                                                  const std::string& client_handshake) {
+
     try { // Tries to parse received RPTL command, will fail if command is empty
         const RptlCommandParser command_parser { client_handshake };
 
@@ -79,7 +81,7 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::string& client_hand
         std::string new_actor_name { handshake_parser.actorName() };
 
         try { // Tries to register actor, implementation registration may fail
-            registerActor(new_actor_uid, new_actor_name);
+            registerActor(client_token, new_actor_uid, new_actor_name);
 
             // If registration hasn't been done at this point, this is an implementation error
             assert(isRegistered(new_actor_uid));
@@ -167,11 +169,11 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
 }
 
 void NetworkBackend::registerActor(const std::uint64_t client_token, const std::uint64_t actor_uid, std::string name) {
-    // Checks over all actors for UID availability, it must already exists inside actors registry
+    // Checks over all alive actors for UID availability, it must already exists inside actors registry
     for (const auto& client : connected_clients_) {
-        const std::optional<Actor>& client_actor { client.second };
+        const std::optional<Actor>& client_actor { client.second.second };  // Second value of client status, actor
 
-        // Only checks for initialized actors
+        // Only checks for initialized actor (only alive actors can have initialized actor)
         if (client_actor.has_value()) {
             if (client_actor->uid == actor_uid) // First, checks for UID
                 throw std::invalid_argument { "Actor UID " + std::to_string(actor_uid) + " unavailable" };
@@ -181,8 +183,18 @@ void NetworkBackend::registerActor(const std::uint64_t client_token, const std::
         }
     }
 
+    // Checks for client to exists
+    if (connected_clients_.count(client_token) == 0)
+        throw UnknownClientToken { client_token };
+
+    auto& [client_alive, client_actor] { connected_clients_.at(client_token) };
+
+    // Checks for client to have alive connection
+    if (!client_alive)
+        throw std::invalid_argument { "Client with token " + std::to_string(client_token) + " is no longer alive" };
+
     // Initializes actor for given client
-    connected_clients_.at(client_token) = { actor_uid, std::move(name) };
+    client_actor = { actor_uid, std::move(name) };
     // Inserts initialized actor UID into registry
     const auto uid_insert_result { actors_registry_.insert({ actor_uid, client_token }) };
 
@@ -192,14 +204,26 @@ void NetworkBackend::registerActor(const std::uint64_t client_token, const std::
 void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) noexcept {
     // Find actor UID entry with owner client token
     const auto uid_entry { actors_registry_.find(actor_uid) };
-    // Reset actor object to uninitialized associated with owner client token
-    connected_clients_.at(uid_entry->second).reset();
+
+    // Reset actor object to uninitialized associated with owner client token and set alive status to false
+    auto& [alive, actor] { connected_clients_.at(uid_entry->second) };
+    actor.reset();
+    alive = false;
+
     // Remove actor UID from registry, as it is no longer owned by any client
     actors_registry_.erase(uid_entry);
 }
 
 bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
     return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
+}
+
+bool NetworkBackend::isAlive(std::uint64_t client_token) const {
+    // Checks for client to exist
+    if (connected_clients_.count(client_token) == 0)
+        throw UnknownClientToken { client_token };
+
+    return connected_clients_.at(client_token).first;
 }
 
 void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
