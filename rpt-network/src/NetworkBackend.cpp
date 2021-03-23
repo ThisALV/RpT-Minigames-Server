@@ -124,6 +124,11 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
             // If tried to handle unregistered client message as non-handshake message, it is an implementation error
             assert(isRegistered(client_actor));
 
+            // Client who was owning this actor UID
+            const std::uint64_t old_owner { actors_registry_.at(client_actor) };
+            // Client owning actor is no longer alive
+            connected_clients_.at(old_owner).first = false;
+
             unregisterActor(client_actor);
 
             // If actor is still registered, it is an implementation error
@@ -201,7 +206,7 @@ void NetworkBackend::registerActor(const std::uint64_t client_token, const std::
     assert(uid_insert_result.second); // Checks for UID insertion
 }
 
-void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) noexcept {
+void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     // Find actor UID entry with owner client token
     const auto uid_entry { actors_registry_.find(actor_uid) };
 
