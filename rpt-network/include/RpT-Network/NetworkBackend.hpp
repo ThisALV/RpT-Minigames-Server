@@ -82,14 +82,54 @@ public:
 
 
 /**
- * @brief Thrown by `NetworkBackend::isAlive()` if given client to check status for doesn't exist
+ * @brief Thrown by `NetworkBackend::isAlive()` and `NetworkBackend::removeClient()` if given client to check status
+ * for doesn't exist
  *
  * @author ThisALV, https://github.com/ThisALV
  */
 class UnknownClientToken : public std::logic_error {
 public:
+    /**
+     * @brief Constructs basic error message for given token
+     *
+     * @param invalid_token Token not used by any connected client
+     */
     explicit UnknownClientToken(const std::uint64_t invalid_token)
     : std::logic_error { "Client with token " + std::to_string(invalid_token) + " doesn't exist" } {}
+};
+
+
+/**
+ * @brief Thrown by `NetworkBackend::addClient()` if given toke is already in use
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class UnavailableClientToken : public std::logic_error {
+public:
+    /**
+     * @brief Constructs basic error message for given token
+     *
+     * @param used_token Token used by another connected client
+     */
+    explicit UnavailableClientToken(const std::uint64_t used_token)
+    : std::logic_error { "Client token " + std::to_string(used_token) + " is already in use" } {}
+};
+
+
+/**
+ * @brief Thrown by `NetworkBackend::removeClient()` is client using given token is in registered mode
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class StillRegistered : public std::logic_error {
+public:
+    /**
+     * @brief Constructs basic error message for given token
+     *
+     * @param used_token Token used by client into registered mode
+     */
+    explicit StillRegistered(const std::uint64_t client_token)
+    : std::logic_error { "Client with token " + std::to_string(client_token) + " is still into registered mode" } {}
 };
 
 
@@ -248,24 +288,6 @@ private:
      */
     std::optional<Core::AnyInputEvent> pollInputEvent();
 
-    /**
-     * @brief Initializes alive actor associated with given client using UID and name parameters
-     *
-     * @param client_token Client to initialize actor with given data
-     * @param actor_uid New actor UID
-     * @param name New actor name
-     *
-     * @throws std::invalid_argument if given UID or name is unavailable
-     */
-    void registerActor(std::uint64_t client_token, std::uint64_t actor_uid, std::string name);
-
-    /**
-     * @brief Remove actor using given UID, `noexcept` as called inside critical error handling code
-     *
-     * @param actor_uid UID for registered actor to logout
-     */
-    void unregisterActor(std::uint64_t actor_uid) noexcept;
-
 protected:
     /**
      * @brief Parses received handshake and registers new actor for given client
@@ -312,7 +334,42 @@ protected:
      */
     virtual Core::AnyInputEvent waitForEvent() = 0;
 
+    /**
+     * @brief Add new connected client with given token, alive and unregistered
+     *
+     * @param new_token Token used by new client
+     *
+     * @throws UnavailableClientToken if `new_token` is already used by another connected client
+     */
+    void addClient(std::uint64_t new_token);
 
+    /**
+     * @brief Remove currently connected and unregistered client (alive or not) with given token
+     *
+     * @param old_token Token used by old client, will be available after method call
+     *
+     * @throws UnknownClientToken if no client is connected using given token
+     * @throws StillRegistered if client has a registered actor UID
+     */
+    void removeClient(std::uint64_t old_token);
+
+    /**
+     * @brief Initializes alive actor associated with given client using UID and name parameters
+     *
+     * @param client_token Client to initialize actor with given data
+     * @param actor_uid New actor UID
+     * @param name New actor name
+     *
+     * @throws std::invalid_argument if given UID or name is unavailable
+     */
+    void registerActor(std::uint64_t client_token, std::uint64_t actor_uid, std::string name);
+
+    /**
+     * @brief Remove actor using given UID
+     *
+     * @param actor_uid UID for registered actor to logout
+     */
+    void unregisterActor(std::uint64_t actor_uid);
 
     /**
      * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for

@@ -226,6 +226,36 @@ bool NetworkBackend::isAlive(std::uint64_t client_token) const {
     return connected_clients_.at(client_token).first;
 }
 
+void NetworkBackend::addClient(const std::uint64_t new_token) {
+    // Checks for token availability
+    if (connected_clients_.count(new_token) == 1)
+        throw UnavailableClientToken { new_token };
+
+    // Inserts client alive and unregistered
+    const auto insert_result {
+        connected_clients_.insert({ new_token, std::make_pair<bool, std::optional<Actor>>(true, {}) })
+    };
+
+    assert(insert_result.second); // Checks for insertion to be successfully done
+}
+
+void NetworkBackend::removeClient(const std::uint64_t old_token) {
+    const auto found_client { connected_clients_.find(old_token) }; // Finds client for given token
+
+    // Checks for client to exist
+    if (found_client == connected_clients_.end())
+        throw UnknownClientToken { old_token };
+
+    // Checks if client for found pair has an associated initialized actor
+    if (found_client->second.second.has_value())
+        throw StillRegistered { old_token };
+
+    // Removes client from connected clients
+    const std::size_t removed_clients { connected_clients_.erase(old_token) };
+
+    assert(removed_clients == 1); // Must have removed exactly one connected client
+}
+
 void NetworkBackend::closePipelineWith(uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
     // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
     pushInputEvent(Core::LeftEvent {
