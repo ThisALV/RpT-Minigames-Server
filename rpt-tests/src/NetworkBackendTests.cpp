@@ -128,6 +128,16 @@ public:
         return isAlive(actor_uid);
     }
 
+    /// Trivial access to addClient() for testing purpose
+    void newClient(const std::uint64_t new_token) {
+        addClient(new_token);
+    }
+
+    /// Trivial access to removeClient() for testing purpose
+    void deleteClient(const std::uint64_t old_token, const RpT::Utils::HandlingResult& reason) {
+        removeClient(old_token, reason);
+    }
+
     /*
      * Not NetworkBackend responsibility, no need to be implemented
      */
@@ -193,6 +203,130 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     BOOST_CHECK_EQUAL(third_event.actor(), 0);
     BOOST_CHECK_EQUAL(third_event.caughtSignal(), 2);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * addClient() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(AddClient)
+
+BOOST_AUTO_TEST_CASE(AvailableToken) {
+    SimpleNetworkBackend io_interface;
+
+    // NetworkBackend mock should also have added TEST_CLIENT as connected token, just have to test for it jere
+    BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    // However, its actor should not have been registered yet
+    BOOST_CHECK(!io_interface.registered(TEST_ACTOR));
+}
+
+BOOST_AUTO_TEST_CASE(UnavailableToken) {
+    SimpleNetworkBackend io_interface;
+
+    // CONSOLE_CLIENT token already used by default client at NetworkBackend mock construction, should throws error
+    BOOST_CHECK_THROW(io_interface.newClient(CONSOLE_CLIENT), UnavailableClientToken);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * removeClient() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(RemoveClient)
+
+BOOST_AUTO_TEST_CASE(UnknownToken) {
+    SimpleNetworkBackend io_interface;
+
+    // Token 42 not used by any connected client
+    BOOST_CHECK_THROW(io_interface.deleteClient(42, {}), UnknownClientToken);
+}
+
+/*
+ * When given client has a registered actor
+ */
+
+BOOST_AUTO_TEST_SUITE(RegisteredMode)
+
+BOOST_AUTO_TEST_CASE(NormalDisconnection) {
+    SimpleNetworkBackend io_interface;
+
+    io_interface.deleteClient(CONSOLE_CLIENT, {}); // Disconnects default console client for no error reason
+
+    /*
+     * Default console client was registered, so removeClient() call should make a pipeline closure.
+     * Pipeline closure NetworkBackend implementation should have emitted a LeftEvent after actor was unregistered
+     */
+
+    BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
+
+    const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
+    BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
+    // Disconnection should be clean
+    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Clean);
+
+    // Adding new client with CONSOLE_CLIENT token should works as it has been removed
+    io_interface.newClient(CONSOLE_CLIENT);
+}
+
+BOOST_AUTO_TEST_CASE(ErrorDisconnection) {
+    SimpleNetworkBackend io_interface;
+
+    // Disconnects default console client for random error reason
+    io_interface.deleteClient(CONSOLE_CLIENT, RpT::Utils::HandlingResult { "Error reason" });
+
+    /*
+     * Default console client was registered, so removeClient() call should make a pipeline closure.
+     * Pipeline closure NetworkBackend implementation should have emitted a LeftEvent after actor was unregistered
+     */
+
+    BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
+
+    const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
+    BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
+    // Disconnection should be crash. Specific error message isn't kept by LeftEvent
+    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Crash);
+
+    // Adding new client with CONSOLE_CLIENT token should works as it has been removed
+    io_interface.newClient(CONSOLE_CLIENT);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * When given client hasn't a registered actor
+ */
+
+BOOST_AUTO_TEST_SUITE(UnregisteredMode)
+
+BOOST_AUTO_TEST_CASE(NormalDisconnection) {
+    SimpleNetworkBackend io_interface;
+
+    // Disconnects default client which wasn't registered for no error reason
+    io_interface.deleteClient(TEST_CLIENT, {});
+
+    // No pipeline closure expected, so input events queue should be empty
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
+
+    // Adding new client with CONSOLE_CLIENT token should works as it has been removed
+    io_interface.newClient(TEST_CLIENT);
+}
+
+BOOST_AUTO_TEST_CASE(ErrorDisconnection) {
+    SimpleNetworkBackend io_interface;
+
+    // Disconnects default client which wasn't registered for random error reason
+    io_interface.deleteClient(TEST_CLIENT, RpT::Utils::HandlingResult { "Error reason" });
+
+    // No pipeline closure expected, so input events queue should be empty
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
+
+    // Adding new client with CONSOLE_CLIENT token should works as it has been removed
+    io_interface.newClient(TEST_CLIENT);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()
 
