@@ -251,16 +251,18 @@ void NetworkBackend::addClient(const std::uint64_t new_token) {
     assert(insert_result.second); // Checks for insertion to be successfully done
 }
 
-void NetworkBackend::removeClient(const std::uint64_t old_token) {
+void NetworkBackend::removeClient(std::uint64_t old_token, const Utils::HandlingResult& reason) {
     const auto found_client { connected_clients_.find(old_token) }; // Finds client for given token
 
     // Checks for client to exist
     if (found_client == connected_clients_.end())
         throw UnknownClientToken { old_token };
 
-    // Checks if client for found pair has an associated initialized actor
-    if (found_client->second.second.has_value())
-        throw StillRegistered { old_token };
+    const std::optional<Actor> client_actor { found_client->second.second }; // Retrieves potential registered actor
+
+    // Checks if client for found pair has registered actor
+    if (client_actor.has_value())
+        closePipelineWith(client_actor->uid, reason); // In that case, closes pipeline for given reason
 
     // Removes client from connected clients
     const std::size_t removed_clients { connected_clients_.erase(old_token) };

@@ -117,23 +117,6 @@ public:
 
 
 /**
- * @brief Thrown by `NetworkBackend::removeClient()` is client using given token is in registered mode
- *
- * @author ThisALV, https://github.com/ThisALV
- */
-class StillRegistered : public std::logic_error {
-public:
-    /**
-     * @brief Constructs basic error message for given token
-     *
-     * @param used_token Token used by client into registered mode
-     */
-    explicit StillRegistered(const std::uint64_t client_token)
-    : std::logic_error { "Client with token " + std::to_string(client_token) + " is still into registered mode" } {}
-};
-
-
-/**
  * @brief Thrown by `NetworkBackend::closePipelineWith()` if given toke is already in use
  *
  * @author ThisALV, https://github.com/ThisALV
@@ -406,14 +389,14 @@ protected:
     void addClient(std::uint64_t new_token);
 
     /**
-     * @brief Remove currently connected and unregistered client (alive or not) with given token
+     * @brief Removes currently connected client, unregistering it and closing pipeline if required
      *
      * @param old_token Token used by old client, will be available after method call
+     * @param reason Reason for client to be disconnected
      *
      * @throws UnknownClientToken if no client is connected using given token
-     * @throws StillRegistered if client has a registered actor UID
      */
-    void removeClient(std::uint64_t old_token);
+    void removeClient(std::uint64_t old_token, const Utils::HandlingResult& reason);
 
     /**
      * @brief Checks if given client is alive or if its connection can be closed by implementation
