@@ -64,10 +64,10 @@ std::string_view NetworkBackend::ServiceCommandParser::serviceRequest() const {
 
 
 Core::JoinedEvent NetworkBackend::handleHandshake(const std::uint64_t client_token,
-                                                  const std::string& client_handshake) {
+                                                  const std::string& message_handshake) {
 
     try { // Tries to parse received RPTL command, will fail if command is empty
-        const RptlCommandParser command_parser { client_handshake };
+        const RptlCommandParser command_parser { message_handshake };
 
         if (!command_parser.isHandshake()) // Checks for invoked command, must be handshake command
             throw BadClientMessage { "Invoked command for connection handshaking must be \"HANDSHAKE\"" };
@@ -100,11 +100,11 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::uint64_t client_tok
     }
 }
 
-Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint64_t client_actor,
-                                                                const std::string& client_message) {
+Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint64_t client_actor,
+                                                                const std::string& regular_message) {
 
     try { // Tries to parse received RPTL command, will fail if command is empty
-        const RptlCommandParser command_parser { client_message };
+        const RptlCommandParser command_parser { regular_message };
 
         const std::string_view invoked_command_name { command_parser.invokedCommandName() };
 
@@ -120,9 +120,6 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
         } else if (invoked_command_name == LOGOUT_COMMAND) {
             if (!command_parser.invokedCommandArgs().empty()) // If any extra arg detected, command call is ill-formed
                 throw TooManyArguments { LOGOUT_COMMAND };
-
-            // If tried to handle unregistered client message as non-handshake message, it is an implementation error
-            assert(isRegistered(client_actor));
 
             // Client who was owning this actor UID
             const std::uint64_t old_owner { actors_registry_.at(client_actor) };
@@ -143,6 +140,16 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleMessage(const std::uint6
     } catch (const Utils::NotEnoughWords&) { // If there isn't any word to parse (if command is empty)
         throw EmptyRptlCommand {};
     }
+}
+
+Core::AnyInputEvent NetworkBackend::handleMessage(const std::uint64_t client_token, const std::string& client_message) {
+    // RPTL message source potential registered actor
+    const std::optional<Actor> client_actor { connected_clients_.at(client_token).second };
+
+    if (!client_actor.has_value()) // If no actor is registered for RPTL message client
+        return handleHandshake(client_token, client_message);
+    else // If any actor is actually registered for RPTL message client
+        return handleRegular(client_actor->uid, client_message); // Handle command for registered actor
 }
 
 void NetworkBackend::pushInputEvent(Core::AnyInputEvent input_event) {
