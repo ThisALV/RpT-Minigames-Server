@@ -168,7 +168,8 @@ public:
  * connected clients.
  *
  * When client is unregistered after having been registered (pipeline closed, interrupted, logout command...) client
- * is no longer alive. Implementation can checks for each client if it's alive or not. If not, connection can be closed.
+ * is no longer alive. Implementation can checks for each client if it's alive or not. If not, connection can be
+ * closed. An alive connection can only be closed in case of server being stopped, or if an error occurred.
  *
  * Messages from server to clients can take two forms : private message or broadcast message. Private messages are
  * sent to a specific registered or not client token while broadcast messages are sent to all registered clients.
