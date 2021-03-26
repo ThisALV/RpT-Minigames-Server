@@ -31,13 +31,13 @@ const std::string& ServiceRequestEvent::serviceRequest() const {
 }
 
 /*
- * TimerTrigger
+ * Timer
  */
 
 TimerEvent::TimerEvent(std::uint64_t actor) : InputEvent { actor } {}
 
 /*
- * StopRequest
+ * Stop
  */
 
 StopEvent::StopEvent(std::uint64_t actor, std::uint8_t caught_signal) :
@@ -48,7 +48,7 @@ std::uint8_t StopEvent::caughtSignal() const {
 }
 
 /*
- * PlayerJoined
+ * Joined
  */
 
 JoinedEvent::JoinedEvent(std::uint64_t new_actor_uid, std::string new_actor_name) :
@@ -59,13 +59,15 @@ const std::string& JoinedEvent::playerName() const {
 }
 
 /*
- * PlayerLeft
+ * Left
  */
 
-LeftEvent::LeftEvent(const std::uint64_t actor, const LeftEvent::Reason reason) :
-InputEvent { actor }, disconnection_reason_ { reason } {}
+LeftEvent::LeftEvent(const std::uint64_t actor) : InputEvent { actor } {}
 
-LeftEvent::Reason LeftEvent::disconnectionReason() const {
+LeftEvent::LeftEvent(const std::uint64_t actor, std::string error_message)
+: InputEvent { actor }, disconnection_reason_ { std::move(error_message) } {}
+
+Utils::HandlingResult LeftEvent::disconnectionReason() const {
     return disconnection_reason_;
 }
 

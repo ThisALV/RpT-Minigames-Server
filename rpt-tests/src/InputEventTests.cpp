@@ -8,25 +8,6 @@
 using namespace RpT::Core;
 
 
-// << overloads must be defined inside this namespace, so ADL can be performed to find them when boost use <<
-// operator on RpT::Core types
-namespace RpT::Core {
-
-
-// Required for Boost.Test logging
-std::ostream& operator<<(std::ostream& out, const LeftEvent::Reason dc_reason) {
-    switch (dc_reason) {
-    case LeftEvent::Reason::Clean:
-        return out << "Clean";
-    case LeftEvent::Reason::Crash:
-        return out << "Crash";
-    }
-}
-
-
-}
-
-
 BOOST_AUTO_TEST_SUITE(InputEventTests)
 
 /*
@@ -123,18 +104,23 @@ BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(PlayerLeft)
 
-BOOST_AUTO_TEST_CASE(ActorNameAndCleanDisconnection) {
-    const LeftEvent event { 42, LeftEvent::Reason::Clean };
+BOOST_AUTO_TEST_CASE(DefaultConstructor) {
+    const LeftEvent event { 42 };
+
+    const RpT::Utils::HandlingResult disconnection_reason { event.disconnectionReason() };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
-    BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Clean);
+    BOOST_CHECK(disconnection_reason); // Disconnection should have been done properly
 }
 
-BOOST_AUTO_TEST_CASE(ActorNameAndCrashDisconnectionWithErrorMsg) {
-    const LeftEvent event { 42, LeftEvent::Reason::Crash };
+BOOST_AUTO_TEST_CASE(ErrorMessageConstructor) {
+    const LeftEvent event { 42, "Error message" };
+
+    const RpT::Utils::HandlingResult disconnection_reason { event.disconnectionReason() };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
-    BOOST_CHECK_EQUAL(event.disconnectionReason(), LeftEvent::Reason::Crash);
+    BOOST_CHECK(!disconnection_reason); // Disconnection should NOT have been done properly
+    BOOST_CHECK_EQUAL(disconnection_reason.errorMessage(), "Error message"); // Checks for correct error message
 }
 
 BOOST_AUTO_TEST_SUITE_END()

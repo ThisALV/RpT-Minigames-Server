@@ -133,7 +133,7 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint6
 
             // Returns input event triggered by player disconnection (or unregistration)
             // RPTL command way disconnection, clean
-            return Core::LeftEvent { client_actor, Core::LeftEvent::Reason::Clean };
+            return Core::LeftEvent { client_actor };
         } else { // If none of available commands is being invoked, then invoked command is unknown
             throw BadClientMessage { "Unknown RPTL command: " + std::string { invoked_command_name } };
         }
@@ -271,11 +271,11 @@ void NetworkBackend::removeClient(std::uint64_t old_token, const Utils::Handling
 }
 
 void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
-    // Server must be notified by disconnection, clean if no error occurred, crash otherwise,
-    pushInputEvent(Core::LeftEvent {
-        actor,
-        clean_shutdown ? Core::LeftEvent::Reason::Clean : Core::LeftEvent::Reason::Crash
-    });
+    // Server must be notified by disconnection, clean if no error occurred, crash with error message otherwise
+    if (clean_shutdown)
+        pushInputEvent(Core::LeftEvent { actor });
+    else
+        pushInputEvent(Core::LeftEvent { actor, clean_shutdown.errorMessage() });
 
     // Checks for actor to be registered
     if (!isRegistered(actor))

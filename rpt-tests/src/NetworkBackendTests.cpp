@@ -10,34 +10,6 @@
 using namespace RpT::Network;
 
 
-// << overloads must be defined inside this namespace, so ADL can be performed to find them when boost use <<
-// operator on RpT::Core types
-namespace RpT::Core {
-// DUPLICATED FROM InputEventTests.cpp, putting it to TestingUtils.hpp would mean includes RpT-Core/InputEvent.hpp
-// for all tests files including TestingUtils.hpp, not relevant
-
-
-/**
- * @brief Prints stringified representation for `LeftEvent::Reason` value
- *
- * @param out Output stream for value
- * @param dc_reason Value to stringify and print
- *
- * @returns Stream which is printing `LeftEvent::Reason` value
- */
-std::ostream& operator<<(std::ostream& out, const LeftEvent::Reason dc_reason) {
-    switch (dc_reason) {
-    case LeftEvent::Reason::Clean:
-        return out << "Clean";
-    case LeftEvent::Reason::Crash:
-        return out << "Crash";
-    }
-}
-
-
-}
-
-
 /// Retrieves index for given input event type inside `RpT::Core::AnyInputEvent` variant types, or -1 if not listed
 template<typename InputType>
 constexpr int inputIndexFor() {
@@ -264,7 +236,7 @@ BOOST_AUTO_TEST_CASE(NormalDisconnection) {
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
     // Disconnection should be clean
-    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Clean);
+    BOOST_CHECK(left_event.disconnectionReason());
 
     // Adding new client with CONSOLE_CLIENT token should works as it has been removed
     io_interface.newClient(CONSOLE_CLIENT);
@@ -284,9 +256,12 @@ BOOST_AUTO_TEST_CASE(ErrorDisconnection) {
     BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
 
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
+    const RpT::Utils::HandlingResult disconnection_reason { left_event.disconnectionReason() };
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
-    // Disconnection should be crash. Specific error message isn't kept by LeftEvent
-    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Crash);
+    // Disconnection should be crash
+    BOOST_CHECK(!disconnection_reason);
+    // Specific error message is kept by LeftEvent
+    BOOST_CHECK_EQUAL(disconnection_reason.errorMessage(), "Error reason");
 
     // Adding new client with CONSOLE_CLIENT token should works as it has been removed
     io_interface.newClient(CONSOLE_CLIENT);
@@ -353,7 +328,7 @@ BOOST_AUTO_TEST_CASE(Clean) {
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
     // Disconnection should be clean
-    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Clean);
+    BOOST_CHECK(left_event.disconnectionReason());
 }
 
 BOOST_AUTO_TEST_CASE(Crash) {
@@ -371,9 +346,11 @@ BOOST_AUTO_TEST_CASE(Crash) {
     BOOST_CHECK(!io_interface.alive(CONSOLE_CLIENT));
 
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
+    const RpT::Utils::HandlingResult disconnection_reason { left_event.disconnectionReason() };
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
     // Disconnection should be caused by crash
-    BOOST_CHECK_EQUAL(left_event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Crash);
+    BOOST_CHECK(!disconnection_reason);
+    BOOST_CHECK_EQUAL(disconnection_reason.errorMessage(), "ERROR");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -501,7 +478,7 @@ BOOST_AUTO_TEST_CASE(LogoutCommandNoArgs) {
     const auto event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(event.actor(), CONSOLE_ACTOR);
     // LOGOUT command is the clean way for client disconnection
-    BOOST_CHECK_EQUAL(event.disconnectionReason(), RpT::Core::LeftEvent::Reason::Clean);
+    BOOST_CHECK(event.disconnectionReason());
 }
 
 BOOST_AUTO_TEST_CASE(LogoutCommandExtraArgs) {
