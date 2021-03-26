@@ -100,7 +100,7 @@ public:
 
 
 /**
- * @brief Thrown by `NetworkBackend::addClient()` if given toke is already in use
+ * @brief Thrown by `NetworkBackend::addClient()` if given token is already in use
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -113,6 +113,23 @@ public:
      */
     explicit UnavailableClientToken(const std::uint64_t used_token)
     : std::logic_error { "Client token " + std::to_string(used_token) + " is already in use" } {}
+};
+
+
+/**
+ * @brief Thrown by `NetworkBackend::removeClient()` if given client is still alive
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class AliveClient : public std::logic_error {
+public:
+    /**
+     * @brief Constructs error with basic error message for given client
+     *
+     * @param client_token Client tried to be removed
+     */
+    explicit AliveClient(const std::uint64_t client_token)
+    : std::logic_error { "Client " + std::to_string(client_token) + " is alive, cannot be removed" } {}
 };
 
 
@@ -131,6 +148,7 @@ public:
     explicit UnknownActorUID(const std::uint64_t invalid_uid)
     : std::logic_error { "No register actor with UID " + std::to_string(invalid_uid) } {}
 };
+
 
 
 /**
@@ -390,14 +408,25 @@ protected:
     void addClient(std::uint64_t new_token);
 
     /**
-     * @brief Removes currently connected client, unregistering it and closing pipeline if required
+     * @brief Makes sure that client is no longer alive, closing pipeline with actor if required
      *
-     * @param old_token Token used by old client, will be available after method call
-     * @param reason Reason for client to be disconnected
+     * @param client_token Token for client to no longer be alive
+     * @param disconnection_reason Reason for disconnection, useful for pipeline closure handling, ignored if
+     * unregistered
      *
      * @throws UnknownClientToken if no client is connected using given token
      */
-    void removeClient(std::uint64_t old_token, const Utils::HandlingResult& reason);
+    void killClient(std::uint64_t client_token, const Utils::HandlingResult& disconnection_reason = {});
+
+    /**
+     * @brief Removes client which isn't alive
+     *
+     * @param old_token Token used by old client, will be available after method call
+     *
+     * @throws UnknownClientToken if no client is connected using given token
+     * @throws AliveClient if given client is still alive so it cannot be removed
+     */
+    void removeClient(std::uint64_t old_token);
 
     /**
      * @brief Checks if given client is alive or if its connection can be closed by implementation
