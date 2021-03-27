@@ -121,11 +121,6 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint6
             if (!command_parser.invokedCommandArgs().empty()) // If any extra arg detected, command call is ill-formed
                 throw TooManyArguments { LOGOUT_COMMAND };
 
-            // Client who was owning this actor UID
-            const std::uint64_t old_owner { actors_registry_.at(client_actor) };
-            // Client owning actor is no longer alive
-            connected_clients_.at(old_owner).first = false;
-
             unregisterActor(client_actor);
 
             // If actor is still registered, it is an implementation error
@@ -199,10 +194,10 @@ void NetworkBackend::registerActor(const std::uint64_t client_token, const std::
     if (connected_clients_.count(client_token) == 0)
         throw UnknownClientToken { client_token };
 
-    auto& [client_alive, client_actor] { connected_clients_.at(client_token) };
+    auto& [client_status, client_actor] { connected_clients_.at(client_token) };
 
     // Checks for client to have alive connection
-    if (!client_alive)
+    if (!client_status.alive)
         throw std::invalid_argument { "Client with token " + std::to_string(client_token) + " is no longer alive" };
 
     // Initializes actor for given client
@@ -217,10 +212,10 @@ void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     // Find actor UID entry with owner client token
     const auto uid_entry { actors_registry_.find(actor_uid) };
 
-    // Reset actor object to uninitialized associated with owner client token and set alive status to false
-    auto& [alive, actor] { connected_clients_.at(uid_entry->second) };
+    // Reset actor object to uninitialized associated with owner client token and set status status to false
+    auto& [status, actor] { connected_clients_.at(uid_entry->second) };
     actor.reset();
-    alive = false;
+    status.alive = false; // Sets status as no longer alive, doesn't care about disconnection reason
 
     // Remove actor UID from registry, as it is no longer owned by any client
     actors_registry_.erase(uid_entry);
@@ -235,7 +230,14 @@ bool NetworkBackend::isAlive(std::uint64_t client_token) const {
     if (connected_clients_.count(client_token) == 0)
         throw UnknownClientToken { client_token };
 
-    return connected_clients_.at(client_token).first;
+    return connected_clients_.at(client_token).first.alive;
+}
+
+const Utils::HandlingResult& NetworkBackend::disconnectionReason(const std::uint64_t client_token) const {
+    if (isAlive(client_token)) // Will throws if no connected client uses this token
+        throw AliveClient { client_token };
+
+    return connected_clients_.at(client_token).first.disconnectionReason;
 }
 
 void NetworkBackend::addClient(const std::uint64_t new_token) {
@@ -245,7 +247,9 @@ void NetworkBackend::addClient(const std::uint64_t new_token) {
 
     // Inserts client alive and unregistered
     const auto insert_result {
-        connected_clients_.insert({ new_token, std::make_pair<bool, std::optional<Actor>>(true, {}) })
+        connected_clients_.insert({ // Insert new client with alive status and no disconnection error reason
+            new_token, std::make_pair<ClientStatus, std::optional<Actor>>({ true, {} }, {})
+        })
     };
 
     assert(insert_result.second); // Checks for insertion to be successfully done
@@ -255,13 +259,13 @@ void NetworkBackend::killClient(const std::uint64_t client_token, const Utils::H
     if (connected_clients_.count(client_token) == 0) // Checks for client to exist
         throw UnknownClientToken { client_token };
 
-    auto& [alive, actor] { connected_clients_.at(client_token) }; // Retrieves alive property and potential actor
+    auto& [status, actor] { connected_clients_.at(client_token) }; // Retrieves status property and potential actor
 
     if (actor.has_value()) { // If associated actor exists and is registered
-        // Then pipeline must be closed, unregistering actor and making client to no longer be alive
+        // Then pipeline must be closed, unregistering actor and making client to no longer be status
         closePipelineWith(actor->uid, disconnection_reason);
-    } else { // Else, only marks it as no longer alive
-        alive = false;
+    } else { // Else, only marks it as no longer alive status with given disconnection reason (error or not)
+        status = { false, disconnection_reason };
     }
 }
 
@@ -269,7 +273,7 @@ void NetworkBackend::removeClient(const std::uint64_t old_token) {
     if (connected_clients_.count(old_token) == 0) // Checks for client to exist
         throw UnknownClientToken { old_token };
 
-    const bool alive_client { connected_clients_.at(old_token).first }; // Retrieves alive client property
+    const bool alive_client { connected_clients_.at(old_token).first.alive }; // Retrieves alive client property
 
     // Checks for client to no longer be alive
     if (alive_client)
@@ -292,8 +296,14 @@ void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::H
     if (!isRegistered(actor))
         throw UnknownActorUID { actor };
 
+    // Saves owner from UID before removing actor entry
+    const std::uint64_t owner_client { actors_registry_.at(actor) };
+
     // Actor is no longer connected, removes it from register and marks it as no longer alive
     unregisterActor(actor);
+
+    // Set appropriate disconnection reason property to client status
+    connected_clients_.at(owner_client).first.disconnectionReason = clean_shutdown;
 }
 
 

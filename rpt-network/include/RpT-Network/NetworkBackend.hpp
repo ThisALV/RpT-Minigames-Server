@@ -129,7 +129,7 @@ public:
      * @param client_token Client tried to be removed
      */
     explicit AliveClient(const std::uint64_t client_token)
-    : std::logic_error { "Client " + std::to_string(client_token) + " is alive, cannot be removed" } {}
+    : std::logic_error { "Client " + std::to_string(client_token) + " is alive" } {}
 };
 
 
@@ -284,6 +284,12 @@ private:
         std::string_view serviceRequest() const;
     };
 
+    /// Connected client status, providing alive/dead status and disconnection reason, if no longer alive
+    struct ClientStatus {
+        bool alive;
+        Utils::HandlingResult disconnectionReason;
+    };
+
     /// Registered client actor has an UID and a name
     struct Actor {
         std::uint64_t uid;
@@ -291,7 +297,7 @@ private:
     };
 
     // First value for client alive or not status; Second value uninitialized if unregistered
-    std::unordered_map<std::uint64_t, std::pair<bool, std::optional<Actor>>> connected_clients_;
+    std::unordered_map<std::uint64_t, std::pair<ClientStatus, std::optional<Actor>>> connected_clients_;
     // Actor UID with its owner client token
     std::unordered_map<std::uint64_t, std::uint64_t> actors_registry_;
     // Input events emitted waiting to be handled
@@ -438,6 +444,18 @@ protected:
      * @throws UnknownClientToken if given client doesn't exist
      */
     bool isAlive(std::uint64_t client_token) const;
+
+    /**
+     * @brief Retrieves reason for given client to no longer be alive
+     *
+     * @param client_token Client to check disconnection reason for
+     *
+     * @returns `Utils::HandlingResult` for client disconnection
+     *
+     * @throws UnknownClientToken if given client doesn't exist
+     * @throws AliveClient if client is still alive
+     */
+    const Utils::HandlingResult& disconnectionReason(std::uint64_t client_token) const;
 
 public:
     /**

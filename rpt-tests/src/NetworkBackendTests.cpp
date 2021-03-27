@@ -115,6 +115,11 @@ public:
         killClient(client_token, disconnnection_reason);
     }
 
+    /// Trivial access to disconnectionReason() for testing purpose
+    const RpT::Utils::HandlingResult& killReason(const std::uint64_t client_token) {
+        return disconnectionReason(client_token);
+    }
+
     /*
      * Not NetworkBackend responsibility, no need to be implemented
      */
@@ -230,6 +235,8 @@ BOOST_AUTO_TEST_CASE(RegisteredNormal) {
     BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
     // Client should no longer be alive
     BOOST_CHECK(!io_interface.alive(CONSOLE_CLIENT));
+    // Disconnection should be clean
+    BOOST_CHECK(io_interface.killReason(CONSOLE_CLIENT));
 
     /*
      * As client has a registered actor, a pipeline should have happened with appropriate LeftEvent
@@ -251,6 +258,10 @@ BOOST_AUTO_TEST_CASE(RegisteredWithErrorMessage) {
     BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
     // Client should no longer be alive
     BOOST_CHECK(!io_interface.alive(CONSOLE_CLIENT));
+    // Disconnection should be crash with an error message
+    const RpT::Utils::HandlingResult status_error { io_interface.killReason(CONSOLE_CLIENT) };
+    BOOST_CHECK(!status_error);
+    BOOST_CHECK_EQUAL(status_error.errorMessage(), "Error reason");
 
     /*
      * As client has a registered actor, a pipeline should have happened with appropriate LeftEvent
@@ -264,7 +275,7 @@ BOOST_AUTO_TEST_CASE(RegisteredWithErrorMessage) {
     BOOST_CHECK_EQUAL(disconnection_reason.errorMessage(), "Error reason");
 }
 
-BOOST_AUTO_TEST_CASE(Unregistered) {
+BOOST_AUTO_TEST_CASE(UnregisteredNormal) {
     SimpleNetworkBackend io_interface;
 
     // TEST_CLIENT is already connected by default but not registered
@@ -272,6 +283,22 @@ BOOST_AUTO_TEST_CASE(Unregistered) {
 
     // TEST_CLIENT should no longer be alive
     BOOST_CHECK(!io_interface.alive(TEST_CLIENT));
+    // Disconnection should be clean
+    BOOST_CHECK(io_interface.killReason(TEST_CLIENT));
+}
+
+BOOST_AUTO_TEST_CASE(UnregisterWithErrorMessage) {
+    SimpleNetworkBackend io_interface;
+
+    // TEST_CLIENT is already connected by default but not registered
+    io_interface.kill(TEST_CLIENT, RpT::Utils::HandlingResult { "Error reason" });
+
+    // TEST_CLIENT should no longer be alive
+    BOOST_CHECK(!io_interface.alive(TEST_CLIENT));
+    // Disconnection should crash with an error message
+    const RpT::Utils::HandlingResult status_error { io_interface.killReason(TEST_CLIENT) };
+    BOOST_CHECK(!status_error);
+    BOOST_CHECK_EQUAL(status_error.errorMessage(), "Error reason");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -332,6 +359,8 @@ BOOST_AUTO_TEST_CASE(Clean) {
     BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
     // Client Console should ne longer be alive
     BOOST_CHECK(!io_interface.alive(CONSOLE_CLIENT));
+    // Disconnection should be clean
+    BOOST_CHECK(io_interface.killReason(CONSOLE_CLIENT));
 
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
@@ -352,6 +381,10 @@ BOOST_AUTO_TEST_CASE(Crash) {
     BOOST_CHECK(!io_interface.registered(CONSOLE_ACTOR));
     // Client Console should ne longer be alive
     BOOST_CHECK(!io_interface.alive(CONSOLE_CLIENT));
+    // Disconnection should be caused by crash
+    const RpT::Utils::HandlingResult status_error { io_interface.killReason(CONSOLE_CLIENT) };
+    BOOST_CHECK(!status_error);
+    BOOST_CHECK_EQUAL(status_error.errorMessage(), "ERROR");
 
     const auto left_event { requireEventType<RpT::Core::LeftEvent>(io_interface.waitForInput()) };
     const RpT::Utils::HandlingResult disconnection_reason { left_event.disconnectionReason() };
