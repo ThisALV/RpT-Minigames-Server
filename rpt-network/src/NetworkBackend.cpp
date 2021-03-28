@@ -306,5 +306,17 @@ void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::H
     connected_clients_.at(owner_client).first.disconnectionReason = clean_shutdown;
 }
 
+void NetworkBackend::replyTo(const std::uint64_t sr_actor, const std::string& sr_response) {
+    const std::uint64_t owner_client { actors_registry_.at(sr_actor) }; // Fetches client owning given actor
+
+    // Formats message for RPTL protocol using SERVICE command
+    handleServiceRequestResponse(owner_client, std::string { SERVICE_COMMAND } + ' ' + sr_response);
+}
+
+void NetworkBackend::outputEvent(const std::string& event) {
+    // Formats message for RPTL protocol using SERVICE command
+    handleServiceEvent(std::string { SERVICE_COMMAND } + ' ' + event);
+}
+
 
 }

@@ -66,6 +66,18 @@ protected:
         return RpT::Core::NoneEvent { CONSOLE_ACTOR };
     }
 
+    /*
+     * Message sending isn't NetworkBackend responsibility
+     */
+
+    void handleServiceRequestResponse(std::uint64_t, std::string) override {
+        throw std::logic_error { "Not implemented" };
+    }
+
+    void handleServiceEvent(std::string) override {
+        throw std::logic_error { "Not implemented" };
+    }
+
 public:
     /// Initializes backend with client actor 0 for `waitForEvent()` return value and unregistered client 1 for
     /// testing purpose
@@ -118,18 +130,6 @@ public:
     /// Trivial access to disconnectionReason() for testing purpose
     const RpT::Utils::HandlingResult& killReason(const std::uint64_t client_token) {
         return disconnectionReason(client_token);
-    }
-
-    /*
-     * Not NetworkBackend responsibility, no need to be implemented
-     */
-
-    void replyTo(const std::uint64_t, const std::string&) override {
-        throw std::runtime_error { "replyTo() not implemented for mocking" };
-    }
-
-    void outputEvent(const std::string&) override {
-        throw std::runtime_error { "outputEvent() not implemented for mocking" };
     }
 };
 

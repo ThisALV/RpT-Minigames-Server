@@ -457,6 +457,21 @@ protected:
      */
     const Utils::HandlingResult& disconnectionReason(std::uint64_t client_token) const;
 
+    /**
+     * @brief Handles RPTL Service Event command from server to clients
+     *
+     * @param se_command RPTL protocol Service command for SE message
+     */
+    virtual void handleServiceEvent(std::string se_command) = 0;
+
+    /**
+     * @brief Handles RPTL Service Request Response command from server to given client
+     *
+     * @param sr_actor_owner Client token for actor who's receiving a SRR
+     * @param sr_response RTPL protocol Service command for SRR message
+     */
+    virtual void handleServiceRequestResponse(std::uint64_t sr_actor_owner, std::string sr_response) = 0;
+
 public:
     /**
      * @brief If any, poll input event inside queue. If queue is empty, wait until input event is triggered.
@@ -476,6 +491,21 @@ public:
      * @throws UnknownActorUID if given actor UID isn't registered
      */
     void closePipelineWith(std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) final;
+
+    /**
+     * @brief Fetches client for given actor and calls RPTL implementation to send given SRR formatted for RPTL protocol
+     *
+     * @param sr_actor Actor UID to fetch client for
+     * @param sr_response Service Request Response formatted as SER command (see `Core::ServiceEventRequestProtocol`)
+     */
+    void replyTo(std::uint64_t sr_actor, const std::string &sr_response) final;
+
+    /**
+     * @brief Calls RPTL implementation to send given SE formatted for RPTL protocol
+     *
+     * @param event Service Event command formatted as SER command (see `Core::ServiceEventRequestProtocol`)
+     */
+    void outputEvent(const std::string &event) final;
 
     /// Required to be virtual (overriding) for polymorphism avoiding memory leaks
     ~NetworkBackend() override = default;
