@@ -214,23 +214,6 @@ public:
  */
 class NetworkBackend : public Core::InputOutputInterface {
 private:
-    /*
-     * Prefixes for RPTL protocol commands invoked by clients
-     */
-
-    static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
-    static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
-    static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
-
-    /*
-     * Prefixes for RPTL protocol commands invoked and formatted by server
-     */
-
-    static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
-    static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
-    static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
-    static constexpr std::string_view LOGGED_OUT_COMMAND { "LOGGED_OUT" };
-
     /// Parser for RPTL Protocol command, only parsing command name
     class RptlCommandParser : public Utils::TextProtocolParser {
     public:
@@ -359,6 +342,23 @@ private:
     Core::AnyInputEvent handleRegular(std::uint64_t client_actor, const std::string& regular_message);
 
 protected:
+    /*
+     * Prefixes for RPTL protocol commands invoked by clients
+     */
+
+    static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
+    static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
+    static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
+
+    /*
+     * Prefixes for RPTL protocol commands invoked and formatted by server
+     */
+
+    static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
+    static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
+    static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
+    static constexpr std::string_view LOGGED_OUT_COMMAND { "LOGGED_OUT" };
+
     /**
      * @brief Parses given RPTL message from given client and retrieves triggered input event
      *
