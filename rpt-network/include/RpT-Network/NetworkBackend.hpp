@@ -378,6 +378,17 @@ protected:
     Core::AnyInputEvent handleMessage(std::uint64_t client_token, const std::string& client_message);
 
     /**
+     * @brief Checks if given client token has an associated actor ID
+     *
+     * @param client_token Client token to check actor for
+     *
+     * @returns `true` if given client is registered, `false` otherwise
+     *
+     * @throws UnknownClientToken if no connected client is using given token
+     */
+    bool isClientRegistered(std::uint64_t client_token) const;
+
+    /**
      * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for
      * registration validity and determines client connection current mode (registered/unregistered)
      *

@@ -225,6 +225,14 @@ void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     actors_registry_.erase(uid_entry);
 }
 
+bool NetworkBackend::isClientRegistered(const std::uint64_t client_token) const {
+    if (connected_clients_.count(client_token) == 0) // Checks for given client to exist
+        throw UnknownClientToken { client_token };
+
+    // Returns if an actor is initialized for given client token entry
+    return connected_clients_.at(client_token).second.has_value();
+}
+
 bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
     return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
 }
