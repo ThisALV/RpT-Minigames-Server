@@ -175,7 +175,7 @@ public:
  * A client connection will be in one of the following modes: registered or unregistered. Each new client (newly
  * opened connection) begins with unregistered state. When a client connects with server, server internally use new
  * client token so it identifies created connection among already existing ones. This token is an implementation
- * detail, it isn't visible outside %NetworkBackend.
+ * detail, it isn't visible outside %NetworkBackend and its RPTL protocol implementation.
  *
  * After connection established successfully, server waits for client to send handshaking message (client to server
  * message using handshaking RPTL command). This handshaking message contains actor UID and name which will be
@@ -201,8 +201,7 @@ public:
  * - Send Service Request command: `SERVICE <SR_command>` (see `Core::ServiceEventRequestProtocol`), must BE registered
  *
  * Server to client, private:
- * - Registration confirmation: `REGISTRATION OK [<uid_1> <actor_1>]...` or `REGISTRATION KO <ERR_MSG>`, must NOT be
- * registered
+ * - Registration confirmation: `REGISTRATION [<uid_1> <actor_1>]...`, must NOT be registered
  * - Connection closed: `INTERRUPT [ERR_MSG]`, might be registered OR not
  * - Service Request Response: `SERVICE <SRR>`, must BE registered, see `Core::ServiceEventRequestProtocol` for SRR doc
  *
@@ -483,14 +482,11 @@ protected:
     virtual void handleServiceRequestResponse(std::uint64_t sr_actor_owner, std::string sr_response) = 0;
 
     /**
-     * @brief Handles given registration result to formats a valid Registration command to confirm or not client
-     * actor registration
-     *
-     * @param registration_ok Client actor registration result
+     * @brief Generates RPTL Registration command message from current server state
      *
      * @returns Formatted RPTL message using `REGISTRATION` command
      */
-    std::string formatRegistrationMessage(const Utils::HandlingResult& registration_ok) const;
+    std::string formatRegistrationMessage() const;
 
 public:
     /**

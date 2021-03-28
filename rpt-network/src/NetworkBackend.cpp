@@ -229,21 +229,15 @@ bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
     return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
 }
 
-std::string NetworkBackend::formatRegistrationMessage(const Utils::HandlingResult& registration_ok) const {
+std::string NetworkBackend::formatRegistrationMessage() const {
     std::string registration_message { REGISTRATION_COMMAND };
 
-    if (registration_ok) { // If registration handled successfully by RPTL protocol implementation
-        registration_message += " OK";
+    for (const auto& client : connected_clients_) { // Checks for each connected client
+        // Get potential Actor from client value inside clients dictionary entry
+        const std::optional<Actor>& potential_actor { client.second.second };
 
-        for (const auto& client : connected_clients_) { // Checks for each connected client
-            // Get potential Actor from client value inside clients dictonnary entry
-            const std::optional<Actor>& potential_actor { client.second.second };
-
-            if (potential_actor.has_value()) // If client is registered with actor, append to sync registration message
-                registration_message += ' ' + std::to_string(potential_actor->uid) + ' ' + potential_actor->name;
-        }
-    } else { // If registration failed
-        registration_message += " KO " + registration_ok.errorMessage();
+        if (potential_actor.has_value()) // If client is registered with actor, append to sync registration message
+            registration_message += ' ' + std::to_string(potential_actor->uid) + ' ' + potential_actor->name;
     }
 
     return registration_message;
