@@ -7,8 +7,6 @@
 #include <boost/beast.hpp>
 #include <RpT-Network/NetworkBackend.hpp>
 #include <RpT-Utils/LoggerView.hpp>
-#include "BeastWebsocketBackendBase.inl"
-#include "NetworkBackend.hpp"
 
 /**
  * @file BeastWebsocketBackendBase.hpp
@@ -95,6 +93,48 @@ private:
         }
     };
 
+    /// Visits given input event triggered by client RPTL message, handlings depends on input event type
+    class TriggeredInputEventVisitor {
+    private:
+        BeastWebsocketBackendBase& protocol_instance_;
+        const std::uint64_t sender_token_;
+
+    public:
+        /**
+         * @brief Constructs input event visitor acting on given backend instance triggered by message sent from
+         * given client
+         *
+         * @param protocol_instance Backend the triggered event will be acting on
+         * @param sender_token Token for client which sent message that triggered visited event
+         */
+        TriggeredInputEventVisitor(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t sender_token)
+        : protocol_instance_ { protocol_instance }, sender_token_ { sender_token } {}
+
+        /// Makes callable object
+        /// Template method used instead of one method for each type as only few event types are actually checked
+        template<typename InputEventT>
+        void operator()(InputEventT&& input_event) {
+            using SimplifiedInputEventT = std::decay_t<InputEventT>;
+
+            // If logout message was sent, client is actor is unregistered and must be removed
+            // If handshaking was done, a new actor was registered and clients should be synced about that
+            if constexpr (std::is_same_v<Core::LeftEvent, SimplifiedInputEventT>) {
+                // As LeftEvent was triggered by logout command, we know no error occurred
+                protocol_instance_.killClient(sender_token_);
+            } else if constexpr (std::is_same_v<Core::JoinedEvent, SimplifiedInputEventT>) {
+                // Handshaking done, actor has been registered for given client, sync new actor owner
+                protocol_instance_.privateMessage(sender_token_, formatRegistrationMessage());
+
+                // Then sync all registered clients, including newly registered one
+                std::string logged_in_message { // Formats Logged In RPTL command message
+                        LOGGED_IN_COMMAND + (' ' + std::to_string(input_event.actor())) + ' ' + input_event.playerName()
+                };
+
+                protocol_instance_.broadcastMessage(std::move(logged_in_message));
+            }
+        }
+    };
+
     // Provides logging features
     Utils::LoggerView logger_;
     // Websocket stream using given TCP stream for each client token
@@ -135,8 +175,9 @@ private:
         // Buffer read by Asio to send message, data must be valid until handler call finished
         const boost::asio::const_buffer message_buffer { message_owner->data(), message_owner->size() };
 
-        for (auto& [client_token, stream] : clients_stream_) // For each connected client, send message with buffer
-            stream.async_write(message_buffer, SentMessageHandler { *this, client_token, message_owner });
+        for (auto& [client_token, stream] : clients_stream_) // For each registered client, send message with buffer
+            if (isClientRegistered(client_token))
+                stream.async_write(message_buffer, SentMessageHandler { *this, client_token, message_owner });
     }
 
     /**
@@ -190,7 +231,7 @@ private:
                 } else { // Ignores if server stopped
                     const std::string error_message { err.message() };
 
-                    logger_.error("Failed message reception from client {}: {}", client_token, error_message)
+                    logger_.error("Failed to receive message from client {}: {}", client_token, error_message)
                     // Error occurred, sets correct message handling result with given error message
                     message_handling_result = Utils::HandlingResult { error_message };
                 }
@@ -206,21 +247,21 @@ private:
 
             // Reinterpret generic void pointer to cstring with buffer-defined message length
             std::string rptl_message { reinterpret_cast<const char*>(readonly_buffer.data()), readonly_buffer.size() };
-            Core::AnyInputEvent client_triggered_event { handleMessage(client_token, rptl_message) };
 
-            // Visits triggered event checking for type
-            client_triggered_event.apply_visitor([this, client_token](auto&& input_event) {
-                using InputEventT = std::decay_t<decltype(input_event)>;
+            try {
+                Core::AnyInputEvent client_triggered_event { handleMessage(client_token, rptl_message) };
 
-                // If logout message was sent, client is actor is unregistered and must be removed
-                if constexpr (std::is_same_v<Core::LeftEvent, InputEventT>) {
-                    // As LeftEvent was triggered by logout command, we know no error occurred
-                    killClient(client_token);
-                }
-            });
+                // Visits triggered event checking for type
+                client_triggered_event.apply_visitor(TriggeredInputEventVisitor { *this, client_token });
 
-            pushInputEvent(std::move(client_triggered_event)); // Moves triggered event into queue
-            listenMessageFrom(client_token); // Then listens next message from current client
+                pushInputEvent(std::move(client_triggered_event)); // Moves triggered event into queue
+                listenMessageFrom(client_token); // Then listens next message from current client
+            } catch (const std::exception& err) { // Any error in message handling results into client disconnection
+                logger_.error("During {} message handling: {}", client_token, err.what());
+
+                // Client will be disconnect for thrown error reason
+                killClient(client_token, Utils::HandlingResult { err.what() });
+            }
         });
     }
 
@@ -234,15 +275,24 @@ private:
 
         // Retrieves stream closure reason to determine Websocket close frame close code
         const Utils::HandlingResult& disconnection_reason { disconnectionReason(client_token) };
+        // Formatting interrupt command message to inform client that it will be disconnected and why
+        std::string interrupt_message { INTERRUPT_COMMAND };
 
         // By default, set to normal close code
         boost::beast::websocket::close_reason websocket_close_reason { boost::beast::websocket::normal };
 
-        // If any error occurred for disconnection to happen, then set error code with custom message
+        // If any error occurred for disconnection to happen, then set error code with custom message, for close
+        // frame and interrupt command message
         if (!disconnection_reason) {
+            const std::string& error_message { disconnection_reason.errorMessage() };
+
+            interrupt_message += ' ' + error_message;
+
             websocket_close_reason.code = boost::beast::websocket::close_code::abnormal;
-            websocket_close_reason.reason = disconnection_reason.errorMessage();
+            websocket_close_reason.reason = error_message;
         }
+
+        privateMessage(client_token, std::move(interrupt_message));
 
         clients_stream_.at(client_token).async_close(websocket_close_reason, [this, client_token](
                 const boost::system::error_code& err) {
@@ -256,6 +306,12 @@ private:
             const std::size_t removed_streams_count { clients_stream_.erase(client_token) };
 
             assert(removed_streams_count == 1); // Must be sure that only one stream was properly removed
+
+            // Formats logout command message to sync clients with server
+            // Priority to separator and to_string conversion to ensure string concatenation
+            std::string logout_message { LOGGED_OUT_COMMAND + (' ' + std::to_string(client_token)) };
+            // Then we can broadcast and confirm client is logged out and sync clients with server
+            broadcastMessage(std::move(logout_message));
         });
     }
 
@@ -312,6 +368,16 @@ protected:
         }
     }
 
+    /// Broadcasts given RPTL Service Event command
+    void handleServiceEvent(std::string se_command) final {
+        broadcastMessage(std::move(se_command));
+    }
+
+    /// Sends private message to appropriate client containing RPTL Service Request Response
+    void handleServiceRequestResponse(const std::uint64_t sr_actor_owner, std::string sr_response) final {
+        privateMessage(sr_actor_owner, std::move(sr_response));
+    }
+
 public:
     /**
      * @brief Constructs IO interface listening for new TCP connections on given local endpoint
@@ -344,15 +410,16 @@ public:
         InputOutputInterface::close();
     }
 
-    
-
     /**
      * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
      *
      * @returns
      */
-    Core::AnyInputEvent waitForEvent() final {
-
+    void waitForEvent() final {
+        while (!inputReady()) { // While input events queue is empty
+            // Wait for next asynchronous IO operation handler, it may triggers an input event
+            async_io_context_.run_one();
+        }
     }
 };
 
