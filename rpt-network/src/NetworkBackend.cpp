@@ -176,7 +176,12 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
         return *last_input_event;
 
     // If queue is empty, new input event must be waited for by NetworkBackend implementation
-    return waitForEvent();
+    waitForEvent();
+    // If events queue isn't yet ready, it is an implementation error
+    assert(inputReady());
+
+    // Then waited for event must be retrieved
+    return *pollInputEvent();
 }
 
 void NetworkBackend::registerActor(const std::uint64_t client_token, const std::uint64_t actor_uid, std::string name) {

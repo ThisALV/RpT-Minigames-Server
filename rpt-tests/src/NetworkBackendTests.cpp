@@ -62,8 +62,8 @@ static constexpr std::uint64_t TEST_ACTOR { 1 };
 class SimpleNetworkBackend : public NetworkBackend {
 protected:
     /// Retrieves `NoneEvent` triggered by actor with UID == 0 when queue is empty
-    RpT::Core::AnyInputEvent waitForEvent() override {
-        return RpT::Core::NoneEvent { CONSOLE_ACTOR };
+    void waitForEvent() override {
+        pushInputEvent(RpT::Core::NoneEvent { CONSOLE_ACTOR });
     }
 
     /*

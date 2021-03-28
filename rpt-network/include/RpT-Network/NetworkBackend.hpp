@@ -406,14 +406,13 @@ protected:
     void pushInputEvent(Core::AnyInputEvent input_event);
 
     /**
-     * @brief Wait for external input event to happen
+     * @brief Wait for external input event to happen and to be queued, must blocks until `inputReady()` evaluates to
+     * `true`
      *
-     * Called by `waitForInput()` when events queue is empty implementation, must be overridden by `NetworkBackend`
-     * implementations, but not called.
-     *
-     * @returns Input event triggered by external cause
+     * Called by `waitForInput()` when events queue is empty, must be overridden by `NetworkBackend implementations,
+     * but not called.
      */
-    virtual Core::AnyInputEvent waitForEvent() = 0;
+    virtual void waitForEvent() = 0;
 
     /**
      * @brief Checks if `waitForInput()` will immediately return or if it still has to wait for input event
