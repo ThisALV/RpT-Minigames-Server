@@ -405,6 +405,15 @@ protected:
     virtual Core::AnyInputEvent waitForEvent() = 0;
 
     /**
+     * @brief Checks if `waitForInput()` will immediately return or if it still has to wait for input event
+     *
+     * Should be called by `waitForEvent()` implementation to figure out when to stop waiting for next input event.
+     *
+     * @returns `true` if any input event is pushed into queue, `false` otherwise
+     */
+    bool inputReady() const;
+
+    /**
      * @brief Add new connected client with given token, alive and unregistered
      *
      * @param new_token Token used by new client

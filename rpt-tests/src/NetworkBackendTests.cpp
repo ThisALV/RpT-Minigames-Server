@@ -102,13 +102,18 @@ public:
         pushInputEvent(std::move(event));
     }
 
+    /// Trivial access to inputReady() for testing purpose
+    bool ready() const {
+        return inputReady();
+    }
+
     /// Checks if given actor UID is registered or not, trivial access to isRegister() for testing purpose
-    bool registered(const std::uint64_t actor_uid) {
+    bool registered(const std::uint64_t actor_uid) const {
         return isRegistered(actor_uid);
     }
 
     /// Checks if given client is alive or not, trivial access to isAlive() for testing purpose
-    bool alive(const std::uint64_t actor_uid) {
+    bool alive(const std::uint64_t actor_uid) const {
         return isAlive(actor_uid);
     }
 
@@ -135,6 +140,31 @@ public:
 
 
 BOOST_AUTO_TEST_SUITE(NetworkBackendTests)
+
+/*
+ * inputReady() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(InputReady)
+
+BOOST_AUTO_TEST_CASE(EmptyQueue) {
+    SimpleNetworkBackend io_interface;
+
+    // No events pushed into queue, shouldn't be ready
+    BOOST_CHECK(!io_interface.ready());
+}
+
+BOOST_AUTO_TEST_CASE(AnyEventInsideQueue) {
+    SimpleNetworkBackend io_interface;
+
+    // Push any event into queue
+    io_interface.trigger(RpT::Core::JoinedEvent { TEST_ACTOR, "NoName" });
+
+    // Should now be ready for next input event
+    BOOST_CHECK(io_interface.ready());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 /*
  * waitForInput() unit tests
