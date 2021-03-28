@@ -159,8 +159,9 @@ public:
  * layer so it can transmits received SR commands to `Core::ServiceEventRequestProtocol` and transmits SE commands
  * and SRR to actors client.
  *
- * This class only implements synchronous server state and server logic operations for RPTL protocol. All
- * asynchronous IO operations used to sync clients state and server state are defined by implementation (subclass).
+ * This class only implements synchronous server state or server logic operations for RPTL protocol and some RPTL
+ * message formatting. All asynchronous IO operations used to sync clients state and server state are defined by
+ * implementation (subclass).
  *
  * Every triggered input event is pushed into an events queue checked each time
  * `waitForInput()` is called. If queue is empty, `waitForEvent()` (defined by implementation) waits for IO
@@ -480,6 +481,16 @@ protected:
      * @param sr_response RTPL protocol Service command for SRR message
      */
     virtual void handleServiceRequestResponse(std::uint64_t sr_actor_owner, std::string sr_response) = 0;
+
+    /**
+     * @brief Handles given registration result to formats a valid Registration command to confirm or not client
+     * actor registration
+     *
+     * @param registration_ok Client actor registration result
+     *
+     * @returns Formatted RPTL message using `REGISTRATION` command
+     */
+    std::string formatRegistrationMessage(const Utils::HandlingResult& registration_ok) const;
 
 public:
     /**

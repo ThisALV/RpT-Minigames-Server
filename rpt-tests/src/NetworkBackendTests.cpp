@@ -132,6 +132,11 @@ public:
         killClient(client_token, disconnnection_reason);
     }
 
+    /// Trivial access to formatRegistrationMessage() for testing purpose
+    std::string registrationMessage(const RpT::Utils::HandlingResult& registration_result) {
+        return formatRegistrationMessage(registration_result);
+    }
+
     /// Trivial access to disconnectionReason() for testing purpose
     const RpT::Utils::HandlingResult& killReason(const std::uint64_t client_token) {
         return disconnectionReason(client_token);
@@ -367,6 +372,69 @@ BOOST_AUTO_TEST_CASE(ErrorDisconnection) {
     // Adding new client with CONSOLE_CLIENT token should works as it has been removed
     io_interface.newClient(TEST_CLIENT);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * formatRegistrationMessage() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(FormatRegistrationMessage)
+
+// registration_result evaluates to true
+BOOST_AUTO_TEST_SUITE(Success)
+
+BOOST_AUTO_TEST_CASE(NoActors) {
+    SimpleNetworkBackend io_interface;
+    // Default registered client with actor should be unregistered so there will not have any actor
+    io_interface.closePipelineWith(CONSOLE_ACTOR, {});
+
+    // Expects Registration command for successfully done registration without any registered actors
+    BOOST_CHECK_EQUAL(io_interface.registrationMessage({}), "REGISTRATION OK");
+}
+
+BOOST_AUTO_TEST_CASE(ManyActors) {
+    SimpleNetworkBackend io_interface;
+    // Registers testing actor for testing client so there will be 2 actors for testing (with Console actor already
+    // registered)
+    io_interface.clientMessage(TEST_CLIENT, "LOGIN " + std::to_string(TEST_ACTOR) + " TestingActor");
+
+    // Expects Registration command for successfully done registration with testing and console actors already
+    // registered
+    const std::string registration_message { io_interface.registrationMessage({}) };
+    const bool first_form { registration_message == "REGISTRATION OK 0 Console 1 TestingActor" };
+    const bool second_form { registration_message == "REGISTRATION OK 1 TestingActor 0 Console" };
+    BOOST_CHECK(first_form || second_form); // No matter in which order actors are formatted
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+// registration_result evaluates to false
+BOOST_AUTO_TEST_SUITE(Failed)
+
+BOOST_AUTO_TEST_CASE(NoActors) {
+    SimpleNetworkBackend io_interface;
+    // Default registered client with actor should be unregistered so there will not have any actor
+    io_interface.closePipelineWith(CONSOLE_ACTOR, {});
+
+    // Expects Registration command for failed registration without any registered actors
+    BOOST_CHECK_EQUAL(io_interface.registrationMessage(RpT::Utils::HandlingResult { "Error reason" }),
+                      "REGISTRATION KO Error reason");
+}
+
+BOOST_AUTO_TEST_CASE(ManyActors) {
+    SimpleNetworkBackend io_interface;
+    // Registers testing actor for testing client so there will be 2 actors for testing (with Console actor already
+    // registered)
+    io_interface.clientMessage(TEST_CLIENT, "LOGIN " + std::to_string(TEST_ACTOR) + " TestingActor");
+
+    // Expects Registration command for failed registration with many registered actors (shouldn't change anything,
+    // as registration failed message should still be the same)
+    BOOST_CHECK_EQUAL(io_interface.registrationMessage(RpT::Utils::HandlingResult { "Error reason" }),
+                      "REGISTRATION KO Error reason");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()
 
