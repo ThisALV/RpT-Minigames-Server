@@ -123,7 +123,7 @@ private:
                 protocol_instance_.killClient(sender_token_);
             } else if constexpr (std::is_same_v<Core::JoinedEvent, SimplifiedInputEventT>) {
                 // Handshaking done, actor has been registered for given client, sync new actor owner
-                protocol_instance_.privateMessage(sender_token_, formatRegistrationMessage());
+                protocol_instance_.privateMessage(sender_token_, protocol_instance_.formatRegistrationMessage());
 
                 // Then sync all registered clients, including newly registered one
                 std::string logged_in_message { // Formats Logged In RPTL command message
@@ -231,7 +231,7 @@ private:
                 } else { // Ignores if server stopped
                     const std::string error_message { err.message() };
 
-                    logger_.error("Failed to receive message from client {}: {}", client_token, error_message)
+                    logger_.error("Failed to receive message from client {}: {}", client_token, error_message);
                     // Error occurred, sets correct message handling result with given error message
                     message_handling_result = Utils::HandlingResult { error_message };
                 }
@@ -308,8 +308,8 @@ private:
             assert(removed_streams_count == 1); // Must be sure that only one stream was properly removed
 
             // Formats logout command message to sync clients with server
-            // Priority to separator and to_string conversion to ensure string concatenation
-            std::string logout_message { LOGGED_OUT_COMMAND + (' ' + std::to_string(client_token)) };
+            std::string logout_message { LOGGED_OUT_COMMAND };
+            logout_message += ' ' + std::to_string(client_token);
             // Then we can broadcast and confirm client is logged out and sync clients with server
             broadcastMessage(std::move(logout_message));
         });
@@ -355,7 +355,7 @@ protected:
 
             // Directly closes Websocket stream as client hasn't been added yet
             new_client_stream.async_close(boost::beast::websocket::internal_error,
-                                          [&err, &remote_endpoint](const boost::system::error_code& closure_err) {
+                                          [this, &err, &remote_endpoint](const boost::system::error_code& closure_err) {
 
                 if (closure_err == boost::asio::error::operation_aborted) // Ignores if server execution stopped
                     return;
