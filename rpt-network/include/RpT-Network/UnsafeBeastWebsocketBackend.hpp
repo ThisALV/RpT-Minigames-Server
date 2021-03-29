@@ -20,6 +20,11 @@ class UnsafeBeastWebsocketBackend : public BeastWebsocketBackendBase<boost::beas
 protected:
     /// Implementation takes base TCP socket to build TCP stream then uses it raw to build Websocket stream
     void openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) final;
+
+public:
+    /// Calls superclass constructor
+    UnsafeBeastWebsocketBackend(const boost::asio::ip::tcp::endpoint& local_endpoint,
+                                Utils::LoggingContext& logging_context);
 };
 
 

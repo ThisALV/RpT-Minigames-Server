@@ -3,6 +3,10 @@
 namespace RpT::Network {
 
 
+UnsafeBeastWebsocketBackend::UnsafeBeastWebsocketBackend(
+        const boost::asio::ip::tcp::endpoint& local_endpoint, Utils::LoggingContext& logging_context)
+        : BeastWebsocketBackendBase<boost::beast::tcp_stream> { local_endpoint, logging_context } {}
+
 void UnsafeBeastWebsocketBackend::openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) {
     // Stream ownership is not inside connected clients registry yet, ownership need to be preserved by async IO
     // handler
