@@ -317,6 +317,15 @@ private:
 
 protected:
     /**
+     * @brief Provides class logging features
+     *
+     * @returns A copy for member logger view
+     */
+    Utils::LoggerView getLogger() const {
+        return logger_;
+    }
+
+    /**
      * @brief Must asynchronously open Websocket stream using `addClientStream()` from given established TCP connection
      *
      * @param new_client_connection TCP connection ready to handshake into upper protocols layer
