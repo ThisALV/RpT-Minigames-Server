@@ -109,7 +109,8 @@ private:
 
                 // Then sync all registered clients, including newly registered one
                 std::string logged_in_message { // Formats Logged In RPTL command message
-                        LOGGED_IN_COMMAND + (' ' + std::to_string(input_event.actor())) + ' ' + input_event.playerName()
+                        std::string { LOGGED_IN_COMMAND } + ' ' +
+                        std::to_string(input_event.actor()) + ' ' + input_event.playerName()
                 };
 
                 protocol_instance_.broadcastMessage(std::move(logged_in_message));
@@ -234,7 +235,7 @@ private:
                 Core::AnyInputEvent client_triggered_event { handleMessage(client_token, rptl_message) };
 
                 // Visits triggered event checking for type
-                client_triggered_event.apply_visitor(TriggeredInputEventVisitor { *this, client_token });
+                boost::apply_visitor(TriggeredInputEventVisitor { *this, client_token }, client_triggered_event);
 
                 pushInputEvent(std::move(client_triggered_event)); // Moves triggered event into queue
                 listenMessageFrom(client_token); // Then listens next message from current client
@@ -290,8 +291,9 @@ private:
             assert(removed_streams_count == 1); // Must be sure that only one stream was properly removed
 
             // Formats logout command message to sync clients with server
-            std::string logout_message { LOGGED_OUT_COMMAND };
-            logout_message += ' ' + std::to_string(client_token);
+            std::string logout_message {
+                std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(client_token)
+            };
             // Then we can broadcast and confirm client is logged out and sync clients with server
             broadcastMessage(std::move(logout_message));
         });
@@ -364,7 +366,7 @@ protected:
 
             // Directly closes Websocket stream as client hasn't been added yet
             new_client_stream.async_close(boost::beast::websocket::internal_error,
-                                          [this, &err, &remote_endpoint](const boost::system::error_code& closure_err) {
+                                          [this, &remote_endpoint](const boost::system::error_code& closure_err) {
 
                 if (closure_err == boost::asio::error::operation_aborted) // Ignores if server execution stopped
                     return;
