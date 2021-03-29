@@ -36,7 +36,7 @@ constexpr RpT::Utils::LogLevel parseLogLevel(const std::string_view level) {
     else if (level == "w" || level == "warn")
         return RpT::Utils::LogLevel::WARN;
     else if (level == "e" || level == "error")
-        return RpT::Utils::LogLevel::ERROR;
+        return RpT::Utils::LogLevel::ERR;
     else if (level == "f" || level == "fatal")
         return RpT::Utils::LogLevel::FATAL;
     else
