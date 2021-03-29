@@ -321,7 +321,7 @@ protected:
      *
      * @param new_client_connection TCP connection ready to handshake into upper protocols layer
      */
-    virtual void openWebsocketStream(boost::asio::ip::tcp::socket& new_client_connection) = 0;
+    virtual void openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) = 0;
 
     /**
      * @brief Inserts new client using server-defined token and given Websocket stream, should be called by
