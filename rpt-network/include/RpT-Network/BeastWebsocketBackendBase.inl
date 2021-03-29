@@ -39,24 +39,6 @@ namespace RpT::Network {
 template<typename TcpStream>
 class BeastWebsocketBackendBase : public NetworkBackend {
 private:
-    /**
-     * @brief Tries to get string representation for TCP socket endpoint, offering safe remote endpoints logging
-     *
-     * @param client_connection Client TCP to try go retrieve endpoint from
-     *
-     * @return Socket remote endpoint string if successful, `"UNKNOWN"` otherwise
-     */
-    static std::string endpointFor(const boost::asio::ip::tcp::socket& client_connection) {
-        try {
-            std::ostringstream endpoint_output;
-            endpoint_output << client_connection.remote_endpoint(); // remote_endpoint() may fail for some reasons
-
-            return endpoint_output.str();
-        } catch (const boost::system::system_error&) { // If it fails, returns fallback string representation
-            return "UNKNOWN";
-        }
-    }
-
     /// Handles message sending result to given client token
     class SentMessageHandler {
     private:
@@ -137,6 +119,7 @@ private:
 
     // Provides logging features
     Utils::LoggerView logger_;
+
     // Websocket stream using given TCP stream for each client token
     std::unordered_map<std::uint64_t, boost::beast::websocket::stream<TcpStream>> clients_stream_;
     // Provides running context for all async IO operations
@@ -145,7 +128,6 @@ private:
     boost::asio::ip::tcp::acceptor tcp_acceptor_;
     // Keep total clients count so an unique token can be given to each new client
     std::uint64_t tokens_count_;
-
     /**
      * @brief Sends private RPTL message to given client stream
      *
@@ -316,6 +298,24 @@ private:
     }
 
 protected:
+    /**
+     * @brief Tries to get string representation for TCP socket endpoint, offering safe remote endpoints logging
+     *
+     * @param client_connection Client TCP to try go retrieve endpoint from
+     *
+     * @return Socket remote endpoint string if successful, `"UNKNOWN"` otherwise
+     */
+    static std::string endpointFor(const boost::asio::ip::tcp::socket& client_connection) {
+        try {
+            std::ostringstream endpoint_output;
+            endpoint_output << client_connection.remote_endpoint(); // remote_endpoint() may fail for some reasons
+
+            return endpoint_output.str();
+        } catch (const boost::system::system_error&) { // If it fails, returns fallback string representation
+            return "UNKNOWN";
+        }
+    }
+
     /**
      * @brief Provides class logging features
      *
