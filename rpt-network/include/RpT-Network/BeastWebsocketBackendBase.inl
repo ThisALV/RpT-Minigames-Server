@@ -404,6 +404,8 @@ public:
      * @brief Starts listening for incoming client TCP connection on local endpoint
      */
     void start() {
+        logger_.info("Open IO interface on local port {}.", tcp_acceptor_.local_endpoint().port());
+
         waitNextClient();
     }
 
