@@ -11,9 +11,16 @@ SafeBeastWebsocketBackend::SafeBeastWebsocketBackend(
     local_endpoint,logging_context },
     tls_context_ { boost::asio::ssl::context::tls_server } {
 
+    auto logger { getLogger() };
+
+    logger.debug("TLS certificate from: {}", certificate_file);
+    logger.debug("TLS private key from: {}", private_key_file);
+
     // Initializes path for both private key and certificate files
     tls_context_.use_certificate_file(certificate_file, boost::asio::ssl::context::pem);
     tls_context_.use_private_key_file(private_key_file, boost::asio::ssl::context::pem);
+
+    logger.info("Enabled TLS context.");
 }
 
 void SafeBeastWebsocketBackend::openSecureLayer(SafeBeastWebsocketBackend::WebsocketStream new_client_stream) {
