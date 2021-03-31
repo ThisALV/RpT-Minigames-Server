@@ -23,7 +23,7 @@ void UnsafeBeastWebsocketBackend::openWebsocketStream(boost::asio::ip::tcp::sock
                 getLogger().error("Websocket handshaking with {}: {}",
                                   endpointFor(underlying_socket), err.message());
 
-            return; // In any case, failed Websocket handshake means client should be added to registry
+            return; // In any case, failed Websocket handshake means client should NOT be added to registry
         }
 
         // Successfully handshake Websocket, move stream into registry, providing underlying TCP socket
