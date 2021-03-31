@@ -24,12 +24,10 @@ private:
 
     /// Takes Websocket stream from `openWebsocketStream()` implementation to call `openSafeWebsocketLayer()` with open
     /// SSL layer
-    void openSecureLayer(
-            boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> new_client_stream);
+    void openSecureLayer(WebsocketStream new_client_stream);
 
     /// Takes Websocket stream from `openSecureLayer()` to call `addClientStream()` with open WSS layer
-    void openSafeWebsocketLayer(
-            boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> new_client_stream);
+    void openSafeWebsocketLayer(WebsocketStream new_client_stream);
 
 protected:
     /// Takes base TCP socket to build TCP stream, then build SSL stream using TLS features and uses it to open

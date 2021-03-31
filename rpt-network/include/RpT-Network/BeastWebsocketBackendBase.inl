@@ -38,6 +38,9 @@ namespace RpT::Network {
  */
 template<typename TcpStream>
 class BeastWebsocketBackendBase : public NetworkBackend {
+protected: // Must be defined early so it can be used all along the class definitions
+    using WebsocketStream = boost::beast::websocket::stream<TcpStream>;
+
 private:
     /// Handles message sending result to given client token
     class SentMessageHandler {
@@ -55,7 +58,7 @@ private:
          * @param message_data_owner Shared pointer owning memory range used by message buffer
          */
         SentMessageHandler(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t client_token,
-                           const std::shared_ptr<std::string> message_data_owner)
+                           const std::shared_ptr<std::string>& message_data_owner)
         : protocol_instance_ { protocol_instance }, client_token_ { client_token },
         message_data_owner_ { message_data_owner } {}
 
@@ -122,13 +125,14 @@ private:
     Utils::LoggerView logger_;
 
     // Websocket stream using given TCP stream for each client token
-    std::unordered_map<std::uint64_t, boost::beast::websocket::stream<TcpStream>> clients_stream_;
+    std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
     // Provides ready TCP connection to open WS stream from
     boost::asio::ip::tcp::acceptor tcp_acceptor_;
     // Keep total clients count so an unique token can be given to each new client
     std::uint64_t tokens_count_;
+
     /**
      * @brief Sends private RPTL message to given client stream
      *
@@ -343,9 +347,7 @@ protected:
      * @param new_client_connection Underlying TCP socket, required for debugging informations
      * @param new_client_stream Produced Websocket stream from TCP connection
      */
-    void addClientStream(const boost::asio::ip::tcp::socket& new_client_connection,
-                         boost::beast::websocket::stream<TcpStream> new_client_stream) {
-
+    void addClientStream(const boost::asio::ip::tcp::socket& new_client_connection, WebsocketStream new_client_stream) {
         const std::string remote_endpoint { endpointFor(new_client_connection) };
 
         try {

@@ -16,14 +16,9 @@ SafeBeastWebsocketBackend::SafeBeastWebsocketBackend(
     tls_context_.use_private_key_file(private_key_file, boost::asio::ssl::context::pem);
 }
 
-void SafeBeastWebsocketBackend::openSecureLayer(
-        boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> new_client_stream) {
-
+void SafeBeastWebsocketBackend::openSecureLayer(SafeBeastWebsocketBackend::WebsocketStream new_client_stream) {
     // Websocket stream should be alive until TLS layer has been open
-    const auto new_client_stream_owner {
-        std::make_shared<boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>(
-                std::move(new_client_stream))
-    };
+    const auto new_client_stream_owner { std::make_shared<WebsocketStream>(std::move(new_client_stream)) };
 
     // Get TLS layer from shared Websocket stream
     boost::beast::ssl_stream<boost::beast::tcp_stream>& tls_layer { new_client_stream_owner->next_layer() };
@@ -49,14 +44,9 @@ void SafeBeastWebsocketBackend::openSecureLayer(
     });
 }
 
-void SafeBeastWebsocketBackend::openSafeWebsocketLayer(
-        boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> new_client_stream) {
-
+void SafeBeastWebsocketBackend::openSafeWebsocketLayer(SafeBeastWebsocketBackend::WebsocketStream new_client_stream) {
     // Websocket stream should be alive until WSS layer has been open
-    const auto new_client_stream_owner {
-            std::make_shared<boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>(
-                    std::move(new_client_stream))
-    };
+    const auto new_client_stream_owner { std::make_shared<WebsocketStream>(std::move(new_client_stream)) };
 
     new_client_stream_owner->async_accept([this, new_client_stream_owner](const boost::system::error_code& err) {
         boost::asio::ip::tcp::socket& underlying_socket { // Get base TCP socket for logging purpose
@@ -79,7 +69,7 @@ void SafeBeastWebsocketBackend::openSafeWebsocketLayer(
 
 void SafeBeastWebsocketBackend::openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) {
     // Builds new websocket stream over security layer using TLS features
-    boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>> new_client_stream {
+    WebsocketStream new_client_stream {
         std::move(new_client_connection), tls_context_
     };
 

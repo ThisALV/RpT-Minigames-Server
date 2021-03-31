@@ -10,10 +10,7 @@ UnsafeBeastWebsocketBackend::UnsafeBeastWebsocketBackend(
 void UnsafeBeastWebsocketBackend::openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) {
     // Stream ownership is not inside connected clients registry yet, ownership need to be preserved by async IO
     // handler
-    const auto new_client_stream {
-            std::make_shared<boost::beast::websocket::stream<boost::beast::tcp_stream>>(
-                    std::move(new_client_connection))
-    };
+    const auto new_client_stream { std::make_shared<WebsocketStream>(std::move(new_client_connection)) };
 
     new_client_stream->async_accept([this, new_client_stream](const boost::system::error_code& err) {
         boost::asio::ip::tcp::socket& underlying_socket { new_client_stream->next_layer().socket() };
