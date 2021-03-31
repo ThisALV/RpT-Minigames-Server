@@ -2,12 +2,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
 #include <RpT-Network/UnsafeBeastWebsocketBackend.hpp>
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
+#include <RpT-Network/SafeBeastWebsocketBackend.hpp>
 
 
 constexpr int SUCCESS { 0 };
@@ -50,7 +52,7 @@ int main(const int argc, const char** argv) {
     try {
         // Read and parse command line options
         const RpT::Utils::CommandLineOptionsParser cmd_line_options {
-            argc, argv, { "game", "log-level", "testing" }
+            argc, argv, { "game", "log-level", "testing", "net-backend", "crt", "privkey" }
         };
 
         // Get game name from command line options
@@ -139,30 +141,64 @@ int main(const int argc, const char** argv) {
         game_resources_path.push_back(std::move(user_path));
         game_resources_path.push_back(std::move(local_path));
 
+        // Selected backend for IO interface, defaults to WSS (Safe Websocket)
+        std::string_view selected_network_bakcend { "wss" };
+        // If backend is supplied by command line options, then override default behavior
+        if (cmd_line_options.has("net-backend"))
+            selected_network_bakcend = cmd_line_options.get("net-backend");
+
+        // Dynamic selection from command line options, requires dynamic allocation
+        std::unique_ptr<RpT::Network::NetworkBackend> network_backend;
+        // Local server endpoint evaluated from configurable port and IP protocol version
+        const boost::asio::ip::tcp::endpoint server_local_endpoint { server_local_protocol, server_local_port };
+
+        if (selected_network_bakcend == "wss") { // Websockets switched from HTTPS
+            logger.debug("Using Secure Websocket backend for IO interface.");
+
+            // Retrieves and copies options from command line
+            const std::string certificate_option { cmd_line_options.get("crt") };
+            const std::string private_key_option { cmd_line_options.get("privkey") };
+
+            // Get and parse valid paths from appropriate command line options
+            const boost::filesystem::path certificate_path { certificate_option };
+            const boost::filesystem::path private_path { private_key_option };
+
+            // Checks for both path validity and file type
+
+            if (!boost::filesystem::is_regular_file(certificate_path))
+                throw RpT::Utils::OptionsError { "Given certificate path isn't a valid path to regular file" };
+
+            if (!boost::filesystem::is_regular_file(private_path))
+                throw RpT::Utils::OptionsError { "Given private key path isn't a valid path to reguler file" };
+
+            // If both paths are valid, uses them to build backend with appropriate TLS features configuration
+            network_backend = std::make_unique<RpT::Network::SafeBeastWebsocketBackend>(
+                    certificate_option, private_key_option, server_local_endpoint, server_logging);
+        } else if (selected_network_bakcend == "unsafe-ws") { // Websockets switched from HTTP
+            logger.debug("Using NON-Secure Websocket backend for IO interface.");
+
+            network_backend = std::make_unique<RpT::Network::UnsafeBeastWebsocketBackend>(
+                    server_local_endpoint, server_logging);
+        } else { // Unknown network backend
+            const std::string backend_copy { selected_network_bakcend }; // Copy required for string concat
+
+            throw RpT::Utils::OptionsError { "Unknown networking backend " + backend_copy };
+        }
+
         /*
-         * Create executor with listed resources paths, game name argument and run main loop with unsafe HTTP IO
-         * interface
+         * Create executor with listed resources paths, game name argument and run main loop with dynamically
+         * initialized NetworkBackend implementation
          */
-
-        // Initializes IO interface for Websocket over unsafe HTTP protocol open to evaluated local port for evaluated
-        // local protocol
-        RpT::Network::UnsafeBeastWebsocketBackend io_interface {
-                boost::asio::ip::tcp::endpoint { server_local_protocol, server_local_port },
-                server_logging
-        };
-
-        // Starts async IO operations
-        io_interface.start();
 
         // For testing if executable is properly launched inside continuous integration, main loop must not continue
         if (cmd_line_options.has("testing")) {
             logger.info("Testing mode for CI, server will be immediately closed.");
 
-            io_interface.close();
+            network_backend->close();
         }
 
         RpT::Core::Executor rpt_executor {
-            std::move(game_resources_path), std::string { game_name }, io_interface, server_logging
+            std::move(game_resources_path), std::string { game_name }, *network_backend, server_logging
         };
 
         const bool done_successfully { rpt_executor.run() };
@@ -182,7 +218,7 @@ int main(const int argc, const char** argv) {
 
         return INVALID_ARGS;
     } catch (const std::exception& err) {
-        logger.fatal("Unhandled runtimer error: {}", err.what());
+        logger.fatal("Unhandled runtime error: {}", err.what());
 
         return RUNTIME_ERROR;
     }
