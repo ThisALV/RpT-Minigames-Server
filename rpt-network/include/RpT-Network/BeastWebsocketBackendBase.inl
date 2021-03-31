@@ -134,6 +134,15 @@ private:
     std::uint64_t tokens_count_;
 
     /**
+     * @brief Starts listening for incoming client TCP connection on local endpoint
+     */
+    void start() {
+        logger_.info("Open IO interface on local port {}.", tcp_acceptor_.local_endpoint().port());
+
+        waitNextClient();
+    }
+
+    /**
      * @brief Sends private RPTL message to given client stream
      *
      * @param client_token Token for used client stream
@@ -402,15 +411,8 @@ public:
                                        Utils::LoggingContext& logging_context)
     : logger_ { "WS-Backend", logging_context },
     tcp_acceptor_ { async_io_context_, local_endpoint },
-    tokens_count_ { 0 } {}
-
-    /**
-     * @brief Starts listening for incoming client TCP connection on local endpoint
-     */
-    void start() {
-        logger_.info("Open IO interface on local port {}.", tcp_acceptor_.local_endpoint().port());
-
-        waitNextClient();
+    tokens_count_ { 0 } {
+        start(); // Required to start because there is no way to use polymorphism on template class
     }
 
     /**
@@ -427,8 +429,6 @@ public:
 
     /**
      * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
-     *
-     * @returns
      */
     void waitForEvent() final {
         while (!inputReady()) { // While input events queue is empty
