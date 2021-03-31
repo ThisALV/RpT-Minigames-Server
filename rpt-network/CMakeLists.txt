@@ -15,7 +15,7 @@ find_package(Boost REQUIRED)
 
 add_library(rpt-network STATIC ${RPT_NETWORK_HEADERS} ${RPT_NETWORK_SOURCES})
 target_include_directories(rpt-network PUBLIC include PRIVATE ${Boost_INCLUDE_DIR})
-target_link_libraries(rpt-network PUBLIC rpt-core rpt-utils)
+target_link_libraries(rpt-network PUBLIC rpt-core rpt-utils ssl crypto)
 register_doc_for(include)
 
 if(WIN32)
