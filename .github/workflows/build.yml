@@ -147,7 +147,7 @@ jobs:
         run: >
           openssl req -batch -x509 -newkey rsa:2048
           -keyout localhost.key -out localhost.pem -nodes -days 1
-          -subj "/CN=localhost"
+          -subj "//CN=localhost"
 
       - name: Run server
         run: rpt-server.exe --game demo_rp --log-level t --testing --crt localhost.pem --privkey --localhost.key
