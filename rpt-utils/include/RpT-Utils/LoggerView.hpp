@@ -57,7 +57,7 @@ private:
             return spdlog::level::info;
         case LogLevel::WARN:
             return spdlog::level::warn;
-        case LogLevel::ERROR:
+        case LogLevel::ERR:
             return spdlog::level::err;
         case LogLevel::FATAL:
             return spdlog::level::critical;
@@ -76,7 +76,7 @@ private:
         case spdlog::level::warn:
             return LogLevel::WARN;
         case spdlog::level::err:
-            return LogLevel::ERROR;
+            return LogLevel::ERR;
         case spdlog::level::critical:
             return LogLevel::FATAL;
         default:
@@ -172,7 +172,7 @@ public:
     /// Log error level message
     template<typename... Args>
     void error(const std::string_view fmt, Args&& ...args) {
-        log<LogLevel::ERROR>(fmt, std::forward<Args>(args)...);
+        log<LogLevel::ERR>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log fatal level message

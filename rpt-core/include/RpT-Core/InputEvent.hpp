@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <RpT-Utils/HandlingResult.hpp>
 
 /**
  * @file InputEvent.hpp
@@ -134,38 +135,49 @@ public:
 };
 
 
+/**
+ * @brief Thrown by `LeftEvent::errorMessage()` if disconnection was done properly without crash reason
+ *
+ * @author ThisALV, https://github.com/ThisALV
+ */
+class NoErrorMessage : public std::logic_error {
+public:
+    /**
+     * @brief Constructs error with basic error message
+     *
+     * @param actor_uid UID for actor who has been disconnected using the clean way
+     */
+    explicit NoErrorMessage(const std::uint64_t actor_uid)
+    : std::logic_error { "Actor " + std::to_string(actor_uid) + " didn't crash, no error message" } {}
+};
+
 /// Event emitted when any actor leaves the server
 class LeftEvent : public InputEvent {
-public: // Required by private fields, so publicly declared before
-    /// Reason for player disconnection
-    enum struct Reason {
-        /// Server shutdown or client-side regular disconnection
-        Clean,
-        /// Error occurred with this player
-        Crash
-    };
-
 private:
-    Reason disconnection_reason_;
+    Utils::HandlingResult disconnection_reason_;
 
 public:
     /**
-     * @brief Constructs player disconnection event with given reason
-     *
-     * @see LeftEvent::Reason
+     * @brief Constructs player disconnection event for clean way logout
      *
      * @param actor UID for disconnected actor
-     * @param reason Reason for player disconnection
      */
-    LeftEvent(std::uint64_t actor, LeftEvent::Reason reason);
+    LeftEvent(std::uint64_t actor);
 
     /**
-     * @brief Get disconnection disconnectionReason
+     * @brief Constructs player disconnection for crashed player with given error message
      *
-     * @returns `Reason` enum value
+     * @param actor UID for disconnected actor
+     * @param error_message Message explaining why crash occurred
      */
-    Reason disconnectionReason() const;
+    LeftEvent(std::uint64_t actor, std::string error_message);
 
+    /**
+     * @brief Get disconnection reason
+     *
+     * @returns Disconnection reason, contains error message if player crashed
+     */
+    Utils::HandlingResult disconnectionReason() const;
 };
 
 

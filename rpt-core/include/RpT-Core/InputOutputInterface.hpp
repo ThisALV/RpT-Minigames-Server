@@ -98,6 +98,8 @@ public:
      * @brief Free interface IO ressources and mark it as closed
      *
      * After call, `closed()` must return `true`.
+     *
+     * Default implementation only marks instance as closed.
      */
     virtual void close();
 

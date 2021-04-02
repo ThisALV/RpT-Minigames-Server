@@ -81,8 +81,14 @@ jobs:
       - name: Install project
         run: sudo ./install.sh
 
+      - name: Create TLS certificate and private key
+        run: >
+          sudo openssl req -batch -x509 -newkey rsa:2048
+          -keyout localhost.key -out localhost.pem -nodes -days 1
+          -subj "/CN=localhost"
+
       - name: Run server
-        run: rpt-server --game demo_rp --log-level t --testing
+        run: sudo rpt-server --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key
 
   build-mingw:
     runs-on: windows-latest
@@ -137,5 +143,11 @@ jobs:
       - name: Install project
         run: ./install.sh
 
+      - name: Create TLS certificate and private key
+        run: >
+          openssl req -batch -x509 -newkey rsa:2048
+          -keyout localhost.key -out localhost.pem -nodes -days 1
+          -subj "//CN=localhost"
+
       - name: Run server
-        run: rpt-server.exe --game demo_rp --log-level t --testing
+        run: rpt-server.exe --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key

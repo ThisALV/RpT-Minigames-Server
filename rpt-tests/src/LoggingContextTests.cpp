@@ -23,8 +23,8 @@ std::ostream& operator<<(std::ostream& out, const LogLevel api_logging_level) {
         return out << "INFO";
     case LogLevel::WARN:
         return out << "WARN";
-    case LogLevel::ERROR:
-        return out << "ERROR";
+    case LogLevel::ERR:
+        return out << "ERR";
     case LogLevel::FATAL:
         return out << "FATAL";
     }

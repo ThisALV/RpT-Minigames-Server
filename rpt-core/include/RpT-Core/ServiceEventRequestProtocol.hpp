@@ -217,6 +217,8 @@ public:
      * @param sr_command Service Request command to handle
      *
      * @returns Service Request Response (SRR) which has to sent to SR actor
+     *
+     * @throws BadServiceRequest if SR command is ill-formed
      */
     std::string handleServiceRequest(std::uint64_t actor, std::string_view service_request);
 

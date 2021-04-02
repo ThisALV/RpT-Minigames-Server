@@ -16,12 +16,6 @@ namespace RpT::Utils {
 
 class LoggerView; // Need to be referenced by LoggingContext when a LoggerView is regietered
 
-
-// wingdi.h header overrides this enum value, making it unusable inside switch cases
-#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_WIN32
-#undef ERROR
-#endif
-
 /**
  * @brief Available logging levels to use with `LoggingContext::updateLoggingLevel()`
  *
@@ -30,7 +24,7 @@ class LoggerView; // Need to be referenced by LoggingContext when a LoggerView i
  * @author ThisALV, https://github.com/ThisALV
  */
 enum struct LogLevel {
-    TRACE, DEBUG, INFO, WARN, ERROR, FATAL
+    TRACE, DEBUG, INFO, WARN, ERR, FATAL
 };
 
 /**
