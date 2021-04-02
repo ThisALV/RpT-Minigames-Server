@@ -11,7 +11,7 @@ set(RPT_NETWORK_SOURCES
         "src/UnsafeBeastWebsocketBackend.cpp"
         "src/SafeBeastWebsocketBackend.cpp")
 
-find_package(Boost REQUIRED)
+find_package(Boost 1.70 REQUIRED)  # Beast ssl_stream available outside experimental since 1.70
 
 add_library(rpt-network STATIC ${RPT_NETWORK_HEADERS} ${RPT_NETWORK_SOURCES})
 target_include_directories(rpt-network PUBLIC include PRIVATE ${Boost_INCLUDE_DIR})

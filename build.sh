@@ -111,7 +111,7 @@ success=
 
 mkdir -p build && \
 cd build && \
-cmake --log-level=$log_level -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" $install_prefix \
+cmake -DCMAKE_SYSTEM_IGNORE_PATH="/mnt/c/msys64/mingw64" --log-level=$log_level -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_PREFIX_PATH="../dist/install" $install_prefix \
   -DCMAKE_AR="$ar_exec" -DCMAKE_RANLIB="$ranlib_exec" -G"$generator" $debug_features_option .. && \
 cmake --build . -- "-j$(nproc)" && \
 cd .. && \

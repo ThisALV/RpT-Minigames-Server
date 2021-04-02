@@ -28,9 +28,9 @@ function extractSourceFrom() {
   wget -O "$download_dir/$archive_filename" "$sources_url" && \
   log "Create destination directory" && \
   mkdir -p "$extraction_dir" && \
-  log "Extract downloaded sources to $dest_dir..." && \
-  tar xf "--$archive_compression" -C "$extraction_dir" && \
-  log "Extraction done to $dest_dir." || \
+  log "Extract downloaded sources to $extraction_dir..." && \
+  tar xf "$download_dir/$archive_filename" "--$archive_compression" -C "$extraction_dir" && \
+  log "Extraction done to $extraction_dir." || \
   error "Error: unable to extract sources from $sources_url."
 }
 
@@ -77,7 +77,8 @@ function tryBoostSourceGet() {
   local sources_url="https://dl.bintray.com/boostorg/release/${version}/source/${archive_filename}" # Full sources archive URL
 
   local deps_dir="build" # Built dependencies parent directory
-  local build_dir="$dest_dir/boostorg" # Where Boost will be bootstrapped and built
+  local extraction_dir="$deps_dir/boostorg"  # Where Boost sources archive content will be extracted
+  local build_dir="$extraction_dir/boost_${major}_${minor}_${patch}" # Where Boost will be bootstrapped and built
   local install_dir="install" # Where headers and binaries will be installed
 
   # Return code to indicate if any error occurred during install
@@ -85,12 +86,12 @@ function tryBoostSourceGet() {
   local failure=1
 
   log "Create deps build directory at $deps_dir..." && \
-  mkdir -p "$dest_dir" && \
-  extractSourceFrom "$sources_url" "download/boostorg" "$archive_filename" bzip2 "$build_dir" && \
+  mkdir -p "$deps_dir" && \
+  extractSourceFrom "http://localhost:8000/$archive_filename" "download/boostorg" "$archive_filename" bzip2 "$extraction_dir" && \
   log "Go to Boost root directory $build_dir..." && \
   cd "$build_dir" && \
   log "Bootstrapping Boost project to install at $install_dir and build libraries $build_required_for..." && \
-  ./bootstrap.sh "--prefix=$install_dir" "--with-libraries=$build_required_for" && \
+  ./bootstrap.sh "--prefix=$caller_dir/$install_dir" "--with-libraries=$build_required_for" && \
   log "Installing built Boost packages..." && \
   ./b2 install && \
   log "Successfully got Boost packages." && \
@@ -229,7 +230,7 @@ function trySourceGet() {
 # List available libboost-dev packages on APT, then parse versions number, then finally retrieves latest (first) version number
 apt_boost_latest="$(apt-cache madison libboost-dev | sed -E "s/.+\| (.+) \| .*/\\1/g" | head -n1)"
 
-if dpkg --compare-versions "$apt_boost_latest" ">=" "1.66"; then # Boost.Beast available since 1.66
+if dpkg --compare-versions "$apt_boost_latest" ">=" "1.70"; then # Boost.Beast ssl_stream available since 1.70
   use_apt_boost=1
 else
   use_apt_boost=
@@ -261,14 +262,14 @@ failure= # Set if any of install try actually fails
 # As dependencies MIGHT be available even if get-deps script failed, installation failure should NOT
 # interrupts script
 
-if [ use_apt_boost ]; then # If Boost apt package latest version contains Boost.Beast, then use apt-get
+if [ "$use_apt_boost" ]; then # If Boost apt package latest version contains Boost.Beast, then use apt-get
   # Header-only files
   tryAptGet libboost-dev || failure=1
   # Binary files
   tryAptGet libboost-filesystem-dev || failure=1
   tryAptGet libboost-test-dev || failure=1
 else # Otherwise, build it from sources
-  tryBoostSourceGet 1 66 0 "filesystem,test"
+  tryBoostSourceGet 1 70 0 "filesystem,test" || failure=1
 fi
 
 tryAptGet liblua5.3-dev || failure=1
