@@ -93,7 +93,7 @@ function tryBoostSourceGet() {
   log "Bootstrapping Boost project to install at $install_dir and build libraries $build_required_for..." && \
   ./bootstrap.sh "--prefix=$caller_dir/$install_dir" "--with-libraries=$build_required_for" && \
   log "Installing built Boost packages..." && \
-  ./b2 -j8 install && \
+  ./b2 "-j$(nproc)" install && \
   log "Successfully got Boost packages." && \
   failure=0 || \
   error "Error: unable to get Boost packages."
