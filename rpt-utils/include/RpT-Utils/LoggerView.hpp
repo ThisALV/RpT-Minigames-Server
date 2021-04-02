@@ -79,7 +79,7 @@ private:
             return LogLevel::ERROR;
         case spdlog::level::critical:
             return LogLevel::FATAL;
-        case spdlog::level::off:
+        default:
             throw std::invalid_argument { "Unhandled backend logging level \"off\"" };
         }
     }
