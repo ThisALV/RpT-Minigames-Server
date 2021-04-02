@@ -272,6 +272,7 @@ else # Otherwise, build it from sources
   tryBoostSourceGet 1 70 0 "filesystem,test" || failure=1
 fi
 
+tryAptGet libssl-dev || failure=1
 tryAptGet liblua5.3-dev || failure=1
 tryHeaderOnlyGet nlohmann json master || failure=1
 tryHeaderOnlyGet ThePhD sol2 main || failure=1
