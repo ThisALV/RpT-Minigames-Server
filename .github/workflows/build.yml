@@ -82,7 +82,7 @@ jobs:
         run: sudo ./install.sh
 
       - name: Create TLS certificate and private key
-        run: osudo penssl req -x509 -newkey rsa:2048 -keyout localhost.key -out localhost.pem -nodes -day 1
+        run: sudo openssl req -x509 -newkey rsa:2048 -keyout localhost.key -out localhost.pem -nodes -day 1
 
       - name: Run server
         run: sudo rpt-server.exe --game demo_rp --log-level t --testing --crt localhost.pem --privkey --localhost.key
