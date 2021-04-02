@@ -55,7 +55,7 @@ Open a terminal and run following commands :
 ```shell
 git clone https://github.com/ThisALV/RpTogether-Server
 cd RpTogether-Server/dist
-sudo ./get-deps-debian.sh # or ./get-deps-msys2.sh for Windows MinGW users
+sudo ./get-deps-debian.sh # or ./get-deps-msys2.sh <32|64> for Windows MinGW users depending on current system architecture
 cd ..
 ./build.sh # add --mingw option if you're Windows MinGW user
 sudo ./install.sh
