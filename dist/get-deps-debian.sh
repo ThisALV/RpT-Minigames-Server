@@ -87,7 +87,7 @@ function tryBoostSourceGet() {
 
   log "Create deps build directory at $deps_dir..." && \
   mkdir -p "$deps_dir" && \
-  extractSourceFrom "http://localhost:8000/$archive_filename" "download/boostorg" "$archive_filename" bzip2 "$extraction_dir" && \
+  extractSourceFrom "$sources_url" "download/boostorg" "$archive_filename" bzip2 "$extraction_dir" && \
   log "Go to Boost root directory $build_dir..." && \
   cd "$build_dir" && \
   log "Bootstrapping Boost project to install at $install_dir and build libraries $build_required_for..." && \
