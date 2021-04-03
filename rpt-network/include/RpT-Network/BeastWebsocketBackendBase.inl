@@ -383,9 +383,11 @@ protected:
                     return;
 
                 if (closure_err)
-                    logger_.error("Client {} websocket closure: {}", remote_endpoint, closure_err.message());
+                    logger_.error("Client {} websocket closure: {}",
+                                  remote_endpoint, closure_err.message());
                 else
-                    logger_.debug("Client {} websocket closed prematurely: {}", remote_endpoint);
+                    logger_.debug("Client {} websocket closed prematurely: {}",
+                                  remote_endpoint, closure_err.message());
             });
         }
     }
