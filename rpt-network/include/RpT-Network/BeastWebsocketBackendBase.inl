@@ -7,6 +7,7 @@
 #include <boost/beast.hpp>
 #include <RpT-Network/NetworkBackend.hpp>
 #include <RpT-Utils/LoggerView.hpp>
+#include <utility>
 
 /**
  * @file BeastWebsocketBackendBase.hpp
@@ -58,9 +59,9 @@ private:
          * @param message_data_owner Shared pointer owning memory range used by message buffer
          */
         SentMessageHandler(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t client_token,
-                           const std::shared_ptr<std::string>& message_data_owner)
+                           std::shared_ptr<std::string>  message_data_owner)
         : protocol_instance_ { protocol_instance }, client_token_ { client_token },
-        message_data_owner_ { message_data_owner } {}
+        message_data_owner_ { std::move(message_data_owner) } {}
 
         /// Makes handler callable object
         void operator()(const boost::system::error_code& err, std::size_t) {
