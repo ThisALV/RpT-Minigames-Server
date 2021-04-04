@@ -15,16 +15,14 @@ template<typename InputType>
 constexpr int inputIndexFor() {
     if constexpr (std::is_same_v<InputType, RpT::Core::NoneEvent>)
         return 0;
-    else if constexpr (std::is_same_v<InputType, RpT::Core::StopEvent>)
-        return 1;
     else if constexpr (std::is_same_v<InputType, RpT::Core::ServiceRequestEvent>)
-        return 2;
+        return 1;
     else if constexpr (std::is_same_v<InputType, RpT::Core::TimerEvent>)
-        return 3;
+        return 2;
     else if constexpr (std::is_same_v<InputType, RpT::Core::JoinedEvent>)
-        return 4;
+        return 3;
     else if constexpr (std::is_same_v<InputType, RpT::Core::LeftEvent>)
-        return 5;
+        return 4;
     else
         return -1;
 }
@@ -205,7 +203,7 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     // 2 timers TO then and server stopped triggered
     io_interface.trigger(RpT::Core::TimerEvent { 1 }); // Triggered by actor 1
     io_interface.trigger(RpT::Core::TimerEvent { 2 }); // Triggered by actor 2
-    io_interface.trigger(RpT::Core::StopEvent { 0, 2 }); // Triggered by actor 0 with signal 2
+    io_interface.trigger(RpT::Core::JoinedEvent { 0, "TestingActor" }); // Triggered by actor 0 with name "TestingActor"
 
     // Checks for 3rd event pushed into queue
     const auto first_event { requireEventType<RpT::Core::TimerEvent>(io_interface.waitForInput()) };
@@ -216,9 +214,9 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     BOOST_CHECK_EQUAL(second_event.actor(), 2);
 
     // Checks for 3rd event pushed into queue
-    const auto third_event { requireEventType<RpT::Core::StopEvent>(io_interface.waitForInput()) };
+    const auto third_event { requireEventType<RpT::Core::JoinedEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(third_event.actor(), 0);
-    BOOST_CHECK_EQUAL(third_event.caughtSignal(), 2);
+    BOOST_CHECK_EQUAL(third_event.playerName(), "TestingActor");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -14,7 +14,7 @@ namespace RpT::Core {
 
 
 /// For using visitor pattern on received input event. See `InputOutputInterface::waitForInput()`.
-using AnyInputEvent = boost::variant<NoneEvent, StopEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
+using AnyInputEvent = boost::variant<NoneEvent, ServiceRequestEvent, TimerEvent, JoinedEvent, LeftEvent>;
 
 
 /**

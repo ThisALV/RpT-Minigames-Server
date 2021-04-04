@@ -91,28 +91,6 @@ public:
     explicit TimerEvent(std::uint64_t actor);
 };
 
-/// Event emitted when server stop is requested by a caughtSignal / a console ctrl
-class StopEvent : public InputEvent {
-private:
-    std::uint8_t caught_signal_;
-
-public:
-    /**
-     * @brief Constructs stop request event with given caught caughtSignal
-     * 
-     * @param actor Actor UID
-     * @param signal Integer value for caught caughtSignal
-     */
-    StopEvent(std::uint64_t actor, std::uint8_t caught_signal);
-
-    /**
-     * @brief Gets caught Posix stop caughtSignal
-     *
-     * @return Posix stop caughtSignal
-     */
-    std::uint8_t caughtSignal() const;
-};
-
 /// Event emitted when any new actor joins the server
 class JoinedEvent : public InputEvent {
 private:

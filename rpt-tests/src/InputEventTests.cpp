@@ -61,26 +61,6 @@ BOOST_AUTO_TEST_CASE(ActorName) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
-/*
- * StopRequest event
- */
-
-BOOST_AUTO_TEST_SUITE(StopRequest)
-
-BOOST_AUTO_TEST_CASE(ActorNameAndSignal0) {
-    const StopEvent event { 42, 0 };
-
-    BOOST_CHECK_EQUAL(event.actor(), 42);
-    BOOST_CHECK_EQUAL(event.caughtSignal(), 0); // Check for minimal value
-}
-
-BOOST_AUTO_TEST_CASE(ActorNameAndSignal255) {
-    const StopEvent event { 42, 255 };
-
-    BOOST_CHECK_EQUAL(event.actor(), 42);
-    BOOST_CHECK_EQUAL(event.caughtSignal(), 255); // Check for maximal value
-}
-
 BOOST_AUTO_TEST_SUITE_END()
 
 /*

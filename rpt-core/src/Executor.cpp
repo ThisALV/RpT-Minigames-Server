@@ -39,12 +39,6 @@ public:
         logger_.debug("Null event, skipping...");
     }
 
-    void operator()(const StopEvent& event) {
-        logger_.debug("Stopping server: caught signal {}", event.caughtSignal());
-
-        io_interface_.close();
-    }
-
     void operator()(const ServiceRequestEvent& event) {
         logger_.debug("Service Request command received from player \"{}\".", event.actor());
 

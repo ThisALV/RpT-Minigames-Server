@@ -37,17 +37,6 @@ const std::string& ServiceRequestEvent::serviceRequest() const {
 TimerEvent::TimerEvent(std::uint64_t actor) : InputEvent { actor } {}
 
 /*
- * Stop
- */
-
-StopEvent::StopEvent(std::uint64_t actor, std::uint8_t caught_signal) :
-    InputEvent { actor }, caught_signal_ { caught_signal } {}
-
-std::uint8_t StopEvent::caughtSignal() const {
-    return caught_signal_;
-}
-
-/*
  * Joined
  */
 

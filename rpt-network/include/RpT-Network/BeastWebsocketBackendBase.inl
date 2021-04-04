@@ -426,6 +426,10 @@ public:
         for (const auto& client : clients_stream_) // For each client token, closes associated stream
             closeStream(client.first);
 
+        // As all players will be disconnected, don't care about syncing server state with LOGGED_OUT broadcast message
+        // Handlers execution can be stopped right now
+        async_io_context_.stop();
+
         // Then IO interface can be considered closed
         InputOutputInterface::close();
     }
@@ -434,7 +438,7 @@ public:
      * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
      */
     void waitForEvent() final {
-        while (!inputReady()) { // While input events queue is empty
+        while (!inputReady() && !closed()) { // While input events queue is empty and interface is open
             // Wait for next asynchronous IO operation handler, it may triggers an input event
             async_io_context_.run_one();
         }
