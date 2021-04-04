@@ -1,6 +1,7 @@
 #ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 #define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 
+#include <array>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -8,6 +9,7 @@
 #include <RpT-Network/NetworkBackend.hpp>
 #include <RpT-Utils/LoggerView.hpp>
 #include <utility>
+#include <boost/asio/signal_set.hpp>
 
 /**
  * @file BeastWebsocketBackendBase.hpp
@@ -129,6 +131,8 @@ private:
     std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
+    // Posix signals handling to stop server
+    boost::asio::signal_set stop_signals_handling_;
     // Provides ready TCP connection to open WS stream from
     boost::asio::ip::tcp::acceptor tcp_acceptor_;
     // Keep total clients count so an unique token can be given to each new client
@@ -407,14 +411,40 @@ public:
     /**
      * @brief Constructs IO interface listening for new TCP connections on given local endpoint
      *
+     * In addition to that, constructor will initialize an Asio signal set listening for `SIGINT` and `SIGTERM` to
+     * close IO interface when required.
+     *
      * @param local_endpoint Endpoint clients will connect to
      * @param logging_context Context for WS backend logging features
      */
     explicit BeastWebsocketBackendBase(const boost::asio::ip::tcp::endpoint& local_endpoint,
                                        Utils::LoggingContext& logging_context)
     : logger_ { "WS-Backend", logging_context },
+    stop_signals_handling_ { async_io_context_ },
     tcp_acceptor_ { async_io_context_, local_endpoint },
     tokens_count_ { 0 } {
+        Utils::LoggerView logger { getLogger() }; // Avoid to create LoggerView for each added signal
+
+        // For each Posix signal that must be caught
+        for (const int posix_signal : std::array<int, 2> { SIGINT, SIGTERM }) {
+            boost::system::error_code err;
+            // Error might occurs when adding signal to add, but it must NOT be fatal
+            stop_signals_handling_.add(posix_signal, err);
+
+            if (err) // Displays warning if signal will not be caught as expected
+                logger.warn("Posix signal {} will not be caught: {}", posix_signal, err.message());
+        }
+
+        // Listens for Posix signals
+        stop_signals_handling_.async_wait([this](const boost::system::error_code& err, const int posix_signal) {
+            if (err) { // Checks for error during signal handling
+                getLogger().error("Failed to handle posix signal {}: {}", posix_signal, err.message());
+            } else {
+                getLogger().debug("Posix signal {}, stopping...", posix_signal);
+                close(); // Close IO interface to stop server
+            }
+        });
+
         start(); // Required to start because there is no way to use polymorphism on template class
     }
 
