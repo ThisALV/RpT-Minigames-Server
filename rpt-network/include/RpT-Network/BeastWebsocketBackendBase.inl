@@ -1,15 +1,15 @@
 #ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 #define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 
-#include <array>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
-#include <boost/beast.hpp>
-#include <RpT-Network/NetworkBackend.hpp>
-#include <RpT-Utils/LoggerView.hpp>
 #include <utility>
 #include <boost/asio/signal_set.hpp>
+#include <boost/beast.hpp>
+#include <RpT-Config/Config.hpp>
+#include <RpT-Network/NetworkBackend.hpp>
+#include <RpT-Utils/LoggerView.hpp>
 
 /**
  * @file BeastWebsocketBackendBase.hpp
@@ -123,6 +123,21 @@ private:
             }
         }
     };
+
+    static std::vector<int> getCaughtSignals() {
+        std::vector<int> caught_signals { SIGTERM }; // SIGTERM is always caught and always exist
+        caught_signals.reserve(3); // At least 3 caught Posix signals: SIGINT, SIGTERM and SIGHUP
+
+#ifdef NDEBUG
+        caught_signals.push_back(SIGINT); // SIGINT used by GDB for debugging
+#endif
+
+#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_UNIX
+        caught_signals.push_back(SIGHUP); // SIGHUP only available for Unix runtime platform
+#endif
+
+        return caught_signals;
+    }
 
     // Provides logging features
     Utils::LoggerView logger_;
@@ -426,7 +441,7 @@ public:
         Utils::LoggerView logger { getLogger() }; // Avoid to create LoggerView for each added signal
 
         // For each Posix signal that must be caught
-        for (const int posix_signal : std::array<int, 2> { SIGINT, SIGTERM }) {
+        for (const int posix_signal : getCaughtSignals()) {
             boost::system::error_code err;
             // Error might occurs when adding signal to add, but it must NOT be fatal
             stop_signals_handling_.add(posix_signal, err);
