@@ -50,3 +50,6 @@ logs/
 # TLS
 keylog.pem
 accessible_localhost.key
+
+# Python stuff
+*.pyc
