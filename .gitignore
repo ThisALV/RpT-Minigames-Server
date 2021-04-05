@@ -34,6 +34,9 @@
 # JetBrains
 .idea/
 
+# Visual Studio Code
+.vscode/
+
 # CMake built configs
 Debug/
 Release/
@@ -43,3 +46,7 @@ download/
 
 # Logging
 logs/
+
+# TLS
+keylog.pem
+accessible_localhost.key
