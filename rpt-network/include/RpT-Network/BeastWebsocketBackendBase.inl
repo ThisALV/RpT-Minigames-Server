@@ -471,6 +471,10 @@ public:
         for (const auto& client : clients_stream_) // For each client token, closes associated stream
             closeStream(client.first);
 
+        // A null event must be pushed so waitForEvent() can properly return
+        // None event must not be handled by Executor so actor UID doesn't matter
+        pushInputEvent(Core::NoneEvent { 0 });
+
         // As all players will be disconnected, don't care about syncing server state with LOGGED_OUT broadcast message
         // Handlers execution can be stopped right now
         async_io_context_.stop();
@@ -483,7 +487,7 @@ public:
      * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
      */
     void waitForEvent() final {
-        while (!inputReady() && !closed()) { // While input events queue is empty and interface is open
+        while (!inputReady()) { // While input events queue is empty
             // Wait for next asynchronous IO operation handler, it may triggers an input event
             async_io_context_.run_one();
         }
