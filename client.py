@@ -15,6 +15,7 @@ tls_context.load_verify_locations(certificate)  # localhost requires self-signed
 
 
 def require_input(input_required: asyncio.Event):
+    print("\b\b", end="")
     input_required.set()
 
 
