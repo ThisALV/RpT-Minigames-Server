@@ -287,8 +287,6 @@ private:
      * @param client_token Token for killed client to closes connection with
      */
     void closeStream(const std::uint64_t client_token) {
-        removeClient(client_token);
-
         // Retrieves stream closure reason to determine Websocket close frame close code
         const Utils::HandlingResult& disconnection_reason { disconnectionReason(client_token) };
         // Formatting interrupt command message to inform client that it will be disconnected and why
@@ -309,19 +307,25 @@ private:
         }
 
         privateMessage(client_token, std::move(interrupt_message));
+        removeClient(client_token); // Once disconnection reason has been sent to client, it can be removed
 
-        clients_stream_.at(client_token).async_close(websocket_close_reason, [this, client_token](
+        // Moves client stream entry as it will be closed and no more operation should be performed on
+        // Use of shared_ptr because stream must not be destroyed before Websocket closure was handled
+        const auto dead_client_stream {
+            std::make_shared<WebsocketStream>(std::move(clients_stream_.at(client_token)))
+        };
+
+        const std::size_t removed_streams_count { clients_stream_.erase(client_token) };
+        assert(removed_streams_count == 1); // Must be sure that exactly ony client stream entry has been removed
+
+        // Does and handles Websocket closure for dead client
+        dead_client_stream->async_close(websocket_close_reason, [this, dead_client_stream, client_token](
                 const boost::system::error_code& err) {
 
             // If for any reason clean Websocket closure failed, TCP connection will be closed anyways, but a warning
             // message must be logged
             if (err)
                 logger_.warn("Unclean disconnection with client {}: {}", client_token, err.message());
-
-            // In any case, client stream must now be removed as it is finally closed
-            const std::size_t removed_streams_count { clients_stream_.erase(client_token) };
-
-            assert(removed_streams_count == 1); // Must be sure that only one stream was properly removed
 
             // Formats logout command message to sync clients with server
             std::string logout_message {
@@ -488,6 +492,22 @@ public:
      */
     void waitForEvent() final {
         while (!inputReady()) { // While input events queue is empty
+            std::vector<std::uint64_t> dead_clients;
+            // Max count of dead clients is count of actual clients
+            dead_clients.reserve(clients_stream_.size());
+
+            // Checks for all dead clients
+            for (const auto& client : clients_stream_) {
+                const std::uint64_t token { client.first }; // Retrieves token for current entry
+
+                if (!isAlive(token)) // If connection is dead, it must be closed
+                    dead_clients.push_back(token);
+            }
+
+            // As clients_stream_ elements must not be erased during iteration, closeStream() calls are deferred
+            for (const std::uint64_t dead_client_token : dead_clients)
+                closeStream(dead_client_token);
+
             // Wait for next asynchronous IO operation handler, it may triggers an input event
             async_io_context_.run_one();
         }
