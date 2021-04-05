@@ -1,6 +1,7 @@
 #ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 #define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 
+#include <queue>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -67,17 +68,32 @@ private:
 
         /// Makes handler callable object
         void operator()(const boost::system::error_code& err, std::size_t) {
-            // Nothing to handle if no error occurred or server stopped
-            if (!err || err == boost::asio::error::operation_aborted)
+            // Retrieves queue for current client
+            std::queue<std::shared_ptr<std::string>>& messages_queue {
+                protocol_instance_.clients_remaining_messages_.at(client_token_)
+            };
+
+            // In any case, async_write operation completed and current message must be removed from queue
+            messages_queue.pop();
+
+            // Ignores if server stopped
+            if (err == boost::asio::error::operation_aborted)
                 return;
 
-            std::string error_message { err.message() }; // Retrieves Asio error code associated message
+            // Handles error with connection closure, as specified by RPTL protocol
+            if (err) {
+                std::string error_message { err.message() }; // Retrieves Asio error code associated message
 
-            protocol_instance_.logger_.error("Unable to send message to client {}: {}", client_token_, error_message);
+                protocol_instance_.logger_.error("Unable to send message to client {}: {}", client_token_, error_message);
 
-            // As RPTL protocol requires, connection if closed if any error occurred, using specific error message
-            // Retrieved error message can be moved inside message sent handler result
-            protocol_instance_.killClient(client_token_, Utils::HandlingResult { error_message });
+                // As RPTL protocol requires, connection if closed if any error occurred, using specific error message
+                // Retrieved error message can be moved inside message sent handler result
+                protocol_instance_.killClient(client_token_, Utils::HandlingResult { error_message });
+            }
+
+            // If no error occurred, checks for messages queue and send next message recursively if any
+            if (!messages_queue.empty())
+                protocol_instance_.sendNextMessage(client_token_);
         }
     };
 
@@ -144,6 +160,8 @@ private:
 
     // Websocket stream using given TCP stream for each client token
     std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
+    // Each client stream remaining messages to send, same message might be sent to many clients, so using sharde_ptr
+    std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> clients_remaining_messages_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
     // Posix signals handling to stop server
@@ -163,15 +181,17 @@ private:
     }
 
     /**
-     * @brief Sends private RPTL message to given client stream
+     * @brief Sends next queued message for given client, async handler will recursively send next message when
+     * operation will complete
      *
-     * @param client_token Token for used client stream
-     * @param message RPTL message to be sent
+     * @param client_token Token for queue to send messages from
      */
-    void privateMessage(const std::uint64_t client_token, std::string message) {
-        // Moves message argument into pointer shared between method and async_write callback so argument string data
-        // is owned until async_write handler call finished
-        const auto message_owner { std::make_shared<std::string>(std::move(message)) };
+    void sendNextMessage(const std::uint64_t client_token) {
+        // Retrieves queue for given client
+        std::queue<std::shared_ptr<std::string>>& messages_queue { clients_remaining_messages_.at(client_token) };
+
+        // Using shared_ptr stored inside queue, data will be valid during async handler execution
+        const auto message_owner { messages_queue.front() };
         // Buffer read by Asio to send message, data must be valid until handler call finished
         const boost::asio::const_buffer message_buffer { message_owner->data(), message_owner->size() };
 
@@ -180,20 +200,49 @@ private:
     }
 
     /**
+     * @brief Immediately sends RPTL message to given client if its queue is empty, else queues given message
+     *
+     * @param client_token Client which must receive message
+     * @param message RPTL message to send, or queue if sending hasn't complete
+     */
+    void pushMessage(const std::uint64_t client_token, const std::shared_ptr<std::string>& message) {
+        // Retrieves queue for given client
+        std::queue<std::shared_ptr<std::string>>& messages_queue { clients_remaining_messages_.at(client_token) };
+
+        messages_queue.push(message); // Moves given message into queue
+
+        // If all other async_write have terminated, sends message right now to begin recursive queue run
+        if (messages_queue.size() == 1)
+            sendNextMessage(client_token);
+    }
+
+    /**
+     * @brief Sends private RPTL message to given client stream
+     *
+     * @param client_token Token for used client stream
+     * @param message RPTL message to be sent
+     */
+    void privateMessage(const std::uint64_t client_token, std::string message) {
+        // Message will only be sent to one client, individual shared_ptr
+        pushMessage(client_token, std::make_shared<std::string>(std::move(message)));
+    }
+
+    /**
      * @brief Sends broadcast RPTL message to all registered clients
      *
      * @param message RPTL message to be sent
      */
     void broadcastMessage(std::string message) {
-        // Moves message argument into pointer shared between method and async_write callback so argument string data
-        // is owned until async_write handler call finished
+        // Message will be sent to all registered clients, using common shared_ptr to avoid string duplication into
+        // messages queues
         const auto message_owner { std::make_shared<std::string>(std::move(message)) };
-        // Buffer read by Asio to send message, data must be valid until handler call finished
-        const boost::asio::const_buffer message_buffer { message_owner->data(), message_owner->size() };
 
-        for (auto& [client_token, stream] : clients_stream_) // For each registered client, send message with buffer
-            if (isClientRegistered(client_token))
-                stream.async_write(message_buffer, SentMessageHandler { *this, client_token, message_owner });
+        for (const auto& client : clients_stream_) { // For each registered client, send message using ptr
+            const std::uint64_t token { client.first }; // Retrieves token for current client
+
+            if (isClientRegistered(token))
+                pushMessage(token, message_owner);
+        }
     }
 
     /**
@@ -316,7 +365,9 @@ private:
         };
 
         const std::size_t removed_streams_count { clients_stream_.erase(client_token) };
-        assert(removed_streams_count == 1); // Must be sure that exactly ony client stream entry has been removed
+        const std::size_t removed_queues_count { clients_remaining_messages_.erase(client_token) };
+        // Must be sure that exactly ony client stream and messages queue entry have been removed
+        assert(removed_streams_count == 1 && removed_queues_count == 1);
 
         // Does and handles Websocket closure for dead client
         dead_client_stream->async_close(websocket_close_reason, [this, dead_client_stream, client_token](
@@ -391,9 +442,16 @@ protected:
             // Add token into connected clients NetworkBackend registry
             addClient(new_client_token); // May throws if token insertion failed
             // Move produced stream into clients stream registry
-            const auto insert_result { clients_stream_.insert({ new_client_token, std::move(new_client_stream) }) };
+            const auto insert_stream_result {
+                clients_stream_.insert({ new_client_token, std::move(new_client_stream) })
+            };
+            // Needs empty messages queue for new client
+            const auto insert_queue_result {
+                clients_remaining_messages_.insert({ new_client_token, {} })
+            };
 
-            assert(insert_result.second); // Checks if client stream insertion has been done
+            // Checks if client stream and messages queue insertions has been done
+            assert(insert_stream_result.second || insert_queue_result.second);
 
             listenMessageFrom(new_client_token); // Now client stream was added, it can be listened
         } catch (const std::exception& err) { // Any token insertion error must result in stream closure
