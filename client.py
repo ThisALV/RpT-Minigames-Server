@@ -26,17 +26,19 @@ async def send_messages(connection: websockets.WebSocketClientProtocol, console_
         try:
             await input_required.wait()  # Waits for Ctrl+C
 
-            async with console_lock:  # Waits for the console to be available before reading stdin
-                rptl_message = input("Send: ")
+            # input_required might have been triggered by connection closure inside receiving coroutine
+            if connection.open:
+                async with console_lock:  # Waits for the console to be available before reading stdin
+                    rptl_message = input("Send: ")
 
-            await connection.send(rptl_message)
+                await connection.send(rptl_message)
 
             input_required.clear()
         except websockets.ConnectionClosed as closed:  # Connection will end up closed
             print(f"Connection was closed: {closed.reason}")
 
 
-async def receive_messages(connection: websockets.WebSocketClientProtocol, console_lock: asyncio.Lock):
+async def receive_messages(connection: websockets.WebSocketClientProtocol, console_lock: asyncio.Lock, input_required: asyncio.Event):
     """Listen for next RPTL message and wait for the console to be available then displays it to stdout."""
 
     while connection.open:  # Waits for next RPTL message until connection has been closed
@@ -48,6 +50,8 @@ async def receive_messages(connection: websockets.WebSocketClientProtocol, conso
         except websockets.ConnectionClosed as closed:  # Connection will end up closed
             print(f"Connection was closed: {closed.reason}")
 
+    require_input(input_required)  # Stops waiting for Ctrl+C to send message as connection has been closed
+
 
 async def rptl_connection(connection: websockets.WebSocketClientProtocol):
     """Listen for RPTL message on given connection and displays them to stdout.
@@ -57,7 +61,7 @@ async def rptl_connection(connection: websockets.WebSocketClientProtocol):
     input_required = asyncio.Event()  # To notify the task sending message that it should prompt for message into stdin
 
     asyncio.get_running_loop().add_signal_handler(signal.SIGINT, require_input, input_required)  # When Ctrl+C is triggered, prompt for RPTL message
-    receiving = asyncio.create_task(receive_messages(connection, console_lock))
+    receiving = asyncio.create_task(receive_messages(connection, console_lock, input_required))
     sending = asyncio.create_task(send_messages(connection, console_lock, input_required))
 
     await asyncio.gather(receiving, sending)
