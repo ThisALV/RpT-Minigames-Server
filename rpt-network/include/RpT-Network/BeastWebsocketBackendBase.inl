@@ -68,13 +68,21 @@ private:
 
         /// Makes handler callable object
         void operator()(const boost::system::error_code& err, std::size_t) {
-            // Retrieves queue for current client
-            std::queue<std::shared_ptr<std::string>>& messages_queue {
-                protocol_instance_.clients_remaining_messages_.at(client_token_)
-            };
+            /*
+             * In any case, async_write operation completed and current message must be removed from queue if queue
+             * still exists
+             */
 
-            // In any case, async_write operation completed and current message must be removed from queue
-            messages_queue.pop();
+            // If client was disconnected, its messages queue might not exist anymore
+            std::queue<std::shared_ptr<std::string>>* messages_queue { nullptr };
+
+            // Checks for client if it is still connected
+            if (protocol_instance_.clients_remaining_messages_.count(client_token_) == 1) {
+                // Retrieves queue for current client
+                messages_queue = &protocol_instance_.clients_remaining_messages_.at(client_token_);
+                // Removes current message from queue as client is still connected
+                messages_queue->pop();
+            }
 
             // Ignores if server stopped
             if (err == boost::asio::error::operation_aborted)
@@ -92,7 +100,7 @@ private:
             }
 
             // If no error occurred, checks for messages queue and send next message recursively if any
-            if (!messages_queue.empty())
+            if (messages_queue && !messages_queue->empty())
                 protocol_instance_.sendNextMessage(client_token_);
         }
     };
