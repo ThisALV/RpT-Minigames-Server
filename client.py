@@ -32,7 +32,7 @@ async def send_messages(connection: websockets.WebSocketClientProtocol, console_
             await connection.send(rptl_message)
 
             input_required.clear()
-        except websockets.ConnectionClosedError as closed:  # Connection will end up closed
+        except websockets.ConnectionClosed as closed:  # Connection will end up closed
             print(f"Connection was closed: {closed.reason}")
 
 
@@ -45,7 +45,7 @@ async def receive_messages(connection: websockets.WebSocketClientProtocol, conso
 
             async with console_lock:  # Waits for the console to be available before writing to stdout
                 print(f"Recv: {rptl_message}")
-        except websockets.ConnectionClosedError as closed:  # Connection will end up closed
+        except websockets.ConnectionClosed as closed:  # Connection will end up closed
             print(f"Connection was closed: {closed.reason}")
 
 
