@@ -131,8 +131,13 @@ public:
     }
 
     /// Trivial access to formatRegistrationMessage() for testing purpose
-    std::string registrationMessage(const RpT::Utils::HandlingResult& registration_result) {
+    std::string registrationMessage() {
         return formatRegistrationMessage();
+    }
+
+    /// Trivial access to formatLoggedOutMessage() for testing purpose
+    std::string loggedOutMessage(const std::uint64_t client_token) {
+        return formatLoggedOutMessage(client_token);
     }
 
     /// Trivial access to disconnectionReason() for testing purpose
@@ -385,7 +390,7 @@ BOOST_AUTO_TEST_CASE(NoActors) {
     io_interface.closePipelineWith(CONSOLE_ACTOR, {});
 
     // Expects Registration command for successfully done registration without any registered actors
-    BOOST_CHECK_EQUAL(io_interface.registrationMessage({}), "REGISTRATION");
+    BOOST_CHECK_EQUAL(io_interface.registrationMessage(), "REGISTRATION");
 }
 
 BOOST_AUTO_TEST_CASE(ManyActors) {
@@ -396,10 +401,42 @@ BOOST_AUTO_TEST_CASE(ManyActors) {
 
     // Expects Registration command for successfully done registration with testing and console actors already
     // registered
-    const std::string registration_message { io_interface.registrationMessage({}) };
+    const std::string registration_message { io_interface.registrationMessage() };
     const bool first_form { registration_message == "REGISTRATION 0 Console 1 TestingActor" };
     const bool second_form { registration_message == "REGISTRATION 1 TestingActor 0 Console" };
     BOOST_CHECK(first_form || second_form); // No matter in which order actors are formatted
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * formatLoggedOutMessage() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(FormatLoggedOutMessage)
+
+BOOST_AUTO_TEST_CASE(UnknownClient) {
+    SimpleNetworkBackend io_interface;
+
+    // No client with token 42 is connected
+    BOOST_CHECK_THROW(io_interface.loggedOutMessage(42), UnknownClientToken);
+}
+
+BOOST_AUTO_TEST_CASE(StillAliveClient) {
+    SimpleNetworkBackend io_interface;
+
+    // Console client is still connected
+    BOOST_CHECK_THROW(io_interface.loggedOutMessage(0), AliveClient);
+}
+
+BOOST_AUTO_TEST_CASE(Disconnected) {
+    SimpleNetworkBackend io_interface;
+
+    // Removes default Console actor
+    io_interface.closePipelineWith(CONSOLE_ACTOR, {});
+
+    // Checks generated message for Console actor disconnection
+    BOOST_CHECK_EQUAL(io_interface.loggedOutMessage(CONSOLE_ACTOR), "LOGGED_OUT 0");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

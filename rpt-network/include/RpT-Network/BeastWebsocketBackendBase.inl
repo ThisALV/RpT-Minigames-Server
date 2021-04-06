@@ -386,12 +386,8 @@ private:
             if (err)
                 logger_.warn("Unclean disconnection with client {}: {}", client_token, err.message());
 
-            // Formats logout command message to sync clients with server
-            std::string logout_message {
-                std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(client_token)
-            };
             // Then we can broadcast and confirm client is logged out and sync clients with server
-            broadcastMessage(std::move(logout_message));
+            broadcastMessage(formatLoggedOutMessage(client_token));
         });
     }
 

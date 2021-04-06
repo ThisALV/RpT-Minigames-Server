@@ -224,7 +224,10 @@ void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     // Reset actor object to uninitialized associated with owner client token and set status status to false
     auto& [status, actor] { connected_clients_.at(uid_entry->second) };
     actor.reset();
-    status.alive = false; // Sets status as no longer alive, doesn't care about disconnection reason
+    // Sets status as no longer alive, doesn't care about disconnection reason
+    status.alive = false;
+    // Formats and save message obtained with formatLoggedOutMessage() which must be broadcast to actors
+    status.loggedOutMessage = std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(actor_uid);
 
     // Remove actor UID from registry, as it is no longer owned by any client
     actors_registry_.erase(uid_entry);
@@ -254,6 +257,13 @@ std::string NetworkBackend::formatRegistrationMessage() const {
     }
 
     return registration_message;
+}
+
+std::string NetworkBackend::formatLoggedOutMessage(uint64_t client_token) const {
+    if (isAlive(client_token)) // Checks for client to exist and to be dead
+        throw AliveClient { client_token };
+
+    return connected_clients_.at(client_token).first.loggedOutMessage;
 }
 
 bool NetworkBackend::isAlive(std::uint64_t client_token) const {

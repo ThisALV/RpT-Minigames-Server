@@ -271,6 +271,7 @@ private:
     struct ClientStatus {
         bool alive;
         Utils::HandlingResult disconnectionReason;
+        std::string loggedOutMessage;
     };
 
     /// Registered client actor has an UID and a name
@@ -307,7 +308,7 @@ private:
     void registerActor(std::uint64_t client_token, std::uint64_t actor_uid, std::string name);
 
     /**
-     * @brief Remove actor using given UID
+     * @brief Remove actor using given UID, making associated client no longer alive
      *
      * @param actor_uid UID for registered actor to logout
      */
@@ -497,6 +498,20 @@ protected:
      * @returns Formatted RPTL message using `REGISTRATION` command
      */
     std::string formatRegistrationMessage() const;
+
+    /**
+     * @brief Generates RPTL Logged out command message from status for given client
+     *
+     * This message will be sent to all actors to sync them with server state
+     *
+     * @param client_token Client to check logged out RPTL message
+     *
+     * @return Formated message using `LOGGED_OUT` command
+     *
+     * @throws UnknownClientToken if no client is connected with given token
+     * @throws AliveClient if given hasn't been disconnected yet
+     */
+    std::string formatLoggedOutMessage(std::uint64_t client_token) const;
 
 public:
     /**
