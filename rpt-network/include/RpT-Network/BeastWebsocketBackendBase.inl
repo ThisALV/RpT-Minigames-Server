@@ -1,7 +1,6 @@
 #ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 #define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 
-#include <queue>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -51,7 +50,7 @@ private:
     private:
         BeastWebsocketBackendBase& protocol_instance_;
         const std::uint64_t client_token_;
-        const std::shared_ptr<std::string> message_data_owner_;
+        std::queue<std::shared_ptr<std::string>> remaining_messages_;
 
     public:
         /**
@@ -59,30 +58,27 @@ private:
          *
          * @param protocol_instance Instance which sent message to client
          * @param client_token Client who must receive instance message
-         * @param message_data_owner Shared pointer owning memory range used by message buffer
+         * @param remaining_messages Queue owning messages which will be recursively sent to given client, including
+         * message currently being sent
          */
         SentMessageHandler(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t client_token,
-                           std::shared_ptr<std::string>  message_data_owner)
+                           std::queue<std::shared_ptr<std::string>> remaining_messages)
         : protocol_instance_ { protocol_instance }, client_token_ { client_token },
-        message_data_owner_ { std::move(message_data_owner) } {}
+        remaining_messages_ { std::move(remaining_messages) } {}
 
         /// Makes handler callable object
         void operator()(const boost::system::error_code& err, std::size_t) {
+            // If client was disconnected, sending message to it is useless
+            if (protocol_instance_.clients_stream_.count(client_token_) == 0)
+                return;
+
             /*
              * In any case, async_write operation completed and current message must be removed from queue if queue
              * still exists
              */
 
-            // If client was disconnected, its messages queue might not exist anymore
-            std::queue<std::shared_ptr<std::string>>* messages_queue { nullptr };
-
-            // Checks for client if it is still connected
-            if (protocol_instance_.clients_remaining_messages_.count(client_token_) == 1) {
-                // Retrieves queue for current client
-                messages_queue = &protocol_instance_.clients_remaining_messages_.at(client_token_);
-                // Removes current message from queue as client is still connected
-                messages_queue->pop();
-            }
+            // Current message is finally sent, removes it from queue, no longer requires it
+            remaining_messages_.pop();
 
             // Ignores if server stopped
             if (err == boost::asio::error::operation_aborted)
@@ -100,8 +96,8 @@ private:
             }
 
             // If no error occurred, checks for messages queue and send next message recursively if any
-            if (messages_queue && !messages_queue->empty())
-                protocol_instance_.sendNextMessage(client_token_);
+            if (!remaining_messages_.empty()) // Handler completed, remaining messages pointers are moved
+                protocol_instance_.sendNextMessage(client_token_, std::move(remaining_messages_));
         }
     };
 
@@ -125,7 +121,7 @@ private:
         /// Makes callable object
         /// Template method used instead of one method for each type as only few event types are actually checked
         template<typename InputEventT>
-        void operator()(InputEventT&& input_event) {
+        void operator()(InputEventT&&) {
             using SimplifiedInputEventT = std::decay_t<InputEventT>;
 
             // If logout message was sent, client is actor is unregistered and must be removed
@@ -133,17 +129,6 @@ private:
             if constexpr (std::is_same_v<Core::LeftEvent, SimplifiedInputEventT>) {
                 // As LeftEvent was triggered by logout command, we know no error occurred
                 protocol_instance_.killClient(sender_token_);
-            } else if constexpr (std::is_same_v<Core::JoinedEvent, SimplifiedInputEventT>) {
-                // Handshaking done, actor has been registered for given client, sync new actor owner
-                protocol_instance_.privateMessage(sender_token_, protocol_instance_.formatRegistrationMessage());
-
-                // Then sync all registered clients, including newly registered one
-                std::string logged_in_message { // Formats Logged In RPTL command message
-                        std::string { LOGGED_IN_COMMAND } + ' ' +
-                        std::to_string(input_event.actor()) + ' ' + input_event.playerName()
-                };
-
-                protocol_instance_.broadcastMessage(std::move(logged_in_message));
             }
         }
     };
@@ -168,8 +153,6 @@ private:
 
     // Websocket stream using given TCP stream for each client token
     std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
-    // Each client stream remaining messages to send, same message might be sent to many clients, so using sharde_ptr
-    std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> clients_remaining_messages_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
     // Posix signals handling to stop server
@@ -194,68 +177,20 @@ private:
      *
      * @param client_token Token for queue to send messages from
      */
-    void sendNextMessage(const std::uint64_t client_token) {
-        // Retrieves queue for given client
-        std::queue<std::shared_ptr<std::string>>& messages_queue { clients_remaining_messages_.at(client_token) };
+    void sendNextMessage(const std::uint64_t client_token,
+                         std::queue<std::shared_ptr<std::string>> remaining_messages) {
 
         // Using shared_ptr stored inside queue, data will be valid during async handler execution
-        const auto message_owner { messages_queue.front() };
+        const auto message_owner { remaining_messages.front() };
+        // Data owned
         // Buffer read by Asio to send message, data must be valid until handler call finished
         const boost::asio::const_buffer message_buffer { message_owner->data(), message_owner->size() };
 
         clients_stream_.at(client_token).async_write(
-                message_buffer, SentMessageHandler { *this, client_token, message_owner });
+                message_buffer, SentMessageHandler { *this, client_token, remaining_messages });
     }
 
-    /**
-     * @brief Immediately sends RPTL message to given client if its queue is empty, else queues given message
-     *
-     * @param client_token Client which must receive message
-     * @param message RPTL message to send, or queue if sending hasn't complete
-     */
-    void pushMessage(const std::uint64_t client_token, const std::shared_ptr<std::string>& message) {
-        // Retrieves queue for given client
-        std::queue<std::shared_ptr<std::string>>& messages_queue { clients_remaining_messages_.at(client_token) };
-
-        messages_queue.push(message); // Moves given message into queue
-
-        // If all other async_write have terminated, sends message right now to begin recursive queue run
-        if (messages_queue.size() == 1)
-            sendNextMessage(client_token);
-    }
-
-    /**
-     * @brief Sends private RPTL message to given client stream
-     *
-     * @param client_token Token for used client stream
-     * @param message RPTL message to be sent
-     */
-    void privateMessage(const std::uint64_t client_token, std::string message) {
-        // Message will only be sent to one client, individual shared_ptr
-        pushMessage(client_token, std::make_shared<std::string>(std::move(message)));
-    }
-
-    /**
-     * @brief Sends broadcast RPTL message to all registered clients
-     *
-     * @param message RPTL message to be sent
-     */
-    void broadcastMessage(std::string message) {
-        // Message will be sent to all registered clients, using common shared_ptr to avoid string duplication into
-        // messages queues
-        const auto message_owner { std::make_shared<std::string>(std::move(message)) };
-
-        for (const auto& client : clients_stream_) { // For each registered client, send message using ptr
-            const std::uint64_t token { client.first }; // Retrieves token for current client
-
-            if (isClientRegistered(token))
-                pushMessage(token, message_owner);
-        }
-    }
-
-    /**
-     * @brief Accepts next incoming TCP client connection, then wait for next client again
-     */
+    /// Accepts next incoming TCP client connection, then wait for next client again
     void waitNextClient() {
         logger_.trace("Waiting for new TCP connection...");
 
@@ -346,8 +281,6 @@ private:
     void closeStream(const std::uint64_t client_token) {
         // Retrieves stream closure reason to determine Websocket close frame close code
         const Utils::HandlingResult& disconnection_reason { disconnectionReason(client_token) };
-        // Formatting interrupt command message to inform client that it will be disconnected and why
-        std::string interrupt_message { INTERRUPT_COMMAND };
 
         // By default, set to normal close code
         boost::beast::websocket::close_reason websocket_close_reason { boost::beast::websocket::normal };
@@ -357,13 +290,10 @@ private:
         if (!disconnection_reason) {
             const std::string& error_message { disconnection_reason.errorMessage() };
 
-            interrupt_message += ' ' + error_message;
-
             websocket_close_reason.code = boost::beast::websocket::close_code::abnormal;
             websocket_close_reason.reason = error_message;
         }
 
-        privateMessage(client_token, std::move(interrupt_message));
         removeClient(client_token); // Once disconnection reason has been sent to client, it can be removed
 
         // Moves client stream entry as it will be closed and no more operation should be performed on
@@ -373,9 +303,8 @@ private:
         };
 
         const std::size_t removed_streams_count { clients_stream_.erase(client_token) };
-        const std::size_t removed_queues_count { clients_remaining_messages_.erase(client_token) };
         // Must be sure that exactly ony client stream and messages queue entry have been removed
-        assert(removed_streams_count == 1 && removed_queues_count == 1);
+        assert(removed_streams_count == 1);
 
         // Does and handles Websocket closure for dead client
         dead_client_stream->async_close(websocket_close_reason, [this, dead_client_stream, client_token](
@@ -385,9 +314,6 @@ private:
             // message must be logged
             if (err)
                 logger_.warn("Unclean disconnection with client {}: {}", client_token, err.message());
-
-            // Then we can broadcast and confirm client is logged out and sync clients with server
-            broadcastMessage(formatLoggedOutMessage(client_token));
         });
     }
 
@@ -426,6 +352,7 @@ protected:
      */
     virtual void openWebsocketStream(boost::asio::ip::tcp::socket new_client_connection) = 0;
 
+
     /**
      * @brief Inserts new client using server-defined token and given Websocket stream, should be called by
      * `openWebsocketStream()` implementation
@@ -449,13 +376,9 @@ protected:
             const auto insert_stream_result {
                 clients_stream_.insert({ new_client_token, std::move(new_client_stream) })
             };
-            // Needs empty messages queue for new client
-            const auto insert_queue_result {
-                clients_remaining_messages_.insert({ new_client_token, {} })
-            };
 
             // Checks if client stream and messages queue insertions has been done
-            assert(insert_stream_result.second || insert_queue_result.second);
+            assert(insert_stream_result.second);
 
             listenMessageFrom(new_client_token); // Now client stream was added, it can be listened
         } catch (const std::exception& err) { // Any token insertion error must result in stream closure
@@ -478,14 +401,37 @@ protected:
         }
     }
 
-    /// Broadcasts given RPTL Service Event command
-    void handleServiceEvent(std::string se_command) final {
-        broadcastMessage(std::move(se_command));
+    /// Syncs client state with server state by sending recursively each flushed message to given client
+    void syncClient(const std::uint64_t client_token,
+                    std::queue<std::shared_ptr<std::string>> flushed_messages_queue) final {
+
+        sendNextMessage(client_token, std::move(flushed_messages_queue));
     }
 
-    /// Sends private message to appropriate client containing RPTL Service Request Response
-    void handleServiceRequestResponse(const std::uint64_t sr_actor_owner, std::string sr_response) final {
-        privateMessage(sr_actor_owner, std::move(sr_response));
+    /**
+     * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
+     */
+    void waitForEvent() final {
+        while (!inputReady()) { // While input events queue is empty
+            std::vector<std::uint64_t> dead_clients;
+            // Max count of dead clients is count of actual clients
+            dead_clients.reserve(clients_stream_.size());
+
+            // Checks for all dead clients
+            for (const auto& client : clients_stream_) {
+                const std::uint64_t token { client.first }; // Retrieves token for current entry
+
+                if (!isAlive(token)) // If connection is dead, it must be closed
+                    dead_clients.push_back(token);
+            }
+
+            // As clients_stream_ elements must not be erased during iteration, closeStream() calls are deferred
+            for (const std::uint64_t dead_client_token : dead_clients)
+                closeStream(dead_client_token);
+
+            // Wait for next asynchronous IO operation handler, it may triggers an input event
+            async_io_context_.run_one();
+        }
     }
 
 public:
@@ -547,32 +493,6 @@ public:
 
         // Then IO interface can be considered closed
         InputOutputInterface::close();
-    }
-
-    /**
-     * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
-     */
-    void waitForEvent() final {
-        while (!inputReady()) { // While input events queue is empty
-            std::vector<std::uint64_t> dead_clients;
-            // Max count of dead clients is count of actual clients
-            dead_clients.reserve(clients_stream_.size());
-
-            // Checks for all dead clients
-            for (const auto& client : clients_stream_) {
-                const std::uint64_t token { client.first }; // Retrieves token for current entry
-
-                if (!isAlive(token)) // If connection is dead, it must be closed
-                    dead_clients.push_back(token);
-            }
-
-            // As clients_stream_ elements must not be erased during iteration, closeStream() calls are deferred
-            for (const std::uint64_t dead_client_token : dead_clients)
-                closeStream(dead_client_token);
-
-            // Wait for next asynchronous IO operation handler, it may triggers an input event
-            async_io_context_.run_one();
-        }
     }
 };
 

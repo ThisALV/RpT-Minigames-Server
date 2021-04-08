@@ -150,7 +150,6 @@ public:
 };
 
 
-
 /**
  * @brief Base class for `RpT::Core::InputOutputInterface` implementations based on networking protocol.
  *
@@ -159,13 +158,16 @@ public:
  * layer so it can transmits received SR commands to `Core::ServiceEventRequestProtocol` and transmits SE commands
  * and SRR to actors client.
  *
- * This class only implements synchronous server state or server logic operations for RPTL protocol and some RPTL
- * message formatting. All asynchronous IO operations used to sync clients state and server state are defined by
- * implementation (subclass).
+ * This class only implements synchronous server state or server logic operations for RPTL protocol and RPTL
+ * messages formatting and queuing. All asynchronous IO operations used to sync clients state and server state are
+ * defined by implementation (subclass).
  *
- * Every triggered input event is pushed into an events queue checked each time
- * `waitForInput()` is called. If queue is empty, `waitForEvent()` (defined by implementation) waits for IO
- * operations handled to push at least one input event into queue.
+ * Every triggered input event is pushed into an events queue checked each time `waitForInput()` is called. If queue
+ * is empty, `waitForEvent()` (defined by implementation) waits for IO operations handled to push at least one input
+ * event into queue.
+ *
+ * Each time interaction from clients is expected, call to `syncClient()` (defined by implementation) if performed to
+ * ensure clients are aware about server and game state before doing any interaction.
  *
  * RPTL, text-based protocol specifications:
  *
@@ -202,7 +204,7 @@ public:
  *
  * Server to client, private:
  * - Registration confirmation: `REGISTRATION [<uid_1> <actor_1>]...`, must NOT be registered
- * - Connection closed: `INTERRUPT [ERR_MSG]`, might be registered OR not
+ * - Connection closed: `INTERRUPT [ERR_MSG]`, must BE registered
  * - Service Request Response: `SERVICE <SRR>`, must BE registered, see `Core::ServiceEventRequestProtocol` for SRR doc
  *
  * Server to clients, broadcast, must BE registered:
@@ -214,6 +216,23 @@ public:
  */
 class NetworkBackend : public Core::InputOutputInterface {
 private:
+    /*
+     * Prefixes for RPTL protocol commands invoked by clients
+     */
+
+    static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
+    static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
+    static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
+
+    /*
+     * Prefixes for RPTL protocol commands invoked and formatted by server
+     */
+
+    static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
+    static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
+    static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
+    static constexpr std::string_view LOGGED_OUT_COMMAND { "LOGGED_OUT" };
+
     /// Parser for RPTL Protocol command, only parsing command name
     class RptlCommandParser : public Utils::TextProtocolParser {
     public:
@@ -271,7 +290,6 @@ private:
     struct ClientStatus {
         bool alive;
         Utils::HandlingResult disconnectionReason;
-        std::string loggedOutMessage;
     };
 
     /// Registered client actor has an UID and a name
@@ -284,6 +302,8 @@ private:
     std::unordered_map<std::uint64_t, std::pair<ClientStatus, std::optional<Actor>>> connected_clients_;
     // Actor UID with its owner client token
     std::unordered_map<std::uint64_t, std::uint64_t> actors_registry_;
+    // Each client stream remaining messages to send, same message might be sent to many clients, so using sharde_ptr
+    std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> clients_remaining_messages_;
     // Input events emitted waiting to be handled
     std::queue<Core::AnyInputEvent> input_events_queue_;
 
@@ -315,6 +335,21 @@ private:
     void unregisterActor(std::uint64_t actor_uid);
 
     /**
+     * @brief Pushes given message into queue for given client
+     *
+     * @param client_token Clients queue to be pushed
+     * @param new_message Message to push into queue
+     */
+    void privateMessage(std::uint64_t client_token, std::string new_message);
+
+    /**
+     * @brief Pushes given message into queue for each registered client
+     *
+     * @param new_message Message to push into queues
+     */
+    void broadcastMessage(std::string new_message);
+
+    /**
      * @brief Parses received handshake and registers new actor for given client
      *
      * @param client_token Client to be passed into registered mode
@@ -342,26 +377,17 @@ private:
      */
     Core::AnyInputEvent handleRegular(std::uint64_t client_actor, const std::string& regular_message);
 
-protected:
-    /*
-     * Prefixes for RPTL protocol commands invoked by clients
-     */
-
-    static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
-    static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
-    static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
-
-    /*
-     * Prefixes for RPTL protocol commands invoked and formatted by server
-     */
-
-    static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
-    static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
-    static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
-    static constexpr std::string_view LOGGED_OUT_COMMAND { "LOGGED_OUT" };
-
     /**
-     * @brief Parses given RPTL message from given client and retrieves triggered input event
+     * @brief Generates RPTL Registration command message from current server state
+     *
+     * @returns Formatted RPTL message using `REGISTRATION` command
+     */
+    std::string formatRegistrationMessage() const;
+
+protected:
+    /**
+     * @brief Parses given RPTL message from given client and retrieves triggered input event. Messages required to
+     * sync clients with new server state pushed into corresponding messages queues.
      *
      * Parsing mode (handshake/regular message) depends on current client connection mode (respectively
      * unregistered/registered).
@@ -377,17 +403,6 @@ protected:
      * (example: unavailable new actor UID for handshake command)
      */
     Core::AnyInputEvent handleMessage(std::uint64_t client_token, const std::string& client_message);
-
-    /**
-     * @brief Checks if given client token has an associated actor ID
-     *
-     * @param client_token Client token to check actor for
-     *
-     * @returns `true` if given client is registered, `false` otherwise
-     *
-     * @throws UnknownClientToken if no connected client is using given token
-     */
-    bool isClientRegistered(std::uint64_t client_token) const;
 
     /**
      * @brief Checks if given actor UID is available or not, called before `registerActor()` to check for
@@ -407,13 +422,23 @@ protected:
     void pushInputEvent(Core::AnyInputEvent input_event);
 
     /**
-     * @brief Wait for external input event to happen and to be queued, must blocks until `inputReady()` evaluates to
-     * `true`
+     * @brief Wait for external input event to happen and to be queued by running implementation asynchronous events
+     * loop, must blocks until `inputReady()` evaluates to `true`
      *
-     * Called by `waitForInput()` when events queue is empty, must be overridden by `NetworkBackend implementations,
+     * Called by `waitForInput()` when events queue is empty, must be overridden by `NetworkBackend` implementations,
      * but not called.
      */
     virtual void waitForEvent() = 0;
+
+    /**
+     * @brief Flushes messages queue in argument queue, must sends asynchronously all messages in flushed queue to
+     * corresponding client
+     *
+     * Called by `waitForInput()` when events queue is empty, must be overridden by `NetworkBackend` implementations,
+     * but not called.
+     */
+    virtual void syncClient(std::uint64_t client_token,
+                            std::queue<std::shared_ptr<std::string>> flushed_messages_queue) = 0;
 
     /**
      * @brief Checks if `waitForInput()` will immediately return or if it still has to wait for input event
@@ -434,7 +459,8 @@ protected:
     void addClient(std::uint64_t new_token);
 
     /**
-     * @brief Makes sure that client is no longer alive, closing pipeline with actor if required
+     * @brief Makes sure that client is no longer alive, closing pipeline with actor if required and push private to
+     * interrupt connection
      *
      * @param client_token Token for client to no longer be alive
      * @param disconnection_reason Reason for disconnection, useful for pipeline closure handling, ignored if
@@ -477,42 +503,6 @@ protected:
      */
     const Utils::HandlingResult& disconnectionReason(std::uint64_t client_token) const;
 
-    /**
-     * @brief Handles RPTL Service Event command from server to clients
-     *
-     * @param se_command RPTL protocol Service command for SE message
-     */
-    virtual void handleServiceEvent(std::string se_command) = 0;
-
-    /**
-     * @brief Handles RPTL Service Request Response command from server to given client
-     *
-     * @param sr_actor_owner Client token for actor who's receiving a SRR
-     * @param sr_response RTPL protocol Service command for SRR message
-     */
-    virtual void handleServiceRequestResponse(std::uint64_t sr_actor_owner, std::string sr_response) = 0;
-
-    /**
-     * @brief Generates RPTL Registration command message from current server state
-     *
-     * @returns Formatted RPTL message using `REGISTRATION` command
-     */
-    std::string formatRegistrationMessage() const;
-
-    /**
-     * @brief Generates RPTL Logged out command message from status for given client
-     *
-     * This message will be sent to all actors to sync them with server state
-     *
-     * @param client_token Client to check logged out RPTL message
-     *
-     * @return Formated message using `LOGGED_OUT` command
-     *
-     * @throws UnknownClientToken if no client is connected with given token
-     * @throws AliveClient if given hasn't been disconnected yet
-     */
-    std::string formatLoggedOutMessage(std::uint64_t client_token) const;
-
 public:
     /**
      * @brief If any, poll input event inside queue. If queue is empty, wait until input event is triggered.
@@ -524,7 +514,8 @@ public:
     Core::AnyInputEvent waitForInput() final;
 
     /**
-     * @brief Unregisters actor using given UID and emits input event for player disconnection
+     * @brief Unregisters actor using given UID, emits input event for player disconnection and syncs clients about
+     * player disconnection sending appropriate messages
      *
      * @param actor UID which will has it's connection closed
      * @param clean_shutdown Error message, if any clean_shutdown caused actor disconnection
@@ -538,6 +529,8 @@ public:
      *
      * @param sr_actor Actor UID to fetch client for
      * @param sr_response Service Request Response formatted as SER command (see `Core::ServiceEventRequestProtocol`)
+     *
+     * @throws UnknownActorUID if given actor doesn't exist
      */
     void replyTo(std::uint64_t sr_actor, const std::string &sr_response) final;
 

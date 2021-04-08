@@ -85,6 +85,17 @@ Core::JoinedEvent NetworkBackend::handleHandshake(const std::uint64_t client_tok
 
             // If registration hasn't been done at this point, this is an implementation error
             assert(isRegistered(new_actor_uid));
+
+            // Client must be synced about its own registration
+            privateMessage(client_token, formatRegistrationMessage());
+
+            // Formats message to notify actors that player joined server
+            std::string logged_in_message {
+                    std::string { LOGGED_IN_COMMAND }
+                    + ' ' + std::to_string(new_actor_uid) + ' ' + new_actor_name
+            };
+            // All players should be aware about new registered player
+            broadcastMessage(std::move(logged_in_message));
         } catch (const std::exception& err) { // It it fails, then registration must NOT have been done
             // If registration is still active at this point, this is an implementation error and server must stop
             assert(!isRegistered(new_actor_uid));
@@ -121,10 +132,18 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint6
             if (!command_parser.invokedCommandArgs().empty()) // If any extra arg detected, command call is ill-formed
                 throw TooManyArguments { LOGOUT_COMMAND };
 
+            // Saves token for client owning current actor before it will be unregister
+            const std::uint64_t owner_client { actors_registry_.at(client_actor) };
+
             unregisterActor(client_actor);
 
             // If actor is still registered, it is an implementation error
             assert(!isRegistered(client_actor));
+
+            // Client must be aware it has been logged out properly
+            privateMessage(owner_client, std::string { INTERRUPT_COMMAND });
+            // Players must be notified about current player disconnection
+            broadcastMessage(std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(client_actor));
 
             // Returns input event triggered by player disconnection (or unregistration)
             // RPTL command way disconnection, clean
@@ -176,7 +195,23 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
         return *last_input_event;
 
     // If queue is empty, new input event must be waited for by NetworkBackend implementation
+    // As interaction with clients might occurres, they must be synced with server and game state
+
+    for (auto& [client_token, messages_queue] : clients_remaining_messages_) {
+        // Queue provided for implementation to send remaining messages
+        std::queue<std::shared_ptr<std::string>> messages_to_send;
+
+        // Flushes queue, message by message
+        while (!messages_to_send.empty()) {
+            messages_to_send.push(messages_queue.front());
+            messages_queue.pop();
+        }
+
+        syncClient(client_token, std::move(messages_to_send)); // Moves pointers to queue provided for implementation
+    }
+
     waitForEvent();
+
     // If events queue isn't yet ready, it is an implementation error
     assert(inputReady());
 
@@ -217,6 +252,25 @@ void NetworkBackend::registerActor(const std::uint64_t client_token, const std::
     assert(uid_insert_result.second); // Checks for UID insertion
 }
 
+void NetworkBackend::privateMessage(const std::uint64_t client_token, std::string new_message) {
+    const auto new_message_owner { std::make_shared<std::string>(std::move(new_message)) };
+
+    clients_remaining_messages_.at(client_token).push(new_message_owner);
+}
+
+void NetworkBackend::broadcastMessage(std::string new_message) {
+    const auto new_message_owner { std::make_shared<std::string>(std::move(new_message)) };
+
+    // For each actor, owner is a registered client
+    for (const auto actor : actors_registry_) {
+        // Retrieves registered client token for current actor UID
+        const std::uint64_t actor_owner { actor.second };
+
+        // Actors queue will share the same data for a broadcast message
+        clients_remaining_messages_.at(actor_owner).push(new_message_owner);
+    }
+}
+
 void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     // Find actor UID entry with owner client token
     const auto uid_entry { actors_registry_.find(actor_uid) };
@@ -226,23 +280,9 @@ void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
     actor.reset();
     // Sets status as no longer alive, doesn't care about disconnection reason
     status.alive = false;
-    // Formats and save message obtained with formatLoggedOutMessage() which must be broadcast to actors
-    status.loggedOutMessage = std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(actor_uid);
 
     // Remove actor UID from registry, as it is no longer owned by any client
     actors_registry_.erase(uid_entry);
-}
-
-bool NetworkBackend::isClientRegistered(const std::uint64_t client_token) const {
-    if (connected_clients_.count(client_token) == 0) // Checks for given client to exist
-        throw UnknownClientToken { client_token };
-
-    // Returns if an actor is initialized for given client token entry
-    return connected_clients_.at(client_token).second.has_value();
-}
-
-bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
-    return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
 }
 
 std::string NetworkBackend::formatRegistrationMessage() const {
@@ -259,11 +299,8 @@ std::string NetworkBackend::formatRegistrationMessage() const {
     return registration_message;
 }
 
-std::string NetworkBackend::formatLoggedOutMessage(uint64_t client_token) const {
-    if (isAlive(client_token)) // Checks for client to exist and to be dead
-        throw AliveClient { client_token };
-
-    return connected_clients_.at(client_token).first.loggedOutMessage;
+bool NetworkBackend::isRegistered(const std::uint64_t actor_uid) const {
+    return actors_registry_.count(actor_uid) == 1; // Checks for UID entries to contain given actor UID
 }
 
 bool NetworkBackend::isAlive(std::uint64_t client_token) const {
@@ -287,13 +324,17 @@ void NetworkBackend::addClient(const std::uint64_t new_token) {
         throw UnavailableClientToken { new_token };
 
     // Inserts client alive and unregistered
-    const auto insert_result {
+    const auto insert_client_result {
         connected_clients_.insert({ // Insert new client with alive status and no disconnection error reason
             new_token, std::make_pair<ClientStatus, std::optional<Actor>>({ true, {} }, {})
         })
     };
+    // Needs empty messages queue for new client
+    const auto insert_queue_result {
+        clients_remaining_messages_.insert({ new_token, {} })
+    };
 
-    assert(insert_result.second); // Checks for insertion to be successfully done
+    assert(insert_client_result.second && insert_queue_result.second); // Checks for insertion to be successfully done
 }
 
 void NetworkBackend::killClient(const std::uint64_t client_token, const Utils::HandlingResult& disconnection_reason) {
@@ -320,10 +361,12 @@ void NetworkBackend::removeClient(const std::uint64_t old_token) {
     if (alive_client)
         throw AliveClient { old_token };
 
-    // Removes client from connected clients
-    const std::size_t removed_clients { connected_clients_.erase(old_token) };
+    // Removes client from connected clients and removes its messages queue
+    const std::size_t removed_clients_count { connected_clients_.erase(old_token) };
+    const std::size_t removed_queues_count { clients_remaining_messages_.erase(old_token) };
 
-    assert(removed_clients == 1); // Must have removed exactly one connected client
+    // Must have removed exactly one connected client and one messages queue
+    assert(removed_clients_count == 1 && removed_queues_count);
 }
 
 void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::HandlingResult& clean_shutdown) {
@@ -342,21 +385,29 @@ void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::H
 
     // Actor is no longer connected, removes it from register and marks it as no longer alive
     unregisterActor(actor);
+    assert(!isRegistered(actor)); // Must be sure actor is no longer registered
+
+    // Now clients state sync can be done, as in handleRegular()
+    privateMessage(owner_client, std::string { INTERRUPT_COMMAND });
+    broadcastMessage(std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(actor));
 
     // Set appropriate disconnection reason property to client status
     connected_clients_.at(owner_client).first.disconnectionReason = clean_shutdown;
 }
 
 void NetworkBackend::replyTo(const std::uint64_t sr_actor, const std::string& sr_response) {
+    if (!isRegistered(sr_actor)) // Checks for given SR command author to exist
+        throw UnknownActorUID { sr_actor };
+
     const std::uint64_t owner_client { actors_registry_.at(sr_actor) }; // Fetches client owning given actor
 
-    // Formats message for RPTL protocol using SERVICE command
-    handleServiceRequestResponse(owner_client, std::string { SERVICE_COMMAND } + ' ' + sr_response);
+    // Formats message for RPTL protocol using SERVICE command and pushes it into queue
+    privateMessage(owner_client, std::string { SERVICE_COMMAND } + ' ' + sr_response);
 }
 
 void NetworkBackend::outputEvent(const std::string& event) {
     // Formats message for RPTL protocol using SERVICE command
-    handleServiceEvent(std::string { SERVICE_COMMAND } + ' ' + event);
+    broadcastMessage(std::string { SERVICE_COMMAND } + ' ' + event);
 }
 
 

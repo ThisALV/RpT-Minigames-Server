@@ -1,5 +1,6 @@
 #include <RpT-Testing/TestingUtils.hpp>
 
+#include <array>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -59,24 +60,17 @@ static constexpr std::uint64_t TEST_ACTOR { 1 };
  */
 class SimpleNetworkBackend : public NetworkBackend {
 protected:
+    void syncClient(std::uint64_t, std::queue<std::shared_ptr<std::string>>) override {}
+
     /// Retrieves `NoneEvent` triggered by actor with UID == 0 when queue is empty
     void waitForEvent() override {
         pushInputEvent(RpT::Core::NoneEvent { CONSOLE_ACTOR });
     }
 
-    /*
-     * Message sending isn't NetworkBackend responsibility
-     */
-
-    void handleServiceRequestResponse(std::uint64_t, std::string) override {
-        throw std::logic_error { "Not implemented" };
-    }
-
-    void handleServiceEvent(std::string) override {
-        throw std::logic_error { "Not implemented" };
-    }
-
 public:
+    /// Where `syncClient()` calls save remaining messages queue, public so it can be asserted
+    std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> messages_queues;
+
     /// Initializes backend with client actor 0 for `waitForEvent()` return value and unregistered client 1 for
     /// testing purpose
     SimpleNetworkBackend() {
@@ -130,16 +124,6 @@ public:
         killClient(client_token, disconnnection_reason);
     }
 
-    /// Trivial access to formatRegistrationMessage() for testing purpose
-    std::string registrationMessage() {
-        return formatRegistrationMessage();
-    }
-
-    /// Trivial access to formatLoggedOutMessage() for testing purpose
-    std::string loggedOutMessage(const std::uint64_t client_token) {
-        return formatLoggedOutMessage(client_token);
-    }
-
     /// Trivial access to disconnectionReason() for testing purpose
     const RpT::Utils::HandlingResult& killReason(const std::uint64_t client_token) {
         return disconnectionReason(client_token);
@@ -149,30 +133,6 @@ public:
 
 BOOST_AUTO_TEST_SUITE(NetworkBackendTests)
 
-/*
- * inputReady() unit tests
- */
-
-BOOST_AUTO_TEST_SUITE(InputReady)
-
-BOOST_AUTO_TEST_CASE(EmptyQueue) {
-    SimpleNetworkBackend io_interface;
-
-    // No events pushed into queue, shouldn't be ready
-    BOOST_CHECK(!io_interface.ready());
-}
-
-BOOST_AUTO_TEST_CASE(AnyEventInsideQueue) {
-    SimpleNetworkBackend io_interface;
-
-    // Push any event into queue
-    io_interface.trigger(RpT::Core::JoinedEvent { TEST_ACTOR, "NoName" });
-
-    // Should now be ready for next input event
-    BOOST_CHECK(io_interface.ready());
-}
-
-BOOST_AUTO_TEST_SUITE_END()
 
 /*
  * waitForInput() unit tests
@@ -374,69 +334,6 @@ BOOST_AUTO_TEST_CASE(ErrorDisconnection) {
     io_interface.deleteClient(TEST_CLIENT);
     // Adding new client with CONSOLE_CLIENT token should works as it has been removed
     io_interface.newClient(TEST_CLIENT);
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-/*
- * formatRegistrationMessage() unit tests
- */
-
-BOOST_AUTO_TEST_SUITE(FormatRegistrationMessage)
-
-BOOST_AUTO_TEST_CASE(NoActors) {
-    SimpleNetworkBackend io_interface;
-    // Default registered client with actor should be unregistered so there will not have any actor
-    io_interface.closePipelineWith(CONSOLE_ACTOR, {});
-
-    // Expects Registration command for successfully done registration without any registered actors
-    BOOST_CHECK_EQUAL(io_interface.registrationMessage(), "REGISTRATION");
-}
-
-BOOST_AUTO_TEST_CASE(ManyActors) {
-    SimpleNetworkBackend io_interface;
-    // Registers testing actor for testing client so there will be 2 actors for testing (with Console actor already
-    // registered)
-    io_interface.clientMessage(TEST_CLIENT, "LOGIN " + std::to_string(TEST_ACTOR) + " TestingActor");
-
-    // Expects Registration command for successfully done registration with testing and console actors already
-    // registered
-    const std::string registration_message { io_interface.registrationMessage() };
-    const bool first_form { registration_message == "REGISTRATION 0 Console 1 TestingActor" };
-    const bool second_form { registration_message == "REGISTRATION 1 TestingActor 0 Console" };
-    BOOST_CHECK(first_form || second_form); // No matter in which order actors are formatted
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-/*
- * formatLoggedOutMessage() unit tests
- */
-
-BOOST_AUTO_TEST_SUITE(FormatLoggedOutMessage)
-
-BOOST_AUTO_TEST_CASE(UnknownClient) {
-    SimpleNetworkBackend io_interface;
-
-    // No client with token 42 is connected
-    BOOST_CHECK_THROW(io_interface.loggedOutMessage(42), UnknownClientToken);
-}
-
-BOOST_AUTO_TEST_CASE(StillAliveClient) {
-    SimpleNetworkBackend io_interface;
-
-    // Console client is still connected
-    BOOST_CHECK_THROW(io_interface.loggedOutMessage(0), AliveClient);
-}
-
-BOOST_AUTO_TEST_CASE(Disconnected) {
-    SimpleNetworkBackend io_interface;
-
-    // Removes default Console actor
-    io_interface.closePipelineWith(CONSOLE_ACTOR, {});
-
-    // Checks generated message for Console actor disconnection
-    BOOST_CHECK_EQUAL(io_interface.loggedOutMessage(CONSOLE_ACTOR), "LOGGED_OUT 0");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
