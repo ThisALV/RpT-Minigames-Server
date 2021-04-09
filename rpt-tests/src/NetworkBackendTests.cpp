@@ -567,9 +567,10 @@ BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
     io_interface.sync();
 
     // New client owning actor should have been notified about its own registration
-    const auto& new_client_queue { io_interface.messages_queues.at(TEST_CLIENT) };
-    BOOST_CHECK_EQUAL(new_client_queue.size(), 1);
+    auto& new_client_queue { io_interface.messages_queues.at(TEST_CLIENT) };
+    BOOST_CHECK_EQUAL(new_client_queue.size(), 2);
     BOOST_CHECK_EQUAL(new_client_queue.front()->substr(0, 12), "REGISTRATION"); // Checks for command in message
+    new_client_queue.pop(); // REGISTRATION message has been checked for
 
     // Each registered client after current registration should have been notified that new player joined server
     const std::array<std::uint64_t, 3> registered_clients {
