@@ -550,9 +550,6 @@ public:
      * @param event Service Event command formatted as SER command (see `Core::ServiceEventRequestProtocol`)
      */
     void outputEvent(const std::string &event) final;
-
-    /// Required to be virtual (overriding) for polymorphism avoiding memory leaks
-    ~NetworkBackend() override = default;
 };
 
 
