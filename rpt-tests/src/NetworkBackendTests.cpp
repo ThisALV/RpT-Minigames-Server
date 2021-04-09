@@ -43,16 +43,24 @@ ExpectedEventT requireEventType(RpT::Core::AnyInputEvent event_variant) {
  * Default client data
  */
 
-static constexpr std::uint64_t CONSOLE_CLIENT { 0 };
-static constexpr std::uint64_t CONSOLE_ACTOR { 0 };
-static constexpr std::string_view CONSOLE_NAME { "Console" };
+constexpr std::uint64_t CONSOLE_CLIENT { 0 };
+constexpr std::uint64_t CONSOLE_ACTOR { 0 };
+constexpr std::string_view CONSOLE_NAME { "Console" };
 
 /*
  * Test client data
  */
 
-static constexpr std::uint64_t TEST_CLIENT { 1 };
-static constexpr std::uint64_t TEST_ACTOR { 1 };
+constexpr std::uint64_t TEST_CLIENT { 1 };
+constexpr std::uint64_t TEST_ACTOR { 1 };
+
+/*
+ * Registered version test client data
+ */
+
+constexpr std::uint64_t REGISTERED_TEST_CLIENT { 2 };
+constexpr std::uint64_t REGISTERED_TEST_ACTOR { 10 };
+constexpr std::string_view REGISTERED_TEST_NAME { "TestingActor" };
 
 
 /**
@@ -87,6 +95,17 @@ public:
 
         // Test client uses token 1
         addClient(TEST_CLIENT);
+
+        // Registered test client uses token 2
+        addClient(REGISTERED_TEST_CLIENT);
+        // Registers test client 2 using actor UID 10
+        handleMessage(REGISTERED_TEST_CLIENT,
+                      "LOGIN " + std::to_string(REGISTERED_TEST_ACTOR)
+                      + ' ' + std::string { REGISTERED_TEST_NAME });
+
+        // Ignores current messages queues polluted with console and testing clients registration
+        synchronize(); // Flushes
+        messages_queues.clear(); // Then clear public dictionary
     }
 
     /// Handles given RPTL message and pushes event triggered by command handling
@@ -132,6 +151,11 @@ public:
     /// Trivial access to disconnectionReason() for testing purpose
     const RpT::Utils::HandlingResult& killReason(const std::uint64_t client_token) {
         return disconnectionReason(client_token);
+    }
+
+    /// Trivial access to synchronize() for testing purpose
+    void sync() {
+        synchronize();
     }
 };
 
@@ -211,6 +235,62 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     const auto third_event { requireEventType<RpT::Core::JoinedEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(third_event.actor(), 0);
     BOOST_CHECK_EQUAL(third_event.playerName(), "TestingActor");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * replyTo() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(ReplyTo)
+
+BOOST_AUTO_TEST_CASE(ConsoleActor) {
+    SimpleNetworkBackend io_interface;
+
+    // Console actor automatically registered
+    io_interface.replyTo(CONSOLE_ACTOR, "Some SRR thing");
+    // Flushes messages queue for each client
+    io_interface.sync();
+
+    // Checks for message to have been pushed into queue using SERVICE command
+    const auto& console_messages_queue { io_interface.messages_queues.at(CONSOLE_CLIENT) };
+    BOOST_CHECK_EQUAL(console_messages_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*console_messages_queue.front(), "SERVICE Some SRR thing");
+}
+
+BOOST_AUTO_TEST_CASE(UnknownActor) {
+    SimpleNetworkBackend io_interface;
+
+    // No actor with UID 42
+    BOOST_CHECK_THROW(io_interface.replyTo(42, ""), UnknownActorUID);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * outputEvent() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(OutputEvent)
+
+BOOST_AUTO_TEST_CASE(AnyServiceEvent) {
+    SimpleNetworkBackend io_interface;
+
+    io_interface.outputEvent("Some SE thing");
+    // Flushes messages queue for each client
+    io_interface.sync();
+
+    /*
+     * Checks for message to have been pushed for both Console and Testing registered clients
+     */
+
+    const std::array<std::uint64_t, 2> registered_clients { CONSOLE_CLIENT, REGISTERED_TEST_CLIENT };
+    for (const std::uint64_t client_token : registered_clients) {
+        const auto& messages_queue { io_interface.messages_queues.at(client_token) };
+        BOOST_CHECK_EQUAL(messages_queue.size(), 1);
+        BOOST_CHECK_EQUAL(*messages_queue.front(), "SERVICE Some SRR thing");
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -393,6 +473,20 @@ BOOST_AUTO_TEST_CASE(Clean) {
     BOOST_CHECK_EQUAL(left_event.actor(), CONSOLE_ACTOR);
     // Disconnection should be clean
     BOOST_CHECK(left_event.disconnectionReason());
+
+    /*
+     * Interrupt and logged out messages must have been queued
+     */
+
+    io_interface.sync();
+
+    const auto& console_client_queue { io_interface.messages_queues.at(CONSOLE_CLIENT) };
+    BOOST_CHECK_EQUAL(console_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*console_client_queue.front(), "INTERRUPT"); // No error occurred, no error message
+
+    const auto& test_client_queue { io_interface.messages_queues.at(REGISTERED_TEST_CLIENT) };
+    BOOST_CHECK_EQUAL(test_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*test_client_queue.front(), "LOGGED_OUT " + std::to_string(CONSOLE_ACTOR)); // Console left server
 }
 
 BOOST_AUTO_TEST_CASE(Crash) {
@@ -419,6 +513,20 @@ BOOST_AUTO_TEST_CASE(Crash) {
     // Disconnection should be caused by crash
     BOOST_CHECK(!disconnection_reason);
     BOOST_CHECK_EQUAL(disconnection_reason.errorMessage(), "ERROR");
+
+    /*
+     * Interrupt and logged out messages must have been queued
+     */
+
+    io_interface.sync();
+
+    const auto& console_client_queue { io_interface.messages_queues.at(CONSOLE_CLIENT) };
+    BOOST_CHECK_EQUAL(console_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*console_client_queue.front(), "INTERRUPT ERROR"); // Error occurred, error message "ERROR"
+
+    const auto& test_client_queue { io_interface.messages_queues.at(REGISTERED_TEST_CLIENT) };
+    BOOST_CHECK_EQUAL(test_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*test_client_queue.front(), "LOGGED_OUT " + std::to_string(CONSOLE_ACTOR)); // Console left server
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -450,6 +558,26 @@ BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
     const auto joined_event { requireEventType<RpT::Core::JoinedEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(joined_event.actor(), 42);
     BOOST_CHECK_EQUAL(joined_event.playerName(), "Alvis"); // Registered with name "Alvis" inside command
+
+    /*
+     * Registration message and logged in message should have been pushed into queues as player (or actor) was
+     * successfully registered
+     */
+
+    io_interface.sync();
+
+    // New client owning actor should have been notified about its own registration
+    const auto& new_client_queue { io_interface.messages_queues.at(42) };
+    BOOST_CHECK_EQUAL(new_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(new_client_queue.front()->substr(0, 12), "REGISTRATION"); // Checks for command in message
+
+    // Each registered client after current registration should have been notified that new player joined server
+    const std::array<std::uint64_t, 3> registered_clients { CONSOLE_CLIENT, REGISTERED_TEST_CLIENT, 42 };
+    for (const std::uint64_t client_token : registered_clients) {
+        const auto& messages_queue { io_interface.messages_queues.at(client_token) };
+        BOOST_CHECK_EQUAL(messages_queue.size(), 1);
+        BOOST_CHECK_EQUAL(*messages_queue.front(), "LOGGED_IN 42 Alvis");
+    }
 }
 
 BOOST_AUTO_TEST_CASE(Uid1MissingName) {
@@ -547,6 +675,22 @@ BOOST_AUTO_TEST_CASE(LogoutCommandNoArgs) {
     BOOST_CHECK_EQUAL(event.actor(), CONSOLE_ACTOR);
     // LOGOUT command is the clean way for client disconnection
     BOOST_CHECK(event.disconnectionReason());
+
+    /*
+     * Interrupt and logged out messages must have been sent as actor was logged out properly
+     */
+
+    io_interface.sync();
+
+    // Checks for interrupt message
+    const auto& console_client_queue { io_interface.messages_queues.at(CONSOLE_CLIENT) };
+    BOOST_CHECK_EQUAL(console_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*console_client_queue.front(), "INTERRUPT"); // Clean logout without any error
+
+    // Checks for logged out message
+    const auto& test_client_queue { io_interface.messages_queues.at(REGISTERED_TEST_CLIENT) };
+    BOOST_CHECK_EQUAL(test_client_queue.size(), 1);
+    BOOST_CHECK_EQUAL(*test_client_queue.front(), "LOGGED_OUT " + std::to_string(CONSOLE_ACTOR)); // Console left server
 }
 
 BOOST_AUTO_TEST_CASE(LogoutCommandExtraArgs) {
