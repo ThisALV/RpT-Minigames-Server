@@ -431,11 +431,20 @@ protected:
     virtual void waitForEvent() = 0;
 
     /**
+     * @brief Ensures clients state are same than current server state by calling implementation-defined `syncClient
+     * ()` method
+     *
+     * This method must be called by implementation. It is recommended to put call inside `waitForEvent()`
+     * implementation, so it will be called each time interaction with clients might occurres.
+     */
+    void synchronize();
+
+    /**
      * @brief Flushes messages queue in argument queue, must sends asynchronously all messages in flushed queue to
      * corresponding client
      *
-     * Called by `waitForInput()` when events queue is empty, must be overridden by `NetworkBackend` implementations,
-     * but not called.
+     * Called by `synchronize()` to sync each client after messages queue has been flushed, must be overridden by
+     * `NetworkBackend` implementations, but not called.
      */
     virtual void syncClient(std::uint64_t client_token,
                             std::queue<std::shared_ptr<std::string>> flushed_messages_queue) = 0;

@@ -188,6 +188,23 @@ bool NetworkBackend::inputReady() const {
     return !input_events_queue_.empty();
 }
 
+void NetworkBackend::synchronize() {
+    // For each client messages queue
+    for (auto& [client_token, messages_queue] : clients_remaining_messages_) {
+        // Queue provided for implementation to send remaining messages
+        std::queue<std::shared_ptr<std::string>> messages_to_send;
+
+        // Flushes queue, message by message
+        while (!messages_queue.empty()) {
+            messages_to_send.push(messages_queue.front());
+            messages_queue.pop();
+        }
+
+        // Syncs current client
+        syncClient(client_token, std::move(messages_to_send)); // Moves pointers to queue provided for implementation
+    }
+}
+
 Core::AnyInputEvent NetworkBackend::waitForInput() {
     // Checks for events inside queue before waiting for new input events
     std::optional<Core::AnyInputEvent> last_input_event { pollInputEvent() };
@@ -195,21 +212,6 @@ Core::AnyInputEvent NetworkBackend::waitForInput() {
         return *last_input_event;
 
     // If queue is empty, new input event must be waited for by NetworkBackend implementation
-    // As interaction with clients might occurres, they must be synced with server and game state
-
-    for (auto& [client_token, messages_queue] : clients_remaining_messages_) {
-        // Queue provided for implementation to send remaining messages
-        std::queue<std::shared_ptr<std::string>> messages_to_send;
-
-        // Flushes queue, message by message
-        while (!messages_to_send.empty()) {
-            messages_to_send.push(messages_queue.front());
-            messages_queue.pop();
-        }
-
-        syncClient(client_token, std::move(messages_to_send)); // Moves pointers to queue provided for implementation
-    }
-
     waitForEvent();
 
     // If events queue isn't yet ready, it is an implementation error

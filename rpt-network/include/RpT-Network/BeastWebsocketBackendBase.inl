@@ -412,6 +412,9 @@ protected:
      * @brief Runs next Asio asynchronous operations handler until input events queue is no longer empty
      */
     void waitForEvent() final {
+        // As interaction with clients might occurres, they must be synced with server and game state
+        synchronize();
+
         while (!inputReady()) { // While input events queue is empty
             std::vector<std::uint64_t> dead_clients;
             // Max count of dead clients is count of actual clients
