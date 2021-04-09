@@ -42,7 +42,12 @@ const std::string& LoggerView::name() const {
 }
 
 void LoggerView::refreshLoggingLevel() {
-    backend_->set_level(apiToBackendLevel(context_.get().retrieveLoggingLevel()));
+    const spdlog::level::level_enum backend_logging_level {
+        apiToBackendLevel(context_.get().retrieveLoggingLevel())
+    };
+
+    backend_->set_level(backend_logging_level);
+    backend_->flush_on(backend_logging_level);
 }
 
 LogLevel LoggerView::loggingLevel() const {
