@@ -60,7 +60,12 @@ static constexpr std::uint64_t TEST_ACTOR { 1 };
  */
 class SimpleNetworkBackend : public NetworkBackend {
 protected:
-    void syncClient(std::uint64_t, std::queue<std::shared_ptr<std::string>>) override {}
+    /// Saves flushed messages queue into public dictionary
+    void syncClient(const std::uint64_t client_token,
+                    std::queue<std::shared_ptr<std::string>> flushed_messages_queue) override {
+
+        messages_queues[client_token] = std::move(flushed_messages_queue);
+    }
 
     /// Retrieves `NoneEvent` triggered by actor with UID == 0 when queue is empty
     void waitForEvent() override {
@@ -133,6 +138,30 @@ public:
 
 BOOST_AUTO_TEST_SUITE(NetworkBackendTests)
 
+/*
+ * inputReady() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(InputReady)
+
+BOOST_AUTO_TEST_CASE(EmptyQueue) {
+    SimpleNetworkBackend io_interface;
+
+    // No events pushed into queue, shouldn't be ready
+    BOOST_CHECK(!io_interface.ready());
+}
+
+BOOST_AUTO_TEST_CASE(AnyEventInsideQueue) {
+    SimpleNetworkBackend io_interface;
+
+    // Push any event into queue
+    io_interface.trigger(RpT::Core::JoinedEvent { TEST_ACTOR, "NoName" });
+
+    // Should now be ready for next input event
+    BOOST_CHECK(io_interface.ready());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 /*
  * waitForInput() unit tests
