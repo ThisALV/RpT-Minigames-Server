@@ -405,7 +405,8 @@ protected:
     void syncClient(const std::uint64_t client_token,
                     std::queue<std::shared_ptr<std::string>> flushed_messages_queue) final {
 
-        sendNextMessage(client_token, std::move(flushed_messages_queue));
+        if (!flushed_messages_queue.empty()) // Initiates recursive calls if there is any message to send
+            sendNextMessage(client_token, std::move(flushed_messages_queue));
     }
 
     /**
