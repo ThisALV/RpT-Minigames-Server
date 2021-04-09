@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(AnyServiceEvent) {
     for (const std::uint64_t client_token : registered_clients) {
         const auto& messages_queue { io_interface.messages_queues.at(client_token) };
         BOOST_CHECK_EQUAL(messages_queue.size(), 1);
-        BOOST_CHECK_EQUAL(*messages_queue.front(), "SERVICE Some SRR thing");
+        BOOST_CHECK_EQUAL(*messages_queue.front(), "SERVICE Some SE thing");
     }
 }
 
