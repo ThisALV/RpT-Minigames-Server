@@ -2,6 +2,7 @@
 #define RPTOGETHER_SERVER_NETWORKBACKEND_HPP
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <queue>
 #include <stdexcept>
