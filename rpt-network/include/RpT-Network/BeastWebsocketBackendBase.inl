@@ -483,8 +483,24 @@ public:
      * closed
      */
     void close() final {
-        for (const auto& client : clients_stream_) // For each client token, closes associated stream
-            closeStream(client.first);
+        std::vector<std::uint64_t> client_tokens;
+        // One token for each client
+        client_tokens.reserve(clients_stream_.size());
+
+        // Each client must be disocnnected
+        for (const auto& client : clients_stream_) {
+            const std::uint64_t token { client.first }; // Retrieves token for current entry
+
+            client_tokens.push_back(token);
+            // Client must be unregistered before being removed
+            killClient(token); // No error, server closed
+        }
+
+        synchronize(); // Sends interrupt messages to clients before disconnection
+
+        // As clients_stream_ elements must not be erased during iteration, closeStream() calls are deferred
+        for (const std::uint64_t dead_client_token : client_tokens)
+            closeStream(dead_client_token);
 
         // A null event must be pushed so waitForEvent() can properly return
         // None event must not be handled by Executor so actor UID doesn't matter
