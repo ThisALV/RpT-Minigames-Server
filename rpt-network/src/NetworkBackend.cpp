@@ -389,8 +389,14 @@ void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::H
     unregisterActor(actor);
     assert(!isRegistered(actor)); // Must be sure actor is no longer registered
 
+    // Formats interrupt command message, beginning with INTERRUPT command
+    std::string interrupt_message { INTERRUPT_COMMAND };
+    // Appends error message if any error occurred
+    if (!clean_shutdown)
+        interrupt_message += ' ' + clean_shutdown.errorMessage();
+
     // Now clients state sync can be done, as in handleRegular()
-    privateMessage(owner_client, std::string { INTERRUPT_COMMAND });
+    privateMessage(owner_client, std::move(interrupt_message));
     broadcastMessage(std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(actor));
 
     // Set appropriate disconnection reason property to client status
