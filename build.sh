@@ -54,7 +54,7 @@ if [ "$help" ]; then
   echo "    --help           : Print this message"
   echo "    --local          : Set install path to dist/install"
   echo "    --mingw          : Set build generator to \"MinGW Makefiles\" and system"
-  echo "                       prefix path to $MSYSTEM_PREFIX. Required on MinGW."
+  echo "                       prefix path to \$MSYSTEM_PREFIX. Required on MinGW."
   echo "    --debug-features : Enable CMake targets for unit testing and doc generation,"
   echo "                       even if this command use Release build."
   echo
