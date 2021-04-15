@@ -105,7 +105,7 @@ private:
      * @param args Formatter arguments
      */
     template<LogLevel message_level, typename... Args>
-    void log(const std::string_view fmt, Args&& ...args) {
+    void log(const std::string_view fmt, Args&& ...args) const {
         refreshLoggingLevel(); // Automatically refresh logging level before
 
         if (context_.get().isEnabled()) { // Should be logged only if logging is enabled inside this context
@@ -143,41 +143,41 @@ public:
      *
      * @note Automatically called before each message logging.
      */
-    void refreshLoggingLevel();
+    void refreshLoggingLevel() const;
 
     /// Log trace level message
     template<typename... Args>
-    void trace(const std::string_view fmt, Args&& ...args) {
+    void trace(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::TRACE>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log debug level message
     template<typename... Args>
-    void debug(const std::string_view fmt, Args&& ...args) {
+    void debug(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::DEBUG>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log info level message
     template<typename... Args>
-    void info(const std::string_view fmt, Args&& ...args) {
+    void info(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::INFO>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log warn level message
     template<typename... Args>
-    void warn(const std::string_view fmt, Args&& ...args) {
+    void warn(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::WARN>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log error level message
     template<typename... Args>
-    void error(const std::string_view fmt, Args&& ...args) {
+    void error(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::ERR>(fmt, std::forward<Args>(args)...);
     }
 
     /// Log fatal level message
     template<typename... Args>
-    void fatal(const std::string_view fmt, Args&& ...args) {
+    void fatal(const std::string_view fmt, Args&& ...args) const {
         log<LogLevel::FATAL>(fmt, std::forward<Args>(args)...);
     }
 };
