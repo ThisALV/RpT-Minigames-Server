@@ -1,11 +1,8 @@
-# RpTogether-Server
+# RpT-Minigames-Server
 
-Server for [RpTogether](#roleplay-together-project), a game for creating and playing classic paper roleplays online.
+Backend for [RpT-Minigames WebApp](#rpt-minigames-web-application), a web application to play minigames online from your web browser. Backend uses the [RpT-WebApp](#rpt-webapp-engine-implementation-details) C++ backend engine.
 
 ## Table of content
-
-Table of Contents
-=================
 
 * [RpTogether-Server](#rptogether-server)
   * [Table of content](#table-of-content)
@@ -18,21 +15,28 @@ Table of Contents
   * [Run](#run)
   * [Special credits](#special-credits)
 
-## Roleplay-Together project
+## RpT-Minigames Web application
 
-User can create its own roleplay, save it, and share it online so every player can try it.
+RpT-Minigames is a web application to play some minigames from web browser. 3 minigames are playable:
+- Açores
+- Bermudes
+- Canaries
 
-Roleplays are both easy to create and powerfully customizable to grant an unlimited game lifetime.
+User can select multiple room from web application, each room running on exactly one server. A server will be [launched] to run one of these minigames.
 
-*More information about Client and roleplays editor will arrive as development progress.*
+### RpT-WebApp engine (implementation details)
 
-Get more details about gameplay on the [wiki](https://github.com/ThisALV/RpTogether-Server/wiki).
+This project is actually a proof-of-concept for RpT-WebApp. It is a web application engine using C++ backend and Angular (TypeScript) front-end.
+
+RpT-WebApp divides web applications into many services which ma
 
 ## Install
 
 ### Windows
 
-*Installer coming soon...*
+You'll need to install MinGW environment using Msys2.
+
+[How to install MinGW using Msys2](https://www.msys2.org/wiki/MSYS2-installation/)
 
 ### Ubuntu (or Windows with MinGW)
 
@@ -53,27 +57,33 @@ sudo apt-get install git cmake g++
 Open a terminal and run following commands :
 
 ```shell
-git clone https://github.com/ThisALV/RpTogether-Server
-cd RpTogether-Server/dist
+git clone https://github.com/ThisALV/RpT-Minigames-Server
+cd RpT-Minigames-Server/dist
 sudo ./get-deps-debian.sh # or ./get-deps-msys2.sh <32|64> for Windows MinGW users depending on current system architecture
 cd ..
 ./build.sh # add --mingw option if you're Windows MinGW user
 sudo ./install.sh
 ```
 
-If you don't want to install RpT-Server at system level, add `--local` option to `./build.sh`.
+If you don't want to install RpT-Minigames-Server at system level, add `--local` option to `./build.sh`.
 It will install files to ./dist/install directory.
 
 ## Run
 
 ```shell
-rpt-server --game <game_name> # for Linux users
-rpt-server.exe --game <game_name> # for Windows MinGW users
+minigames-server --game <a|b|c> [--port <0..65535>] [--addr <local_address>] # for Linux users
+minigames-server.exe --game <a|b|c> [--port <0..65535>] [--addr <local_address>] # for Windows MinGW users
 
-## If locally installed with --local
-./dist/install/bin/rpt-server --game <game_name> # for Linux users
-./dist/install/bin/rpt-server.exe --game <game_name> # for Windows MinGW users
+## If locally installed with --local, from cloned project directory
+./dist/install/bin/minigames-server --game <a|b|c> [--port <0..65535>] [--addr <local_address>] # for Linux users
+./dist/install/bin/minigames-server.exe --game <a|b|c> [--port <0..65535>] [--addr <local_address>] # for Windows MinGW users
 ```
+
+Each letter a, b or c stands for following game:
+- Açores
+- Bermudes
+- Canaries
+
 
 ## Special credits
 
