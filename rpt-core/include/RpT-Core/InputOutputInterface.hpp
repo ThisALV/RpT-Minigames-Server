@@ -20,7 +20,7 @@ using AnyInputEvent = boost::variant<NoneEvent, ServiceRequestEvent, TimerEvent,
 /**
  * @brief Base class for input/output operations backend
  *
- * Subclasses will serve as backend, and every access inside rpt-server will be done using base class reference to
+ * Subclasses will serve as backend, and every access inside executor will be done using base class reference to
  * make a backend API.
  *
  * Input events refers to any event that affects `Executor` runtime and state, and which are external to the main

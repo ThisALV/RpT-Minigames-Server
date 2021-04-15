@@ -119,7 +119,7 @@ int main(const int argc, const char** argv) {
         // At max 3 paths : next to server executable, into user directory and into /usr/share for Unix platform
         game_resources_path.reserve(3);
 
-        boost::filesystem::path local_path { ".rpt-server" };
+        boost::filesystem::path local_path { ".minigames-server" };
         boost::filesystem::path user_path; // Platform dependent
 
         // Get user home directory depending of the current runtime platform
@@ -129,10 +129,10 @@ int main(const int argc, const char** argv) {
             user_path = std::getenv("UserProfile");
         }
 
-        user_path /= ".rpt-server"; // Search for .rpt-server hidden subdirectory inside user directory
+        user_path /= ".minigames-server"; // Search for .minigames-server hidden subdirectory inside user directory
 
         if constexpr (RpT::Config::isUnixBuild()) { // Unix systems may have /usr/share directory for programs data
-            boost::filesystem::path system_path { "/usr/share/rpt-server" };
+            boost::filesystem::path system_path { "/usr/share/minigames-server" };
 
             game_resources_path.push_back(std::move(system_path)); // Add Unix /usr/share directory
         }

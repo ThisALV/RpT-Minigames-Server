@@ -83,7 +83,7 @@ add_subdirectory(rpt-core)
 add_subdirectory(rpt-serialization)
 add_subdirectory(rpt-utils)
 add_subdirectory(rpt-network)
-add_subdirectory(rpt-server)
+add_subdirectory(minigames-server)
 
 # Enable tests sources directory if debug features are ON
 if(ENABLE_DEBUG_FEATURES)

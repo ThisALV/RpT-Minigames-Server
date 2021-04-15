@@ -1,0 +1,10 @@
+set(MINIGAMES_SERVER_SOURCES
+        "src/Main.cpp")
+
+find_package(Boost REQUIRED COMPONENTS filesystem)
+
+add_executable(minigames-server ${RPT_SERVER_HEADERS} ${MINIGAMES_SERVER_SOURCES})
+target_include_directories(minigames-server PRIVATE include)
+target_link_libraries(minigames-server PRIVATE rpt-core rpt-network rpt-utils rpt-serialization Boost::filesystem)
+
+install(TARGETS minigames-server RUNTIME)

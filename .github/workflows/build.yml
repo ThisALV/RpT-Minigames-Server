@@ -88,7 +88,7 @@ jobs:
           -subj "/CN=localhost"
 
       - name: Run server
-        run: sudo rpt-server --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key
+        run: sudo minigames-server --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key
 
   build-mingw:
     runs-on: windows-latest
@@ -150,4 +150,4 @@ jobs:
           -subj "//CN=localhost"
 
       - name: Run server
-        run: rpt-server.exe --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key
+        run: minigames-server.exe --game demo_rp --log-level t --testing --crt localhost.pem --privkey localhost.key
