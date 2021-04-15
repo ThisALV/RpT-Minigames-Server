@@ -1,176 +1,91 @@
 #include <RpT-Core/Executor.hpp>
 
-#include <type_traits>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
 
 
 namespace RpT::Core {
 
-namespace { // Input handler only visible for Executor::run() implementation
 
+Executor::InputEventVisitor::InputEventVisitor(Executor& running_instance)
+: instance_ { running_instance }, logger_ { instance_.logger_ }, ser_protocol_ { nullptr } {}
 
-/**
- * @brief Provides call operators set, one call operator per InputEvent type
- *
- * Has an access to Executor IO interface, running SER Protocol and Executor's logger
- */
-class InputHandler {
-private:
-    InputOutputInterface& io_interface_;
-    ServiceEventRequestProtocol& ser_protocol_;
-    Utils::LoggerView& logger_;
-
-public:
-    /**
-     * @brief Initializes handler to use given IO interface and SER Protocol
-     *
-     * @param io_interface Input/Output events interface
-     * @param ser_protocol Running SER Protocol
-     * @param caller_logger Logger used by caller (Executor)
-     */
-    InputHandler(InputOutputInterface& io_interface, ServiceEventRequestProtocol& ser_protocol,
-                 Utils::LoggerView& caller_logger) :
-
-                 io_interface_ { io_interface },
-                 ser_protocol_ { ser_protocol },
-                 logger_ { caller_logger } {}
-
-    void operator()(const NoneEvent&) {
-        logger_.debug("Null event, skipping...");
-    }
-
-    void operator()(const ServiceRequestEvent& event) {
-        logger_.debug("Service Request command received from player \"{}\".", event.actor());
-
-        const std::uint64_t actor_uid { event.actor() };
-        try { // Tries to parse SR command
-            // Give SR command to parse and execute by SER Protocol
-            const std::string sr_command_response {
-                    ser_protocol_.handleServiceRequest(event.actor(), event.serviceRequest())
-            };
-
-            // Replies to actor with command handling result
-            io_interface_.replyTo(actor_uid, sr_command_response);
-        } catch (const BadServiceRequest& err) { // If command cannot be parsed, SRR cannot be sent, pipeline broken
-            // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline with thrown
-            // exception message
-            io_interface_.closePipelineWith(actor_uid, Utils::HandlingResult { err.what() });
-
-            logger_.error("SER Protocol broken for actor {}: {}. Closing pipeline...", actor_uid, err.what());
-        }
-    }
-
-    void operator()(const TimerEvent&) {
-        logger_.debug("Timer end, continuing...");
-    }
-
-    void operator()(const JoinedEvent& event) {
-        logger_.info("Player \"{}\" joined server as actor {}.", event.playerName(), event.actor());
-    }
-
-    void operator()(const LeftEvent& event) {
-        logger_.info("Actor {} left server.", event.actor());
-    }
-};
-
-
+bool Executor::InputEventVisitor::isConfigured() const {
+    return static_cast<bool>(ser_protocol_);
 }
 
-Executor::Executor(std::vector<boost::filesystem::path> game_resources_path, std::string game_name,
-                   InputOutputInterface& io_interface, Utils::LoggingContext& logger_context) :
+void Executor::InputEventVisitor::markReady(ServiceEventRequestProtocol& ser_protocol) {
+    ser_protocol_ = &ser_protocol;
+}
+
+void Executor::InputEventVisitor::operator()(NoneEvent event) const {
+    logger_.trace("Null event");
+
+    // Input event will not be used anymore, can be moved to user callback
+    userNoneHandler(std::move(event));
+}
+
+void Executor::InputEventVisitor::operator()(ServiceRequestEvent event) const {
+    logger_.debug("SR command received from player {}", event.actor());
+
+    const std::uint64_t actor_uid { event.actor() };
+    try { // Tries to parse SR command
+        // Give SR command to parse and execute by SER Protocol
+        const std::string sr_command_response {
+                ser_protocol_->handleServiceRequest(event.actor(), event.serviceRequest())
+        };
+
+        // Replies to actor with command handling result
+        instance_.io_interface_.replyTo(actor_uid, sr_command_response);
+    } catch (const BadServiceRequest& err) { // If command cannot be parsed, SRR cannot be sent, pipeline broken
+        // It is no longer possible to sync SR with actor as RUID might be wrong, closing pipeline with thrown
+        // exception message
+        instance_.io_interface_.closePipelineWith(
+                actor_uid, Utils::HandlingResult { err.what() });
+
+        logger_.error("SER Protocol broken for actor {}: {}. Closing pipeline...", actor_uid, err.what());
+    }
+
+    userServiceRequestHandler(std::move(event));
+}
+
+void Executor::InputEventVisitor::operator()(TimerEvent event) const {
+    logger_.trace("Timer triggered");
+
+    userTimerHandler(std::move(event));
+}
+
+void Executor::InputEventVisitor::operator()(JoinedEvent event) const {
+    logger_.info("Player \"{}\" joined server as actor {}", event.playerName(), event.actor());
+
+    userJoinedHandler(std::move(event));
+}
+
+void Executor::InputEventVisitor::operator()(LeftEvent event) const {
+    logger_.info("Actor {} left server", event.actor());
+
+    userLeftHandler(std::move(event));
+}
+
+
+Executor::Executor(InputOutputInterface& io_interface, Utils::LoggingContext& logger_context) :
     logger_context_ { logger_context },
     logger_ { "Executor", logger_context_ },
-    io_interface_ { io_interface } {
+    io_interface_ { io_interface },
+    events_visitor_ { *this },
+    loop_routine_ { []() {} } /* default behavior of loop's routine is to do nothing */ {}
 
-    logger_.debug("Game name: {}", game_name);
+void Executor::make(std::function<void()> loop_routine) {
+    if (events_visitor_.isConfigured()) // Configured underlying visitor means run() has been called once
+        throw BadExecutorMode {};
 
-    for (const boost::filesystem::path& resource_path : game_resources_path)
-        logger_.debug("Game resources path: {}", resource_path.string());
+    loop_routine_ = std::move(loop_routine);
 }
 
-/**
- * @brief TEMPORARY : Chat service which can be toggled on/off with "/toggle" command
- *
- * Used to test efficiency of `InputOutputInterface::replyTo()`.
- */
-class ChatService : public Service {
-private:
-    static constexpr bool isAdmin(const std::uint64_t actor) {
-        return actor == 0;
-    }
-
-    /// Parses chat message, checks if it's a /toggle command, and checks if there are no extra argument given to cmd
-    class ChatCommandParser : public Utils::TextProtocolParser {
-    public:
-        /// Parse first word, needs to check if it is a command
-        explicit ChatCommandParser(const std::string_view chat_msg)
-        : Utils::TextProtocolParser { chat_msg, 1 } {}
-
-        /// Is message starting with /toggle ?
-        bool isToggle() const {
-            return getParsedWord(0) == "/toggle";
-        }
-
-        /// Are there extra unparsed arguments in addition to command ?
-        bool extraArgs() const {
-            return !unparsedWords().empty();
-        }
-    };
-
-    bool enabled_;
-
-public:
-    explicit ChatService(ServiceContext& run_context) : Service { run_context }, enabled_ { true } {}
-
-    std::string_view name() const override {
-        return "Chat";
-    }
-
-    Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
-                                               const std::string_view sr_command_data) override {
-
-        try { // If message is empty, parsing will fail. A chat message should NOT be empty
-            const ChatCommandParser chat_msg_parser { sr_command_data }; // Parsing message for potential command
-
-            if (chat_msg_parser.isToggle()) { // If message begins with "/toggle"
-                if (chat_msg_parser.extraArgs()) // This command hasn't any arguments
-                    return Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
-
-                if (!isAdmin(actor)) // Player using this command should be admin
-                    return Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
-
-                enabled_ = !enabled_;
-
-                emitEvent(enabled_ ? "ENABLED" : "DISABLED");
-
-                return {}; // State was successfully changed
-            } else if (enabled_) { // Checks for chat being enabled or not
-                emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + std::string { sr_command_data });
-
-                return {}; // Message should be sent to all players if chat is enabled
-            } else { // If it isn't, message can't be sent
-                return Utils::HandlingResult { "Chat disabled by admin." };
-            }
-        } catch (const Utils::NotEnoughWords&) { // If there is not at least one word to parse (message is empty)
-            return Utils::HandlingResult { "Message cannot be empty" };
-        }
-    }
-};
-
-bool Executor::run() {
-    logger_.info("Initializing online services...");
-
-    /*
-     * Initializes services and protocol
-     */
-
-    ServiceContext ser_protocol_context; // Context in which all online services will be running on
-    ChatService chat_svc { ser_protocol_context }; // A test service fot chat feature
-
+bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> services) {
     // Protocol initialization with created services
-    ServiceEventRequestProtocol ser_protocol {{ chat_svc }, logger_context_ };
-    // Functions set for input events handling
-    InputHandler input_handler { io_interface_, ser_protocol, logger_ };
+    ServiceEventRequestProtocol ser_protocol { services, logger_context_ };
+    // run() called, ends configuration mode
+    events_visitor_.markReady(ser_protocol);
 
     logger_.info("Starts main loop.");
 
@@ -179,7 +94,7 @@ bool Executor::run() {
             // Blocking until receiving external event to handle (timer, data packet, etc.)
             const AnyInputEvent input_event { io_interface_.waitForInput() };
 
-            boost::apply_visitor(input_handler, input_event);
+            boost::apply_visitor(events_visitor_, input_event);
 
             // After input event has been handled, events emitted by services should also be handled in the order they
             // appeared

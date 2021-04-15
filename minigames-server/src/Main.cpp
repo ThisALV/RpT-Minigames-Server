@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
+#include <boost/filesystem.hpp>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
 #include <RpT-Network/UnsafeBeastWebsocketBackend.hpp>
@@ -113,33 +114,7 @@ int main(const int argc, const char** argv) {
             logger.debug("Keeps mode IPv4, no command line options \"ip\"");
         }
 
-        logger.info("Running RpT server {} on {}.", RpT::Config::VERSION, RpT::Config::runtimePlatformName());
-
-        std::vector<boost::filesystem::path> game_resources_path;
-        // At max 3 paths : next to server executable, into user directory and into /usr/share for Unix platform
-        game_resources_path.reserve(3);
-
-        boost::filesystem::path local_path { ".minigames-server" };
-        boost::filesystem::path user_path; // Platform dependent
-
-        // Get user home directory depending of the current runtime platform
-        if constexpr (RpT::Config::isUnixBuild()) {
-            user_path = std::getenv("HOME");
-        } else {
-            user_path = std::getenv("UserProfile");
-        }
-
-        user_path /= ".minigames-server"; // Search for .minigames-server hidden subdirectory inside user directory
-
-        if constexpr (RpT::Config::isUnixBuild()) { // Unix systems may have /usr/share directory for programs data
-            boost::filesystem::path system_path { "/usr/share/minigames-server" };
-
-            game_resources_path.push_back(std::move(system_path)); // Add Unix /usr/share directory
-        }
-
-        // Add path for subdirectory inside working directory and inside user directory
-        game_resources_path.push_back(std::move(user_path));
-        game_resources_path.push_back(std::move(local_path));
+        logger.info("Running minigames server {} on {}.", RpT::Config::VERSION, RpT::Config::runtimePlatformName());
 
         // Selected backend for IO interface, defaults to WSS (Safe Websocket)
         std::string_view selected_network_bakcend { "wss" };
@@ -197,11 +172,9 @@ int main(const int argc, const char** argv) {
             network_backend->close();
         }
 
-        RpT::Core::Executor rpt_executor {
-            std::move(game_resources_path), std::string { game_name }, *network_backend, server_logging
-        };
+        RpT::Core::Executor rpt_executor { *network_backend, server_logging };
 
-        const bool done_successfully { rpt_executor.run() };
+        const bool done_successfully { rpt_executor.run({}) };
 
         // Process exit code depends on main loop result
         if (done_successfully) {
