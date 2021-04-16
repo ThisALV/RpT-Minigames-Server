@@ -110,6 +110,9 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
             }
 
             logger_.debug("Events polled.");
+
+            logger_.trace("Entering loop end routine...");
+            loop_routine_(); // Calls loop routine to continue Services progression before waiting for next input event
         }
 
         logger_.info("Stopped.");
