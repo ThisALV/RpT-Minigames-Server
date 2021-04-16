@@ -242,9 +242,20 @@ int main(const int argc, const char** argv) {
             network_backend->close();
         }
 
+        /*
+         * Initializes executor for main loop without user-provided callbacks
+         */
+
         RpT::Core::Executor rpt_executor { *network_backend, server_logging };
 
-        const bool done_successfully { rpt_executor.run({}) };
+        /*
+         * Initializes online services
+         */
+
+        RpT::Core::ServiceContext services_context;
+        ChatService chat_svc { services_context };
+
+        const bool done_successfully { rpt_executor.run({ chat_svc }) };
 
         // Process exit code depends on main loop result
         if (done_successfully) {
