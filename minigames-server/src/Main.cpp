@@ -17,75 +17,7 @@ constexpr int RUNTIME_ERROR { 2 };
 constexpr std::uint16_t DEFAULT_PORT { 35555 };
 
 
-/**
- * @brief TEMPORARY : Chat service which can be toggled on/off with "/toggle" command
- *
- * Used to test efficiency of `InputOutputInterface::replyTo()`.
- */
-class ChatService : public RpT::Core::Service {
-private:
-    static constexpr bool isAdmin(const std::uint64_t actor) {
-        return actor == 0;
-    }
-
-    /// Parses chat message, checks if it's a /toggle command, and checks if there are no extra argument given to cmd
-    class ChatCommandParser : public RpT::Utils::TextProtocolParser {
-    public:
-        /// Parse first word, needs to check if it is a command
-        explicit ChatCommandParser(const std::string_view chat_msg)
-                : RpT::Utils::TextProtocolParser { chat_msg, 1 } {}
-
-        /// Is message starting with /toggle ?
-        bool isToggle() const {
-            return getParsedWord(0) == "/toggle";
-        }
-
-        /// Are there extra unparsed arguments in addition to command ?
-        bool extraArgs() const {
-            return !unparsedWords().empty();
-        }
-    };
-
-    bool enabled_;
-
-public:
-    explicit ChatService(RpT::Core::ServiceContext& run_context)
-    : RpT::Core::Service { run_context }, enabled_ { true } {}
-
-    std::string_view name() const override {
-        return "Chat";
-    }
-
-    RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor,
-                                                    const std::string_view sr_command_data) override {
-
-        try { // If message is empty, parsing will fail. A chat message should NOT be empty
-            const ChatCommandParser chat_msg_parser { sr_command_data }; // Parsing message for potential command
-
-            if (chat_msg_parser.isToggle()) { // If message begins with "/toggle"
-                if (chat_msg_parser.extraArgs()) // This command hasn't any arguments
-                    return RpT::Utils::HandlingResult { "Invalid arguments for /toggle: command hasn't any args" };
-
-                if (!isAdmin(actor)) // Player using this command should be admin
-                    return RpT::Utils::HandlingResult { "Permission denied: you must be admin to use that command" };
-
-                enabled_ = !enabled_;
-
-                emitEvent(enabled_ ? "ENABLED" : "DISABLED");
-
-                return {}; // State was successfully changed
-            } else if (enabled_) { // Checks for chat being enabled or not
-                emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + std::string { sr_command_data });
-
-                return {}; // Message should be sent to all players if chat is enabled
-            } else { // If it isn't, message can't be sent
-                return RpT::Utils::HandlingResult { "Chat disabled by admin." };
-            }
-        } catch (const RpT::Utils::NotEnoughWords&) { // If there is not at least one word to parse (message is empty)
-            return RpT::Utils::HandlingResult { "Message cannot be empty" };
-        }
-    }
-};
+// TODO: Ici ChatService
 
 
 /**
@@ -253,9 +185,9 @@ int main(const int argc, const char** argv) {
          */
 
         RpT::Core::ServiceContext services_context;
-        ChatService chat_svc { services_context };
 
-        const bool done_successfully { rpt_executor.run({ chat_svc }) };
+        // TODO: Ici
+        const bool done_successfully { rpt_executor.run({}) };
 
         // Process exit code depends on main loop result
         if (done_successfully) {
