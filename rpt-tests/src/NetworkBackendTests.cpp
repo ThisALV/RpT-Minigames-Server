@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
+#include <RpT-Core/Timer.hpp>
 #include <RpT-Network/NetworkBackend.hpp>
 
 
@@ -156,6 +157,11 @@ public:
     /// Trivial access to synchronize() for testing purpose
     void sync() {
         synchronize();
+    }
+
+    // No responsiblity without Executor
+    void beginTimer(RpT::Core::Timer&) override {
+        throw std::runtime_error { "Not implemented" };
     }
 };
 
