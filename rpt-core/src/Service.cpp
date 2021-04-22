@@ -28,5 +28,9 @@ std::string Service::pollEvent() {
     return event_command;
 }
 
+std::vector<std::reference_wrapper<Timer>> Service::getWaitingTimers() {
+    return {};
+}
+
 
 }

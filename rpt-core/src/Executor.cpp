@@ -49,7 +49,14 @@ void Executor::InputEventVisitor::operator()(ServiceRequestEvent event) const {
 }
 
 void Executor::InputEventVisitor::operator()(TimerEvent event) const {
-    logger_.trace("Timer triggered");
+    const std::uint64_t timer_token { event.token() }; // Token for timer which timed out
+    logger_.trace("Triggering timer {}", timer_token);
+
+    const auto timer_to_trigger { instance_.pending_timers_.find(timer_token) }; // Retrieves timer by its token
+    assert(timer_to_trigger != instance_.pending_timers_.cend()); // Must be sure timer actually exists
+
+    timer_to_trigger->second.get().trigger(); // Trigger timed out timer
+    instance_.pending_timers_.erase(timer_to_trigger); // Timer is no longer pending, removes it from registry
 
     userTimerHandler(std::move(event));
 }
@@ -96,6 +103,19 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
 
             boost::apply_visitor(events_visitor_, input_event);
 
+            // Handlers on services might have been called, checks for waiting timers
+            for (auto service : services) {
+                for (auto waiting_timer : service.get().getWaitingTimers()) { // For each Ready timer in each service
+                    const auto insert_result {
+                        pending_timers_.insert({ waiting_timer.get().token(), waiting_timer })
+                    };
+
+                    assert(insert_result.second); // Checks for token and timer ref insertion into registry
+
+                    io_interface_.beginTimer(waiting_timer.get()); // Will be set to pending by implementation
+                }
+            }
+
             // After input event has been handled, events emitted by services should also be handled in the order they
             // appeared
 
@@ -113,6 +133,7 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
 
             logger_.trace("Entering loop end routine...");
             loop_routine_(); // Calls loop routine to continue Services progression before waiting for next input event
+            logger_.trace("Loop end routine done.");
         }
 
         logger_.info("Stopped.");

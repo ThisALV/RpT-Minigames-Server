@@ -4,11 +4,13 @@
 #include <functional>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <RpT-Core/InputOutputInterface.hpp>
 #include <RpT-Core/Service.hpp>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
+#include <RpT-Core/Timer.hpp>
 #include <RpT-Utils/LoggerView.hpp>
 
 /**
@@ -41,10 +43,14 @@ public:
  *
  * Runs main loop for RpT for each received input event from given `InputOutputInterface` implementation.
  *
- * When input event of a certain type is received, is default handler is executed first, then user-provided handler
- * is called with input event as only argument.
+ * When input event of a certain type is received, event type default handler is executed first, then user-provided
+ * handler is called with input event as only argument.
  *
- * After event specific handlers have been called, routine handler, which is user-provided, is called to
+ * After event specific handlers have been called, %Executor will check for Timer instances in services which are
+ * into Ready state (waiting for countdown). All of them will be registered with their token inside pending timers
+ * registry, then `InputOutputInterface` implementation will do its job and begin waiting timers countdown.
+ *
+ * After required timers countdown have begun, routine handler, which is user-provided, is called to
  * make application progress with updated Services state.
  *
  * Finally, all events emitted by Services are sent to actors. Then, if IO interface is still open, next input event
@@ -137,7 +143,7 @@ private:
         void operator()(NoneEvent event) const;
         /// Default behavior: handles SR command, and send back response to actor who emitted event
         void operator()(ServiceRequestEvent event) const;
-        /// No default behavior
+        /// Default behavior: marks timer with given token as triggered ans removes it from pending timers registry
         void operator()(TimerEvent event) const;
         /// No default behavior
         void operator()(JoinedEvent event) const;
@@ -150,6 +156,7 @@ private:
     InputOutputInterface& io_interface_;
     InputEventVisitor events_visitor_;
     std::function<void()> loop_routine_;
+    std::unordered_map<std::uint64_t, std::reference_wrapper<Timer>> pending_timers_;
 
 public:
     /**
@@ -174,6 +181,9 @@ public:
 
     /**
      * @brief Setup loop's specific input event handler
+     *
+     * @note User-provided handler does NOT override default behavior, it rather is an unique additional handler for
+     * given event type.
      *
      * @tparam InputEventT type to expect for given handler
      *

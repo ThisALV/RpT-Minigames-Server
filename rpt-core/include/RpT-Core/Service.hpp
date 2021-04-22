@@ -1,6 +1,7 @@
 #ifndef RPTOGETHER_SERVER_SERVICE_HPP
 #define RPTOGETHER_SERVER_SERVICE_HPP
 
+#include <functional>
 #include <optional>
 #include <queue>
 #include <stdexcept>
@@ -8,6 +9,7 @@
 #include <string_view>
 #include <utility>
 #include <RpT-Core/ServiceContext.hpp>
+#include <RpT-Core/Timer.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 
 /**
@@ -95,6 +97,16 @@ public:
      * @throws EmptyEventsQueue if queue is empty so event cannot be polled
      */
     std::string pollEvent();
+
+    /**
+     * @brief Checks for every timers owned by service which are waiting for their countdown to begin
+     *
+     * If a %Service doesn't need timers feature, it can just use default method implementation, which basically
+     * returns an empty vector.
+     *
+     * @returns Reference to every timer is Ready mode
+     */
+    virtual std::vector<std::reference_wrapper<Timer>> getWaitingTimers();
 
     /**
      * @brief Get service name for registration
