@@ -121,7 +121,7 @@ int main(const int argc, const char** argv) {
     try {
         // Read and parse command line options
         const RpT::Utils::CommandLineOptionsParser cmd_line_options {
-            argc, argv, { "game", "log-level", "testing", "ip", "net-backend", "crt", "privkey" }
+            argc, argv, { "game", "log-level", "testing", "ip", "port", "net-backend", "crt", "privkey" }
         };
 
         // Get game name from command line options
