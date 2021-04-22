@@ -6,19 +6,6 @@
 using namespace RpT::Core;
 
 
-BOOST_AUTO_TEST_SUITE(ServiceContextTests)
-
-BOOST_AUTO_TEST_CASE(DefaultConstructed) {
-    ServiceContext context;
-
-    BOOST_CHECK_EQUAL(context.newEventPushed(), 0);
-    BOOST_CHECK_EQUAL(context.newEventPushed(), 1);
-    BOOST_CHECK_EQUAL(context.newEventPushed(), 2);
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-
 /**
  * @brief Basic implementation to build Service class and test its defined methods
  *

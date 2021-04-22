@@ -1,18 +1,8 @@
-//
-// Created by lelio on 24/02/2021.
-//
-
 #include <RpT-Core/Service.hpp>
 
 
 namespace RpT::Core {
 
-
-ServiceContext::ServiceContext() : events_count_ { 0 } {}
-
-std::size_t ServiceContext::newEventPushed() {
-    return events_count_++;
-}
 
 Service::Service(ServiceContext& run_context) : run_context_ { run_context } {}
 
