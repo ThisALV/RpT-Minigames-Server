@@ -39,7 +39,8 @@ register_test(core
         "src/InputEventTests.cpp"
         "src/ServiceTests.cpp"
         "src/ServiceContextTests.cpp"
-        "src/SerProtocolTests.cpp")
+        "src/SerProtocolTests.cpp"
+        "src/TimerTests.cpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
 
 register_test(network
