@@ -88,6 +88,9 @@ public:
     Timer(const Timer&) = delete;
     Timer& operator=(const Timer&) = delete;
 
+    Timer(Timer&&) = default;
+    Timer& operator=(Timer&&) = default;
+
     /**
      * @brief Retrieves timer token
      *
