@@ -54,9 +54,10 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(TimerTrigger)
 
 BOOST_AUTO_TEST_CASE(ActorName) {
-    const TimerEvent event { 42 };
+    const TimerEvent event { 42, 15 };
 
     BOOST_CHECK_EQUAL(event.actor(), 42);
+    BOOST_CHECK_EQUAL(event.token(), 15);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
