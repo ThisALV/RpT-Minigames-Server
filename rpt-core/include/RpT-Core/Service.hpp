@@ -46,11 +46,15 @@ public:
  * virtual method.
  *
  * Implementations will access protected method `emitEvent()` so they can trigger events later polled by any SER
- * Protocol instance.
+ * Protocol instance, and will uses superclass constructor arguments to watch timers so their state will be checked at
+ * each %Executor loop iteration using `getWaitingTimers()`.
  *
  * Each service possesses its own events queue, and each event contains a event ID provided by `ServiceContext`, which
  * allows knowing what event was triggered first (as ID is growing from low to high) and an event command,
  * corresponding to words after `EVENT` prefix and service name inside Service Event command.
+ *
+ * Each service also has a references vector for watched timers which can be used by %Executor to survey any timer
+ * that entered the Ready state. %Executor then will pass Ready state timers to `InputOutputInterface` implementation.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -58,6 +62,7 @@ class Service {
 private:
     ServiceContext& run_context_;
     std::queue<std::pair<std::size_t, std::string>> events_queue_;
+    std::vector<std::reference_wrapper<Timer>> watched_timers_;
 
 protected:
     /**
@@ -76,7 +81,8 @@ public:
      *
      * @param run_context Context, should be same instance for services registered in same SER Protocol
      */
-    explicit Service(ServiceContext& run_context);
+    explicit Service(ServiceContext& run_context,
+                     const std::initializer_list<std::reference_wrapper<Timer>>& watched_timers = {});
 
     /**
      * @brief Get next event ID so check for newest event between services can be performed
@@ -99,14 +105,11 @@ public:
     std::string pollEvent();
 
     /**
-     * @brief Checks for every timers owned by service which are waiting for their countdown to begin
+     * @brief Checks for every timers owned and watched by %Service which are waiting for their countdown to begin
      *
-     * If a %Service doesn't need timers feature, it can just use default method implementation, which basically
-     * returns an empty vector.
-     *
-     * @returns Reference to every timer is Ready mode
+     * @returns Reference to every watched timer into Ready mode
      */
-    virtual std::vector<std::reference_wrapper<Timer>> getWaitingTimers();
+    std::vector<std::reference_wrapper<Timer>> getWaitingTimers();
 
     /**
      * @brief Get service name for registration

@@ -4,7 +4,9 @@
 namespace RpT::Core {
 
 
-Service::Service(ServiceContext& run_context) : run_context_ { run_context } {}
+Service::Service(ServiceContext& run_context,
+                 const std::initializer_list<std::reference_wrapper<Timer>>& watched_timers)
+                 : run_context_ { run_context }, watched_timers_ { watched_timers } {}
 
 void Service::emitEvent(std::string event_command) {
     const std::size_t event_id { run_context_.newEventPushed() }; // Event counter is growing, ID is given so trigger order is kept
@@ -29,7 +31,14 @@ std::string Service::pollEvent() {
 }
 
 std::vector<std::reference_wrapper<Timer>> Service::getWaitingTimers() {
-    return {};
+    std::vector<std::reference_wrapper<Timer>> ready_timers;
+    ready_timers.reserve(watched_timers_.size()); // Max number of ready timers is number of current timers
+
+    // Copies each watched timer which is waiting for IO interface to begin countdown, using push_back()
+    std::copy_if(watched_timers_.cbegin(), watched_timers_.cend(), std::back_inserter(ready_timers),
+                 [](const Timer& t) { return t.isWaitingCountdown(); });
+
+    return ready_timers;
 }
 
 

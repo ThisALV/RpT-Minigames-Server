@@ -14,7 +14,9 @@ using namespace RpT::Core;
  */
 class TestingService : public Service {
 public:
-    explicit TestingService(ServiceContext& run_context) : Service { run_context } {}
+    template<typename... Timers>
+    explicit TestingService(ServiceContext& run_context, Timers& ...watched_timers)
+    : Service { run_context, { watched_timers... } } {}
 
     std::string_view name() const override {
         return "";
@@ -32,15 +34,23 @@ public:
 
 /**
  * @brief Provides `TestingService` instance with just initialized `ServiceContext` required for Service construction.
+ *
+ * Also, few timers are provided to test `getWatchingTimers()` features and manipulate directly timers without using
+ * %Service.
  */
 class ServiceTestFixture {
 private:
     ServiceContext context_;
 
 public:
+    Timer timerA;
+    Timer timerB;
+    Timer timerC;
     TestingService service;
 
-    ServiceTestFixture() : context_ {}, service { context_ } {}
+    ServiceTestFixture() : context_ {},
+    timerA { context_, 0 }, timerB { context_, 0 }, timerC { context_, 0 },
+    service { context_, timerA, timerB, timerC } {}
 };
 
 
@@ -92,5 +102,49 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     // Now, queue should be empty
     BOOST_CHECK(!service.checkEvent().has_value());
 }
+
+/*
+ * getWaitingTimers() unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(GetWaitingTimers)
+
+BOOST_AUTO_TEST_CASE(AllTimersDisabled) {
+    BOOST_CHECK(service.getWaitingTimers().empty()); // All timers are constructed as Disabled
+}
+
+BOOST_AUTO_TEST_CASE(AllTimersDisabledOrPending) {
+    // Puts timer into Pending state
+    timerA.requestCountdown();
+    timerA.beginCountdown();
+
+    BOOST_CHECK(service.getWaitingTimers().empty()); // Still not any ready timer
+}
+
+BOOST_AUTO_TEST_CASE(SomeTimersReady) {
+    // Puts timers into Ready state
+    timerA.requestCountdown();
+    timerC.requestCountdown();
+
+    const auto waiting_timers { service.getWaitingTimers() };
+    BOOST_CHECK_EQUAL(waiting_timers.size(), 2); // 2 timers put into Ready state
+    BOOST_CHECK_EQUAL(waiting_timers.at(0).get().token(), 0); // 1st one is A
+    BOOST_CHECK_EQUAL(waiting_timers.at(1).get().token(), 2); // 2nd one is C
+}
+
+BOOST_AUTO_TEST_CASE(AllTimersReady) {
+    // Puts timers into Ready state
+    timerA.requestCountdown();
+    timerB.requestCountdown();
+    timerC.requestCountdown();
+
+    const auto waiting_timers { service.getWaitingTimers() };
+    BOOST_CHECK_EQUAL(waiting_timers.size(), 3); // 2 timers put into Ready state
+    BOOST_CHECK_EQUAL(waiting_timers.at(0).get().token(), 0); // 1st one is A
+    BOOST_CHECK_EQUAL(waiting_timers.at(1).get().token(), 1); // 2nd one is B
+    BOOST_CHECK_EQUAL(waiting_timers.at(2).get().token(), 2); // 3rd one is C
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE_END()

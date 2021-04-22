@@ -51,14 +51,8 @@ private:
 
 public:
     explicit ChatService(RpT::Core::ServiceContext& run_context, const std::size_t cooldown_ms)
-    : RpT::Core::Service { run_context }, enabled_ { true }, cooldown_ { run_context, cooldown_ms } {}
-
-    std::vector<std::reference_wrapper<RpT::Core::Timer>> getWaitingTimers() override {
-        if (cooldown_.isWaitingCountdown())
-            return { cooldown_ };
-        else
-            return {};
-    }
+    : RpT::Core::Service { run_context, { cooldown_ } },
+    enabled_ { true }, cooldown_ { run_context, cooldown_ms } {}
 
     std::string_view name() const override {
         return "Chat";
