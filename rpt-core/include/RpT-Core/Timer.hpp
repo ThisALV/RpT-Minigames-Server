@@ -83,6 +83,11 @@ public:
      */
     Timer(ServiceContext& token_provider, std::size_t countdown_ms);
 
+    // Entity semantic class
+
+    Timer(const Timer&) = delete;
+    Timer& operator=(const Timer&) = delete;
+
     /**
      * @brief Retrieves timer token
      *
