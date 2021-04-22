@@ -13,7 +13,7 @@
 #include <RpT-Utils/LoggerView.hpp>
 
 /**
- * @file BeastWebsocketBackendBase.hpp
+ * @file BeastWebsocketBackendBase.inl
  */
 
 
@@ -43,6 +43,7 @@ namespace RpT::Network {
 template<typename TcpStream>
 class BeastWebsocketBackendBase : public NetworkBackend {
 protected: // Must be defined early so it can be used all along the class definitions
+    /// Top-level WS stream used to communicate with clients with RPTL protocol, depends on underlying `TcpStream`
     using WebsocketStream = boost::beast::websocket::stream<TcpStream>;
 
 private:

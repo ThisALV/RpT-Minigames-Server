@@ -80,6 +80,8 @@ public:
      * @brief Constructs service with empty events queue and given run context
      *
      * @param run_context Context, should be same instance for services registered in same SER Protocol
+     * @param watched_timers All timers retrieved passed to `InputOutputInteface` implementation by `Executor` if in
+     * Ready state
      */
     explicit Service(ServiceContext& run_context,
                      const std::initializer_list<std::reference_wrapper<Timer>>& watched_timers = {});

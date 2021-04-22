@@ -57,8 +57,8 @@ public:
 /// Event emitted if interface is closed
 class NoneEvent : public InputEvent {
 public:
+    /// Constructs null event for given actor (which doesn't actually matter)
     explicit NoneEvent(std::uint64_t actor);
-
 };
 
 /// Event emitted when service request is received

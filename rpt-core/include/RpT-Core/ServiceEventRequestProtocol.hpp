@@ -194,7 +194,7 @@ public:
      * @throws ServiceNameAlreadyRegistered if a service name appears twice into services list
      *
      * @param services References to services
-     * @param Context for SER Protocol logging
+     * @param logging_context for SER Protocol logging
      */
     ServiceEventRequestProtocol(const std::initializer_list<std::reference_wrapper<Service>>& services,
                                 Utils::LoggingContext& logging_context);
@@ -214,7 +214,7 @@ public:
      * Find appropriate service, and make it handle the given SR command with actor executor.
      *
      * @param actor UID for actor who's trying to execute that SR command
-     * @param sr_command Service Request command to handle
+     * @param service_request Service Request command to handle
      *
      * @returns Service Request Response (SRR) which has to sent to SR actor
      *

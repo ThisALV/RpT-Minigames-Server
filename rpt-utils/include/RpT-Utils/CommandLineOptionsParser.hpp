@@ -25,6 +25,11 @@ namespace RpT::Utils {
  */
 class OptionsError : public std::logic_error {
 public:
+    /**
+     * @brief Constructs error with custom error message provided by caller
+     *
+     * @param reason Reason for command-line options to be ill-formed
+     */
     explicit OptionsError(const std::string& reason) : std::logic_error { reason } {}
 };
 

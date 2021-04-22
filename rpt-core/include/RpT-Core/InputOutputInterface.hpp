@@ -42,7 +42,7 @@ using AnyInputEvent = boost::variant<NoneEvent, ServiceRequestEvent, TimerEvent,
  * @author ThisALV, https://github.com/ThisALV
  */
 class InputOutputInterface {
-protected:
+private:
     bool closed_;
 
 public:

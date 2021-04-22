@@ -173,7 +173,7 @@ public:
  * RPTL, text-based protocol specifications:
  *
  * Each RPTL frame is a message. Messages can be received by client from server, or by server from client. Each
- * message must follow that syntax: `<RPTL_command> [args]...` and <RPTL_command> must NOT be empty.
+ * message must follow that syntax: `<RPTL_command> [args]...` and `<RPTL_command>` must NOT be empty.
  *
  * A client connection will be in one of the following modes: registered or unregistered. Each new client (newly
  * opened connection) begins with unregistered state. When a client connects with server, server internally use new

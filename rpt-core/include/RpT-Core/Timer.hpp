@@ -26,6 +26,13 @@ enum struct TimerState : int {
  */
 class BadTimerState : public std::logic_error {
 public:
+    /**
+     * @brief Constructs error with basic formatted message based on:
+     *
+     * @param operation Method called
+     * @param expected Method pre-condition
+     * @param current Actual timer state
+     */
     BadTimerState(const std::string& operation, TimerState expected, TimerState current)
     : std::logic_error {
         operation + ": expected state " + std::to_string(static_cast<int>(expected))
@@ -88,7 +95,9 @@ public:
     Timer(const Timer&) = delete;
     Timer& operator=(const Timer&) = delete;
 
+    /// Default move constructor
     Timer(Timer&&) = default;
+    /// Default move assignment operator
     Timer& operator=(Timer&&) = default;
 
     /**
