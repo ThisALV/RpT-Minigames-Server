@@ -140,7 +140,7 @@ std::string ServiceEventRequestProtocol::handleServiceRequest(const std::uint64_
         logger_.error("Service \"{}\" failed to handle command: {}" , intended_service_name, err.what());
 
         // Retrieves error Service Request Response with given caught message `RESPONSE <RUID> KO <ERR_MSG>`
-        return sr_response_prefix + std::to_string(request_uid) + " KO " + err.what();
+        return sr_response_prefix + "KO " + err.what();
     }
 }
 

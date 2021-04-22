@@ -1,6 +1,7 @@
 #ifndef RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 #define RPTOGETHER_SERVER_BEASTWEBSOCKETBACKENDBASE_INL
 
+#include <chrono>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -477,6 +478,34 @@ public:
         });
 
         start(); // Required to start because there is no way to use polymorphism on template class
+    }
+
+    /**
+     * @brief Set Ready timer state to Pending, then uses an Asio steady clock to asynchronously wait for timer
+     * countdown to be done
+     */
+    void beginTimer(Core::Timer& ready_timer) final {
+        // Retrieves token for timer which will be pending
+        const std::uint64_t token { ready_timer.token() };
+        // Retrieves duration to wait asynchronously and set state to Pending, into std::chrono compatible type
+        const std::chrono::milliseconds countdown { ready_timer.beginCountdown() };
+
+        // Must NOT on the stack as timer will be pending asynchronously, owning shared with Asio timer async handler
+        const auto asio_timer { std::make_shared<boost::asio::steady_timer>(async_io_context_, countdown) };
+
+        // Does timer countdown
+        asio_timer->async_wait([this, token, asio_timer](const boost::system::error_code& err) {
+            if (err == boost::asio::error::operation_aborted) // Ignores if server stopped
+                return;
+
+            if (err) { // Does not trigger timer if error occurred while it was pending
+                logger_.error("Pending timer {} countdown: {}", token, err.message());
+                return;
+            }
+
+            // Actor UID doesn't matter, timer token does
+            pushInputEvent(Core::TimerEvent { 0, token });
+        });
     }
 
     /**

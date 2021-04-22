@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
+#include <RpT-Core/Timer.hpp>
 #include <RpT-Network/NetworkBackend.hpp>
 
 
@@ -157,6 +158,11 @@ public:
     void sync() {
         synchronize();
     }
+
+    // No responsiblity without Executor
+    void beginTimer(RpT::Core::Timer&) override {
+        throw std::runtime_error { "Not implemented" };
+    }
 };
 
 
@@ -219,17 +225,19 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     SimpleNetworkBackend io_interface;
 
     // 2 timers TO then and server stopped triggered
-    io_interface.trigger(RpT::Core::TimerEvent { 1 }); // Triggered by actor 1
-    io_interface.trigger(RpT::Core::TimerEvent { 2 }); // Triggered by actor 2
+    io_interface.trigger(RpT::Core::TimerEvent { 1, 10 }); // Triggered by actor 1 with token 10
+    io_interface.trigger(RpT::Core::TimerEvent { 2, 20 }); // Triggered by actor 2 with token 20
     io_interface.trigger(RpT::Core::JoinedEvent { 0, "TestingActor" }); // Triggered by actor 0 with name "TestingActor"
 
     // Checks for 3rd event pushed into queue
     const auto first_event { requireEventType<RpT::Core::TimerEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(first_event.actor(), 1);
+    BOOST_CHECK_EQUAL(first_event.token(), 10);
 
     // Checks for 2nd event pushed into queue
     const auto second_event { requireEventType<RpT::Core::TimerEvent>(io_interface.waitForInput()) };
     BOOST_CHECK_EQUAL(second_event.actor(), 2);
+    BOOST_CHECK_EQUAL(second_event.token(), 20);
 
     // Checks for 3rd event pushed into queue
     const auto third_event { requireEventType<RpT::Core::JoinedEvent>(io_interface.waitForInput()) };

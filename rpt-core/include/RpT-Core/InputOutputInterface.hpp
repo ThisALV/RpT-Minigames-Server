@@ -3,6 +3,7 @@
 
 #include <boost/variant.hpp>
 #include <RpT-Core/InputEvent.hpp>
+#include <RpT-Core/Timer.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 
 /**
@@ -85,6 +86,14 @@ public:
      * @param event Event string representation based on SER Protocol (see `ServiceEventRequestProtocol` doc)
      */
     virtual void outputEvent(const std::string& event) = 0;
+
+    /**
+     * @brief Does countdown for given timer. Implementation must emits `TimerEvent` for timer token with any actor
+     * while countdown isn't done yet.
+     *
+     * @param ready_timer Ready to make countdown for, will be set to Pending state
+     */
+    virtual void beginTimer(Timer& ready_timer) = 0;
 
     /**
      * @brief Closes pipeline with given actor and shutdown reason so it no longer can emit input events

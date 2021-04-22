@@ -47,10 +47,12 @@ private:
     };
 
     bool enabled_;
+    RpT::Core::Timer cooldown_;
 
 public:
-    explicit ChatService(RpT::Core::ServiceContext& run_context)
-    : RpT::Core::Service { run_context }, enabled_ { true } {}
+    explicit ChatService(RpT::Core::ServiceContext& run_context, const std::size_t cooldown_ms)
+    : RpT::Core::Service { run_context, { cooldown_ } },
+    enabled_ { true }, cooldown_ { run_context, cooldown_ms } {}
 
     std::string_view name() const override {
         return "Chat";
@@ -75,7 +77,17 @@ public:
 
                 return {}; // State was successfully changed
             } else if (enabled_) { // Checks for chat being enabled or not
+                if (cooldown_.isPending()) { // If cooldown hasn't timed out yet
+                    return RpT::Utils::HandlingResult {
+                        "Chat cooldown is " + std::to_string(cooldown_.countdown()) + " ms!"
+                    };
+                }
+
+                if (cooldown_.hasTriggered()) // If timer has already been consumed, resets its lifecycle
+                    cooldown_.clear();
+
                 emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + std::string { sr_command_data });
+                cooldown_.requestCountdown(); // Begins cooldown
 
                 return {}; // Message should be sent to all players if chat is enabled
             } else { // If it isn't, message can't be sent
@@ -253,7 +265,7 @@ int main(const int argc, const char** argv) {
          */
 
         RpT::Core::ServiceContext services_context;
-        ChatService chat_svc { services_context };
+        ChatService chat_svc { services_context, 2000 };
 
         const bool done_successfully { rpt_executor.run({ chat_svc }) };
 

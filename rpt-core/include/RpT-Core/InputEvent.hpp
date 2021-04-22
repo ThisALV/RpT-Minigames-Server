@@ -85,10 +85,26 @@ public:
     const std::string& serviceRequest() const;
 };
 
-/// Event emitted when a timer is timed out
+/// Event emitted when a timer with a specific token timed out
 class TimerEvent : public InputEvent {
+private:
+    std::uint64_t token_;
+
 public:
-    explicit TimerEvent(std::uint64_t actor);
+    /**
+     * @brief Constructs timer triggered event for timer with given token
+     *
+     * @param actor Ignored, timer are triggered by server clock implementation
+     * @param token Token for timer which has been triggered
+     */
+    explicit TimerEvent(std::uint64_t actor, std::uint64_t token);
+
+    /**
+     * @brief Retrieves token for timer which timed out
+     *
+     * @returns Token for timer which has timed out
+     */
+    std::uint64_t token() const;
 };
 
 /// Event emitted when any new actor joins the server

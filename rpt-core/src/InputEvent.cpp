@@ -34,7 +34,11 @@ const std::string& ServiceRequestEvent::serviceRequest() const {
  * Timer
  */
 
-TimerEvent::TimerEvent(std::uint64_t actor) : InputEvent { actor } {}
+TimerEvent::TimerEvent(const std::uint64_t actor, const std::uint64_t token) : InputEvent { actor }, token_ { token } {}
+
+std::uint64_t TimerEvent::token() const {
+    return token_;
+}
 
 /*
  * Joined
