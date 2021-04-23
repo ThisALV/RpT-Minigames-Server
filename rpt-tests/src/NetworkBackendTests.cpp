@@ -40,6 +40,8 @@ ExpectedEventT requireEventType(RpT::Core::AnyInputEvent event_variant) {
 }
 
 
+constexpr std::size_t ACTORS_LIMIT { 3 };
+
 /*
  * Default client data
  */
@@ -86,8 +88,8 @@ public:
     std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> messages_queues;
 
     /// Initializes backend with client actor 0 for `waitForEvent()` return value and unregistered client 1 for
-    /// testing purpose
-    SimpleNetworkBackend() {
+    /// testing purpose. Actors number limit is 3.
+    SimpleNetworkBackend() : NetworkBackend { ACTORS_LIMIT } {
         // Default client uses token 0
         addClient(CONSOLE_CLIENT);
         // Registers client 0 as actor 0 named "Console"
@@ -540,7 +542,7 @@ BOOST_AUTO_TEST_CASE(Crash) {
 BOOST_AUTO_TEST_SUITE_END()
 
 /*
- * handleHandshake() unit tests
+ * handleFromUnregistered() unit tests
  */
 
 BOOST_AUTO_TEST_SUITE(HandleMessage)
@@ -549,7 +551,7 @@ BOOST_AUTO_TEST_SUITE(HandleMessage)
  * Client connection mode: unregistered
  */
 
-BOOST_AUTO_TEST_SUITE(HandleHandshake)
+BOOST_AUTO_TEST_SUITE(HandleFromUnregistered)
 
 BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
     SimpleNetworkBackend io_interface;
@@ -639,13 +641,25 @@ BOOST_AUTO_TEST_CASE(UnavailableUid) {
     BOOST_CHECK(io_interface.alive(TEST_CLIENT));
 }
 
+BOOST_AUTO_TEST_CASE(ServerFull) {
+    SimpleNetworkBackend io_interface;
+
+    // Last of the 3 testing clients is registered, now limit should have been reached
+    io_interface.clientMessage(TEST_CLIENT, "LOGIN 1 NewTestingActor");
+
+    // Adds 4th client, unregistered for now
+    io_interface.newClient(3);
+    // Already 3 registered actors, should throw
+    BOOST_CHECK_THROW(io_interface.clientMessage(3, "LOGIN 99 E"), InternalError);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 /*
  * Client connection mode: registered
  */
 
-BOOST_AUTO_TEST_SUITE(HandleRegular)
+BOOST_AUTO_TEST_SUITE(HandleFromActor)
 
 BOOST_AUTO_TEST_CASE(ServiceCommandAnyRequest) {
     SimpleNetworkBackend io_interface;

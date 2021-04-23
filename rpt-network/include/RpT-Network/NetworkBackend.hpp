@@ -185,6 +185,9 @@ public:
  * associated with client token. Then, a client will go to registered mode, having an associated actor so it can
  * interact with other clients and services.
  *
+ * Prior to send handshaking message, a client might send checkout message to check if maximum numbers of actors has
+ * been reached or not. A handshake cannot be performed if server is already full.
+ *
  * If any error occurres at RPTL / SER level, client connection is closed by server using RPTL command interrupts,
  * providing disconnection reason if any available. Interrupt message is the same for registered and unregistered
  * connected clients.
@@ -199,11 +202,13 @@ public:
  * Commands summary:
  *
  * Client to server:
+ * - Checkout: `CHECKOUT`, must NOT be registered
  * - Handshake: `LOGIN <uid> <name>`, must NOT be registered
  * - Log out (clean way): `LOGOUT`, must BE registered
  * - Send Service Request command: `SERVICE <SR_command>` (see `Core::ServiceEventRequestProtocol`), must BE registered
  *
  * Server to client, private:
+ * - Check: `AVAILABILITY <actors_count> <max_actors_number>`, must NOT be registered
  * - Registration confirmation: `REGISTRATION [<uid_1> <actor_1>]...`, must NOT be registered
  * - Connection closed: `INTERRUPT [ERR_MSG]`, must BE registered
  * - Service Request Response: `SERVICE <SRR>`, must BE registered, see `Core::ServiceEventRequestProtocol` for SRR doc
@@ -221,6 +226,7 @@ private:
      * Prefixes for RPTL protocol commands invoked by clients
      */
 
+    static constexpr std::string_view CHECKOUT_COMMAND { "CHECKOUT" };
     static constexpr std::string_view HANDSHAKE_COMMAND { "LOGIN" };
     static constexpr std::string_view LOGOUT_COMMAND { "LOGOUT" };
     static constexpr std::string_view SERVICE_COMMAND { "SERVICE" };
@@ -229,6 +235,7 @@ private:
      * Prefixes for RPTL protocol commands invoked and formatted by server
      */
 
+    static constexpr std::string_view AVAILABILITY_COMMAND { "AVAILABILITY" };
     static constexpr std::string_view REGISTRATION_COMMAND { "REGISTRATION" };
     static constexpr std::string_view INTERRUPT_COMMAND { "INTERRUPT" };
     static constexpr std::string_view LOGGED_IN_COMMAND { "LOGGED_IN" };
@@ -245,8 +252,6 @@ private:
         /// Retrieves invoked command arguments
         std::string_view invokedCommandArgs() const;
 
-        /// Checks if command is an handshake for actor registering
-        bool isHandshake() const;
     };
 
     /// Parser for RPTL `HANDSHAKE` command arguments
@@ -299,6 +304,7 @@ private:
         std::string name;
     };
 
+    std::size_t actors_limit_;
     // First value for client alive or not status; Second value uninitialized if unregistered
     std::unordered_map<std::uint64_t, std::pair<ClientStatus, std::optional<Actor>>> connected_clients_;
     // Actor UID with its owner client token
@@ -351,18 +357,21 @@ private:
     void broadcastMessage(std::string new_message);
 
     /**
-     * @brief Parses received handshake and registers new actor for given client
+     * @brief Parses and handles received message from unregistered client
+     *
+     * Registers new actor for given client if message is a handshake or send `AVAILABILITY` private message to client
+     * if it is a checkout.
      *
      * @param client_token Client to be passed into registered mode
-     * @param message_handshake Handshake data received from connected client
+     * @param message Handshake data received from connected client
      *
-     * @returns Input triggered by handshake, means that it was handled successfully, and actor has been registered
+     * @returns Input event triggered by handshake, or null event if message is a checkout command
      *
      * @throws BadClientMessage if invoked command isn't valid connection handshake
      * @throws InternalError if invoked command is valid connection handshake but registration hasn't been done
      * (server internal state fault, example: unavailable UID)
      */
-    Core::JoinedEvent handleHandshake(std::uint64_t client_token, const std::string& message_handshake);
+    Core::AnyInputEvent handleFromUnregistered(std::uint64_t client_token, const std::string& message);
 
     /**
      * @brief Parses given received RPTL message from client with associated registered actor UID and retrieves
@@ -376,7 +385,7 @@ private:
      *
      * @throws BadClientMessage if given client message is ill-formed (missing args, unknown command...)
      */
-    Core::AnyInputEvent handleRegular(std::uint64_t client_actor, const std::string& regular_message);
+    Core::AnyInputEvent handleFromActor(std::uint64_t client_actor, const std::string& regular_message);
 
     /**
      * @brief Generates RPTL Registration command message from current server state
@@ -388,16 +397,17 @@ private:
 protected:
     /**
      * @brief Parses given RPTL message from given client and retrieves triggered input event. Messages required to
-     * sync clients with new server state pushed into corresponding messages queues.
+     * sync clients with new server state are pushed into corresponding messages queues.
      *
-     * Parsing mode (handshake/regular message) depends on current client connection mode (respectively
-     * unregistered/registered).
+     * Parsing mode (currently available commands) depends on current client connection mode (unregistered/registered).
      *
      * @param client_token
      * @param client_message
      *
-     * @returns Event triggered by message, type must be `Core::LeftEvent`, `Core::ServiceRequestEvent` or
-     * `Core::JoinedEvent` as only these events can be triggered by a client RPTL message
+     * @returns Event triggered by message, type must be `Core::LeftEvent`, `Core::ServiceRequestEvent`,
+     * `Core::JoinedEvent` or `Core::NoneEvent` as only these events can be triggered by a client RPTL message
+     *
+     * @note `Core::NoneEvent` is returned on case of a server checkout using `CHECKOUT` command.
      *
      * @throws BadClientMessage if invoked command is ill-formed (invalid arguments, unknown command...)
      * @throws InternalError if invoked command is valid but server state makes it unable to propery handles command
@@ -514,6 +524,13 @@ protected:
     const Utils::HandlingResult& disconnectionReason(std::uint64_t client_token) const;
 
 public:
+    /**
+     * @brief Constructs backend without connected client, and with given actors number limits
+     *
+     * @param actors_limit Maximum number of actors registered
+     */
+    explicit NetworkBackend(std::size_t actors_limit);
+
     /**
      * @brief If any, poll input event inside queue. If queue is empty, wait until input event is triggered.
      *
