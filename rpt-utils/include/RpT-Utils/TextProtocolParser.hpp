@@ -97,6 +97,10 @@ protected:
      * @return All unparsed substring
      */
     std::string_view unparsedWords() const;
+
+public:
+    /// Required for polymorphic instance destruction
+    virtual ~TextProtocolParser() = default;
 };
 
 
