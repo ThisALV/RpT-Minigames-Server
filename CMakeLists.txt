@@ -80,7 +80,6 @@ configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 
 add_subdirectory(rpt-gameplay)
 add_subdirectory(rpt-core)
-add_subdirectory(rpt-serialization)
 add_subdirectory(rpt-utils)
 add_subdirectory(rpt-network)
 add_subdirectory(minigames-server)
