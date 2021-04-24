@@ -22,7 +22,7 @@ find_package(Boost REQUIRED) # Variant requirement
 
 add_library(rpt-core STATIC ${RPT_CORE_HEADERS} ${RPT_CORE_SOURCES})
 target_include_directories(rpt-core PUBLIC include ${Boost_INCLUDE_DIR})
-target_link_libraries(rpt-core PUBLIC rpt-utils rpt-gameplay)
+target_link_libraries(rpt-core PUBLIC rpt-utils)
 register_doc_for(include)
 
 install(DIRECTORY "include/" TYPE INCLUDE)
