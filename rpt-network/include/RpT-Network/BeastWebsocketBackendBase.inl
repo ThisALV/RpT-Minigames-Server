@@ -449,13 +449,16 @@ public:
      *
      * @param local_endpoint Endpoint clients will connect to
      * @param logging_context Context for WS backend logging features
+     * @param players_limit Maximum number of actors registered simultaneously
      */
     explicit BeastWebsocketBackendBase(const boost::asio::ip::tcp::endpoint& local_endpoint,
-                                       Utils::LoggingContext& logging_context)
-    : logger_ { "WS-Backend", logging_context },
+                                       Utils::LoggingContext& logging_context, const std::size_t players_limit = 2)
+    : NetworkBackend { players_limit },
+    logger_ { "WS-Backend", logging_context },
     stop_signals_handling_ { async_io_context_ },
     tcp_acceptor_ { async_io_context_, local_endpoint },
     tokens_count_ { 0 } {
+
         Utils::LoggerView logger { getLogger() }; // Avoid to create LoggerView for each added signal
 
         // For each Posix signal that must be caught

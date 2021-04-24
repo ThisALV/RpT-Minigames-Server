@@ -18,15 +18,12 @@ std::string_view NetworkBackend::RptlCommandParser::invokedCommandArgs() const {
     return unparsedWords();
 }
 
-bool NetworkBackend::RptlCommandParser::isHandshake() const {
-    return invokedCommandName() == HANDSHAKE_COMMAND;
-}
-
 
 NetworkBackend::HandshakeParser::HandshakeParser(const NetworkBackend::RptlCommandParser& parsed_rptl_command)
 : Utils::TextProtocolParser { parsed_rptl_command.invokedCommandArgs(), 2 } {
 
-    assert(parsed_rptl_command.isHandshake()); // Parsed handshake must be an handshake command
+    // Parsed handshake must be an handshake command
+    assert(parsed_rptl_command.invokedCommandName() == HANDSHAKE_COMMAND);
 
     if (!unparsedWords().empty()) // Checks for syntax, there must NOT be any remaining argument
         throw TooManyArguments { HANDSHAKE_COMMAND };
@@ -63,56 +60,80 @@ std::string_view NetworkBackend::ServiceCommandParser::serviceRequest() const {
 }
 
 
-Core::JoinedEvent NetworkBackend::handleHandshake(const std::uint64_t client_token,
-                                                  const std::string& message_handshake) {
+Core::AnyInputEvent NetworkBackend::handleFromUnregistered(const std::uint64_t client_token,
+                                                           const std::string& message) {
 
     try { // Tries to parse received RPTL command, will fail if command is empty
-        const RptlCommandParser command_parser { message_handshake };
+        const RptlCommandParser command_parser { message };
 
-        if (!command_parser.isHandshake()) // Checks for invoked command, must be handshake command
-            throw BadClientMessage { "Invoked command for connection handshaking must be \"HANDSHAKE\"" };
+        const std::string_view invoked_command_name { command_parser.invokedCommandName() };
+        // Current actors number needed in both maybe invoked command
+        const std::size_t actors_count { actors_registry_.size() };
 
-        const HandshakeParser handshake_parser { command_parser };
-        const std::uint64_t new_actor_uid { handshake_parser.actorUID() };
+        // Checks for each available command name if it is invoked by received RPTL message
+        if (invoked_command_name == CHECKOUT_COMMAND) {
+            if (!command_parser.invokedCommandArgs().empty()) // Check for command to not have any additional argument
+                throw BadClientMessage { "No arguments expected with command CHECKOUT" };
 
-        if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
-            throw InternalError { "Player UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
-
-        std::string new_actor_name { handshake_parser.actorName() };
-
-        try { // Tries to register actor, implementation registration may fail
-            registerActor(client_token, new_actor_uid, new_actor_name);
-
-            // If registration hasn't been done at this point, this is an implementation error
-            assert(isRegistered(new_actor_uid));
-
-            // Client must be synced about its own registration
-            privateMessage(client_token, formatRegistrationMessage());
-
-            // Formats message to notify actors that player joined server
-            std::string logged_in_message {
-                    std::string { LOGGED_IN_COMMAND }
-                    + ' ' + std::to_string(new_actor_uid) + ' ' + new_actor_name
+            std::string availability_response { // Formats AVAILABILITY command message to respond checkout
+                std::string { AVAILABILITY_COMMAND }
+                + ' ' + std::to_string(actors_count) + ' ' + std::to_string(actors_limit_)
             };
-            // All players should be aware about new registered player
-            broadcastMessage(std::move(logged_in_message));
-        } catch (const std::exception& err) { // It it fails, then registration must NOT have been done
-            // If registration is still active at this point, this is an implementation error and server must stop
-            assert(!isRegistered(new_actor_uid));
 
-            // Handshaking is valid, but server is currently unable to register actor
-            throw InternalError { err.what() };
+            // Push response into messages queue for asking client
+            privateMessage(client_token, std::move(availability_response));
+
+            return Core::NoneEvent { 0 }; // Actor doesn't matter, no modification on server state so null event
+        } else if (invoked_command_name == HANDSHAKE_COMMAND) {
+            const HandshakeParser handshake_parser { command_parser };
+            const std::uint64_t new_actor_uid { handshake_parser.actorUID() };
+
+            if (actors_count >= actors_limit_) // Checks if server is full
+                throw InternalError { "Limit of " + std::to_string(actors_limit_) + " reached" };
+
+            if (isRegistered(new_actor_uid)) // Checks if new actor UID is available
+                throw InternalError { "Player UID \"" + std::to_string(new_actor_uid) + "\" is not available" };
+
+            std::string new_actor_name { handshake_parser.actorName() };
+
+            try { // Tries to register actor, implementation registration may fail
+                registerActor(client_token, new_actor_uid, new_actor_name);
+
+                // If registration hasn't been done at this point, this is an implementation error
+                assert(isRegistered(new_actor_uid));
+
+                // Client must be synced about its own registration
+                privateMessage(client_token, formatRegistrationMessage());
+
+                // Formats message to notify actors that player joined server
+                std::string logged_in_message {
+                        std::string { LOGGED_IN_COMMAND }
+                        + ' ' + std::to_string(new_actor_uid) + ' ' + new_actor_name
+                };
+                // All players should be aware about new registered player
+                broadcastMessage(std::move(logged_in_message));
+            } catch (const std::exception& err) { // It it fails, then registration must NOT have been done
+                // If registration is still active at this point, this is an implementation error and server must stop
+                assert(!isRegistered(new_actor_uid));
+
+                // Handshaking is valid, but server is currently unable to register actor
+                throw InternalError { err.what() };
+            }
+
+            // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
+            return Core::JoinedEvent { new_actor_uid, std::move(new_actor_name) };
+        } else { // If none of available commands is being invoked, then invoked command is unknown
+            throw BadClientMessage {
+                "Unknown RPTL command for unregistered mode: " + std::string { invoked_command_name }
+            };
         }
-
-        // Returns event triggered by actor registration, takes reference to actor's name, no copy done on string
-        return Core::JoinedEvent { new_actor_uid, std::move(new_actor_name) };
     } catch (const Utils::NotEnoughWords&) { // If command is empty, unable to parse invoked command name
         throw EmptyRptlCommand {};
     }
 }
 
-Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint64_t client_actor,
-                                                                const std::string& regular_message) {
+Core::AnyInputEvent RpT::Network::NetworkBackend::handleFromActor(uint64_t client_actor,
+                                                                  const std::string& regular_message) {
 
     try { // Tries to parse received RPTL command, will fail if command is empty
         const RptlCommandParser command_parser { regular_message };
@@ -149,7 +170,9 @@ Core::AnyInputEvent RpT::Network::NetworkBackend::handleRegular(const std::uint6
             // RPTL command way disconnection, clean
             return Core::LeftEvent { client_actor };
         } else { // If none of available commands is being invoked, then invoked command is unknown
-            throw BadClientMessage { "Unknown RPTL command: " + std::string { invoked_command_name } };
+            throw BadClientMessage {
+                "Unknown RPTL command fom registered mode: " + std::string { invoked_command_name }
+            };
         }
     } catch (const Utils::NotEnoughWords&) { // If there isn't any word to parse (if command is empty)
         throw EmptyRptlCommand {};
@@ -161,9 +184,9 @@ Core::AnyInputEvent NetworkBackend::handleMessage(const std::uint64_t client_tok
     const std::optional<Actor> client_actor { connected_clients_.at(client_token).second };
 
     if (!client_actor.has_value()) // If no actor is registered for RPTL message client
-        return handleHandshake(client_token, client_message);
+        return handleFromUnregistered(client_token, client_message);
     else // If any actor is actually registered for RPTL message client
-        return handleRegular(client_actor->uid, client_message); // Handle command for registered actor
+        return handleFromActor(client_actor->uid, client_message); // Handle command for registered actor
 }
 
 void NetworkBackend::pushInputEvent(Core::AnyInputEvent input_event) {
@@ -395,7 +418,7 @@ void NetworkBackend::closePipelineWith(const std::uint64_t actor, const Utils::H
     if (!clean_shutdown)
         interrupt_message += ' ' + clean_shutdown.errorMessage();
 
-    // Now clients state sync can be done, as in handleRegular()
+    // Now clients state sync can be done, as in handleFromActor()
     privateMessage(owner_client, std::move(interrupt_message));
     broadcastMessage(std::string { LOGGED_OUT_COMMAND } + ' ' + std::to_string(actor));
 
@@ -417,6 +440,9 @@ void NetworkBackend::outputEvent(const std::string& event) {
     // Formats message for RPTL protocol using SERVICE command
     broadcastMessage(std::string { SERVICE_COMMAND } + ' ' + event);
 }
+
+NetworkBackend::NetworkBackend(std::size_t actors_limit)
+: Core::InputOutputInterface {}, actors_limit_ { actors_limit } {}
 
 
 }

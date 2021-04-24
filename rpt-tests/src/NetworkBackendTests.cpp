@@ -40,6 +40,8 @@ ExpectedEventT requireEventType(RpT::Core::AnyInputEvent event_variant) {
 }
 
 
+constexpr std::size_t ACTORS_LIMIT { 3 };
+
 /*
  * Default client data
  */
@@ -86,8 +88,8 @@ public:
     std::unordered_map<std::uint64_t, std::queue<std::shared_ptr<std::string>>> messages_queues;
 
     /// Initializes backend with client actor 0 for `waitForEvent()` return value and unregistered client 1 for
-    /// testing purpose
-    SimpleNetworkBackend() {
+    /// testing purpose. Actors number limit is 3.
+    SimpleNetworkBackend() : NetworkBackend { ACTORS_LIMIT } {
         // Default client uses token 0
         addClient(CONSOLE_CLIENT);
         // Registers client 0 as actor 0 named "Console"
@@ -540,7 +542,7 @@ BOOST_AUTO_TEST_CASE(Crash) {
 BOOST_AUTO_TEST_SUITE_END()
 
 /*
- * handleHandshake() unit tests
+ * handleFromUnregistered() unit tests
  */
 
 BOOST_AUTO_TEST_SUITE(HandleMessage)
@@ -549,9 +551,9 @@ BOOST_AUTO_TEST_SUITE(HandleMessage)
  * Client connection mode: unregistered
  */
 
-BOOST_AUTO_TEST_SUITE(HandleHandshake)
+BOOST_AUTO_TEST_SUITE(HandleFromUnregistered)
 
-BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
+BOOST_AUTO_TEST_CASE(LoginUid42NameAlvis) {
     SimpleNetworkBackend io_interface;
 
     // Sends handshake RPTL command for registration, from client token 1 using actor UID 42
@@ -592,7 +594,7 @@ BOOST_AUTO_TEST_CASE(Uid42NameAlvis) {
     }
 }
 
-BOOST_AUTO_TEST_CASE(Uid1MissingName) {
+BOOST_AUTO_TEST_CASE(LoginUid1MissingName) {
     SimpleNetworkBackend io_interface;
 
     // Name argument is missing
@@ -601,18 +603,22 @@ BOOST_AUTO_TEST_CASE(Uid1MissingName) {
     BOOST_CHECK(!io_interface.registered(2));
     // Client should still be alive, error handling is for NetworkBackend implementation
     BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    // No events should have been emitted because registration didn't happen (NoneEvent for NetworkBackend mocking)
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
 }
 
-BOOST_AUTO_TEST_CASE(InvalidUid) {
+BOOST_AUTO_TEST_CASE(LoginInvalidUid) {
     SimpleNetworkBackend io_interface;
 
     // UID argument isn't valid 64 bits unsigned integer
     BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, "LOGIN abcd "), BadClientMessage);
     // Client should still be alive, error handling is for NetworkBackend implementation
     BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    // No events should have been emitted because registration didn't happen (NoneEvent for NetworkBackend mocking)
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
 }
 
-BOOST_AUTO_TEST_CASE(ExtraArgs) {
+BOOST_AUTO_TEST_CASE(LoginExtraArgs) {
     SimpleNetworkBackend io_interface;
 
     // Extra arg "a"
@@ -620,23 +626,76 @@ BOOST_AUTO_TEST_CASE(ExtraArgs) {
     // Ill-formed handshake, should not be registered
     BOOST_CHECK(!io_interface.registered(42));
     BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
 }
 
-BOOST_AUTO_TEST_CASE(NotAHandshake) {
-    SimpleNetworkBackend io_interface;
-
-    // UNKNOWN command is not handshaking command
-    BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, "UNKNOWN 42 Alvis"), BadClientMessage);
-    BOOST_CHECK(io_interface.alive(TEST_CLIENT));
-}
-
-BOOST_AUTO_TEST_CASE(UnavailableUid) {
+BOOST_AUTO_TEST_CASE(LoginUnavailableUid) {
     SimpleNetworkBackend io_interface;
 
     // Actor UID 0 isn't available, actor 0 at initialized, which is a server error
     BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, "LOGIN 0 Alvis"), InternalError);
     BOOST_CHECK(io_interface.registered(CONSOLE_ACTOR)); // Actual actor 0 should still be registered
     BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
+}
+
+BOOST_AUTO_TEST_CASE(LoginServerFull) {
+    SimpleNetworkBackend io_interface;
+
+    // Last of the 3 testing clients is registered, now limit should have been reached
+    io_interface.clientMessage(TEST_CLIENT, "LOGIN 1 NewTestingActor");
+    // Flushes events queue because new actor just joined server and queue must be checked later
+    io_interface.waitForInput();
+
+    // Adds 4th client, unregistered for now
+    io_interface.newClient(3);
+    // Already 3 registered actors, should throw
+    BOOST_CHECK_THROW(io_interface.clientMessage(3, "LOGIN 99 E"), InternalError);
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
+}
+
+BOOST_AUTO_TEST_CASE(Checkout) {
+    SimpleNetworkBackend io_interface;
+
+    // Unregistered client sends CHECKOUT command
+    io_interface.clientMessage(TEST_CLIENT, "CHECKOUT  ");
+
+    // Sends AVAILABILITY response to unregistered testing client
+    io_interface.sync();
+
+    auto& testing_client_queue { io_interface.messages_queues.at(TEST_CLIENT) };
+    BOOST_CHECK_EQUAL(testing_client_queue.size(), 1); // Should have received 1 AVAILABILITY command message
+    BOOST_CHECK_EQUAL(*testing_client_queue.front(), "AVAILABILITY 2 3"); // 2 out of 3 actors registered
+    // Client should still be able to register after many checkout commands
+    BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+    // No alteration to server state, null event emitted for this specific command
+    requireEventType<RpT::Core::NoneEvent>(io_interface.waitForInput());
+}
+
+BOOST_AUTO_TEST_CASE(CheckoutExtraArgs) {
+    SimpleNetworkBackend io_interface;
+
+    // Unregistered client sends CHECKOUT command with forbidden extra argument
+    BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, "CHECKOUT  A"), BadClientMessage);
+
+    // Client should still be alive, error handling is for NetworkBackend implementation
+    BOOST_CHECK(io_interface.alive(TEST_CLIENT));
+}
+
+BOOST_AUTO_TEST_CASE(UnknownCommand) {
+    SimpleNetworkBackend io_interface;
+
+    // Send UNKNOWN_COMMAND which isn't a valid RPTL command, so message is ill-formed
+    // Sent from unregistered testing client, so handleFromUnregistered() will be called
+    BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, "UNKNOWN_COMMAND some args"), BadClientMessage);
+}
+
+BOOST_AUTO_TEST_CASE(EmptyMessage) {
+    SimpleNetworkBackend io_interface;
+
+    // Send message not containing any RPTL command which isn't a valid syntax, so message is ill-formed
+    // Sent from unregistered testing client, so handleFromUnregistered() will be called
+    BOOST_CHECK_THROW(io_interface.clientMessage(TEST_CLIENT, ""), BadClientMessage);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -645,7 +704,7 @@ BOOST_AUTO_TEST_SUITE_END()
  * Client connection mode: registered
  */
 
-BOOST_AUTO_TEST_SUITE(HandleRegular)
+BOOST_AUTO_TEST_SUITE(HandleFromActor)
 
 BOOST_AUTO_TEST_CASE(ServiceCommandAnyRequest) {
     SimpleNetworkBackend io_interface;
@@ -721,6 +780,7 @@ BOOST_AUTO_TEST_CASE(UnknownCommand) {
     SimpleNetworkBackend io_interface;
 
     // Send UNKNOWN_COMMAND which isn't a valid RPTL command, so message is ill-formed
+    // Sent from registered Console client, so handleFromActor() will be called
     BOOST_CHECK_THROW(io_interface.clientMessage(CONSOLE_CLIENT, "UNKNOWN_COMMAND some args"), BadClientMessage);
 }
 
@@ -728,6 +788,7 @@ BOOST_AUTO_TEST_CASE(EmptyMessage) {
     SimpleNetworkBackend io_interface;
 
     // Send message not containing any RPTL command which isn't a valid syntax, so message is ill-formed
+    // Sent from registered Console client, so handleFromActor() will be called
     BOOST_CHECK_THROW(io_interface.clientMessage(CONSOLE_CLIENT, ""), BadClientMessage);
 }
 
