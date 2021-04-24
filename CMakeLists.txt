@@ -78,7 +78,6 @@ configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 
 ## Init source directories
 
-add_subdirectory(rpt-gameplay)
 add_subdirectory(rpt-core)
 add_subdirectory(rpt-utils)
 add_subdirectory(rpt-network)
