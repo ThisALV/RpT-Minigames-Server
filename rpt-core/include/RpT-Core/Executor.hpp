@@ -204,7 +204,10 @@ public:
     /**
      * @brief Setup loop's routine
      *
-     * @param loop_routine Routine to call at the end for each main loop iteration
+     * Put into this routine every action or check that must be performed every time the application continue its
+     * execution, no matter what type of input event where emitted.
+     *
+     * @param loop_routine Routine to call after input event specific handling for each main loop iteration
      *
      * @throws BadExecutorMode if `run()` has already been called
      */

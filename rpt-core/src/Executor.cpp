@@ -116,8 +116,15 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
                 }
             }
 
-            // After input event has been handled, events emitted by services should also be handled in the order they
-            // appeared
+            // Calls routine for operations which must be performed or checked for iteration no matter which input
+            // event were emitted
+
+            logger_.trace("Entering loop routine...");
+            loop_routine_();
+            logger_.trace("Loop routine done.");
+
+            // After all required handlers and operations have been done, events emitted by services should also be
+            // handled in the order they appeared so clients can be synced with server services state
 
             logger_.debug("Polling service events...");
 
@@ -130,10 +137,6 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
             }
 
             logger_.debug("Events polled.");
-
-            logger_.trace("Entering loop end routine...");
-            loop_routine_(); // Calls loop routine to continue Services progression before waiting for next input event
-            logger_.trace("Loop end routine done.");
         }
 
         logger_.info("Stopped.");
