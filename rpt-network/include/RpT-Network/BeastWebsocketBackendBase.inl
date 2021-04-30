@@ -292,7 +292,7 @@ private:
         if (!disconnection_reason) {
             const std::string& error_message { disconnection_reason.errorMessage() };
 
-            websocket_close_reason.code = boost::beast::websocket::close_code::abnormal;
+            websocket_close_reason.code = boost::beast::websocket::close_code::internal_error;
             websocket_close_reason.reason = error_message;
         }
 
