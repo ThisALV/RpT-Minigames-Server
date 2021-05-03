@@ -232,27 +232,30 @@ BOOST_AUTO_TEST_CASE(ManyEventsInSomeQueues) {
 }
 
 BOOST_AUTO_TEST_CASE(ManyEventsInEveryQueues) {
-    // Emits many events
-    svc_a.handleRequestCommand(1, {});
-    svc_b.handleRequestCommand(2, {});
-    svc_c.handleRequestCommand(3, {});
-    svc_a.handleRequestCommand(4, {});
-    svc_b.handleRequestCommand(5, {});
-    svc_c.handleRequestCommand(6, {});
+    // Emits many events in a random miscellaneous order
+    svc_a.handleRequestCommand(1, "");
+    svc_a.handleRequestCommand(2, "");
+    svc_c.handleRequestCommand(3, "");
+    svc_b.handleRequestCommand(4, "");
+    svc_b.handleRequestCommand(5, "");
+    svc_b.handleRequestCommand(6, "");
+    svc_c.handleRequestCommand(7, "");
 
     // Checks for events polling order, FIFO queue, so should be the same than insertion (or events emission) order
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
                                            std::optional<std::string> { "EVENT ServiceA 1" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 2" });
+                                           std::optional<std::string> { "EVENT ServiceA 2" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
                                            std::optional<std::string> { "EVENT ServiceC 3" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA 4" });
+                                           std::optional<std::string> { "EVENT ServiceB 4" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
                                            std::optional<std::string> { "EVENT ServiceB 5" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceC 6" });
+                                           std::optional<std::string> { "EVENT ServiceB 6" });
+    RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
+                                           std::optional<std::string> { "EVENT ServiceC 7" });
 }
 
 BOOST_AUTO_TEST_SUITE_END()
