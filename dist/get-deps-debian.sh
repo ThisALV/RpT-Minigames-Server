@@ -74,7 +74,8 @@ function tryBoostSourceGet() {
 
   local version="$major.$minor.$patch" # Formatted version library number
   local archive_filename="boost_${major}_${minor}_${patch}.tar.bz2" # Archive which will be fetched and downloaded using bzip2 compression
-  local sources_url="https://dl.bintray.com/boostorg/release/${version}/source/${archive_filename}" # Full sources archive URL
+  # Full sources archive URL
+  local sources_url="https://boostorg.jfrog.io/artifactory/main/release/${version}/source/${archive_filename}"
 
   local deps_dir="build" # Built dependencies parent directory
   local extraction_dir="$deps_dir/boostorg"  # Where Boost sources archive content will be extracted
