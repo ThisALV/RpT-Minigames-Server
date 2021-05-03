@@ -47,7 +47,6 @@ function extractGitHubSource() {
   local branch_name="$3"
   local extract_dir="$4"
 
-  local dest_dir="$extract_dir/$author" # Extracted archive content location
   local archive_filename="$name-$branch_name.tar.gz" # Name of downloaded archive
   local sources_url="https://github.com/$author/$name/archive/$branch_name.tar.gz" # Download from URL using gzip compression
 
