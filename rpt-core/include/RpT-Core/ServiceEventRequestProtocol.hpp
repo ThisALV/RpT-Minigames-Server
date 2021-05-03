@@ -160,30 +160,8 @@ private:
         std::string_view commandData() const;
     };
 
-    /// Data structure holding cached Service Event emitter inside queue
-    struct CachedServiceEventEmitter {
-        std::size_t emittedEventId;
-        Service* queuedEmitter; // Holds pointer as only constant access to top element is allowed inside priority_queue
-
-        /// Priority emitter holds event with the highest priority (lowest emitted event ID)
-        bool operator>(const CachedServiceEventEmitter& rhs) const;
-        /// Required for `std::less`
-        bool operator<(const CachedServiceEventEmitter& rhs) const;
-    };
-
     Utils::LoggerView logger_;
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
-    std::priority_queue<CachedServiceEventEmitter, std::deque<CachedServiceEventEmitter>> latest_se_emitters_cache_;
-
-    /**
-     * @brief Poll ref to Service that we know is holding Service Event with the highest priority (the lowest
-     * event ID)
-     *
-     * @note Emitters cache must NOT be empty when called.
-     *
-     * @returns Reference to Service holding the next event that must be polled by SER Protocol instance
-     */
-    Service& latestEventEmitter();
 
 public:
     /**

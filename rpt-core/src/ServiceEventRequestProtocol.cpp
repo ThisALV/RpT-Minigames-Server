@@ -38,32 +38,6 @@ std::string_view ServiceEventRequestProtocol::ServiceRequestCommandParser::comma
 }
 
 
-bool ServiceEventRequestProtocol::CachedServiceEventEmitter::operator>(
-        const ServiceEventRequestProtocol::CachedServiceEventEmitter& rhs) const {
-
-    assert(emittedEventId != rhs.emittedEventId); // All emitted SE must have an unique ID
-
-    return emittedEventId < rhs.emittedEventId;
-}
-
-bool ServiceEventRequestProtocol::CachedServiceEventEmitter::operator<(
-        const ServiceEventRequestProtocol::CachedServiceEventEmitter& rhs) const {
-
-    return !(*this > rhs);
-}
-
-
-Service& ServiceEventRequestProtocol::latestEventEmitter() {
-    assert(!latest_se_emitters_cache_.empty()); // Cache queue must contains at least one event emitter
-
-    // Retrieves ref for Service which has emitted the next event to poll
-    Service& latest_event_emitter { *latest_se_emitters_cache_.top().queuedEmitter };
-    // Removes emitter from cache, its event will be polled
-    latest_se_emitters_cache_.pop();
-
-    return latest_event_emitter;
-}
-
 ServiceEventRequestProtocol::ServiceEventRequestProtocol(
         const std::initializer_list<std::reference_wrapper<Service>>& services,
         Utils::LoggingContext& logging_context) :
@@ -147,31 +121,27 @@ std::string ServiceEventRequestProtocol::handleServiceRequest(const std::uint64_
 std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
     std::optional<std::string> next_event; // Event to poll is first uninitialized
 
-    Service* latest_event_emitter { nullptr }; // Will be set any event has been emitted by a service
+    // Will be set to Service which has the lowest ID if any of them emitted a an event
+    Service* latest_event_emitter { nullptr };
 
-    // There might be events emitter cached if we know they are holding Service Event with the next higher priority
-    // (lower unsigned integer)
-    if (!latest_se_emitters_cache_.empty()) {
-        latest_event_emitter = &latestEventEmitter(); // Saves address for next event emitter
-    } else { // If not any Service is cached as next event emitter...
-        // ...checks next event ID for each service and caches service into next events emiiters queue
+    std::size_t lowest_event_id;
+    for (auto registered_service : running_services_) {
+        Service& service { registered_service.second.get() };
 
-        for (auto [service_name, registered_service] : running_services_) {
-            const std::optional<std::size_t> next_event_id { registered_service.get().checkEvent() };
+        const std::optional<std::size_t> next_event_id { service.checkEvent() };
 
-            if (next_event_id.has_value()) { // If Service emitted event...
-                // ...then cache emitter into queue with corresponding event emitter priority
-                latest_se_emitters_cache_.push({ *next_event_id, &registered_service.get() });
+        if (next_event_id.has_value()) { // Skip service if has an empty events queue
+            logger_.trace("Service {} last event ID: {}", service.name(), *next_event_id);
 
-                logger_.trace("Service {} last event ID: {}. Cached as emitter.", service_name, *next_event_id);
-            } else { // If Service didn't emit anything
-                logger_.trace("Service {} hasn't any event.", service_name);
+            // If there isn't any event to poll or current was triggered first...
+            if (!latest_event_emitter || next_event_id < lowest_event_id) {
+                // ...then set new event emitter, and update lowest ID
+                latest_event_emitter = &service;
+                lowest_event_id = *next_event_id;
             }
+        } else {
+            logger_.trace("Service {} hasn't any event.", service.name());
         }
-
-        // All next known events are cached, next from cached will be retrieved (if any event has been emitted)
-        if (!latest_se_emitters_cache_.empty())
-            latest_event_emitter = &latestEventEmitter();
     }
 
     if (latest_event_emitter) { // If there is any emitted event, format it and move it into polled event
@@ -181,7 +151,7 @@ std::optional<std::string> ServiceEventRequestProtocol::pollServiceEvent() {
 
         logger_.trace("Polled event from service {}: {}", latest_event_emitter->name(), *next_event);
     } else {
-        logger_.trace("No event to retrieve.");
+        logger_.trace("No event to retrieve");
     }
 
     return next_event;
