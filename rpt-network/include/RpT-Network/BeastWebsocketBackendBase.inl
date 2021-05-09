@@ -68,17 +68,9 @@ private:
             // No matter if async_write succeeded or not, RPTL message should not be handled twice, so pop it from queue
             protocol_instance_.merged_remaining_messages_.pop();
 
-            // If client was disconnected, sending message to it is useless
-            if (protocol_instance_.clients_stream_.count(client_token_) == 0)
-                return;
-
-            // Ignores if server stopped
-            if (err == boost::asio::error::operation_aborted)
-                return;
-
             // Handles error with connection closure, as specified by RPTL protocol
             // An error for one RPTL message must NOT crash other client connections, so error is fatal for client only
-            if (err) {
+            if (err && err != boost::asio::error::operation_aborted) { // Ignores if server stopped
                 std::string error_message { err.message() }; // Retrieves Asio error code associated message
 
                 protocol_instance_.logger_.error("Unable to send message to client {}: {}", client_token_, error_message);
@@ -150,10 +142,10 @@ private:
     // Provides logging features
     Utils::LoggerView logger_;
 
-    // Websocket stream using given TCP stream for each client token
-    std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
+    // Websocket stream using given TCP stream for each client token
+    std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Posix signals handling to stop server
     boost::asio::signal_set stop_signals_handling_;
     // Provides ready TCP connection to open WS stream from
@@ -181,16 +173,24 @@ private:
      * @param remaining_messages Pop-only queue for PRTL messages to send once next message have been sent successfully
      */
     void sendRemainingMessages() {
-        // Using shared_ptr stored inside queue, data will be valid during async handler execution
+        // Shared_ptr for RPTL message is not popped from queue, so message data is still valid during async_write
         const QueuedMessage message_owner { merged_remaining_messages_.front() };
-        // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
-        // is owned by RPTL message shared pointer, alive until queued message is popped from queue
-        const boost::asio::const_buffer message_buffer {
-            message_owner.rptlMessage->data(), message_owner.rptlMessage->size()
-        };
 
-        clients_stream_.at(message_owner.client).async_write(
-                message_buffer, SentMessageHandler { *this, message_owner.client });
+        if (clients_stream_.count(message_owner.client) == 1) { // If destination client is still connected, send msg
+            // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
+            // is owned by RPTL message shared pointer, alive until queued message is popped from queue
+            const boost::asio::const_buffer message_buffer {
+                    message_owner.rptlMessage->data(), message_owner.rptlMessage->size()
+            };
+
+            clients_stream_.at(message_owner.client).async_write(
+                    message_buffer, SentMessageHandler { *this, message_owner.client });
+        } else { // If client is disconnected, skip this message and go to next message if any
+            merged_remaining_messages_.pop(); // Skip this RPTL message
+
+            if (!merged_remaining_messages_.empty())
+                sendRemainingMessages();
+        }
     }
 
     /// Accepts next incoming TCP client connection, then wait for next client again
