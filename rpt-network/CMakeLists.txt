@@ -4,12 +4,14 @@ set(RPT_NETWORK_HEADERS
         "${RPT_NETWORK_HEADERS_DIR}/BeastWebsocketBackendBase.inl"
         "${RPT_NETWORK_HEADERS_DIR}/NetworkBackend.hpp"
         "${RPT_NETWORK_HEADERS_DIR}/UnsafeBeastWebsocketBackend.hpp"
-        "${RPT_NETWORK_HEADERS_DIR}/SafeBeastWebsocketBackend.hpp")
+        "${RPT_NETWORK_HEADERS_DIR}/SafeBeastWebsocketBackend.hpp"
+        "${RPT_NETWORK_HEADERS_DIR}/MessagesQueueView.hpp")
 
 set(RPT_NETWORK_SOURCES
         "src/NetworkBackend.cpp"
         "src/UnsafeBeastWebsocketBackend.cpp"
-        "src/SafeBeastWebsocketBackend.cpp")
+        "src/SafeBeastWebsocketBackend.cpp"
+        "src/MessagesQueueView.cpp")
 
 find_package(Boost 1.70 REQUIRED)  # Beast ssl_stream available outside experimental since 1.70
 
