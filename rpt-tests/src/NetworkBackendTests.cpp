@@ -71,11 +71,12 @@ constexpr std::string_view REGISTERED_TEST_NAME { "TestingActor" };
  */
 class SimpleNetworkBackend : public NetworkBackend {
 protected:
-    /// Saves flushed messages queue into public dictionary
-    void syncClient(uint64_t client_token,
-                    MessagesQueueView client_messages_queue) override {
+    /// Saves messages queue into public dictionary by popping each pointer
+    void syncClient(uint64_t client_token, MessagesQueueView client_messages_queue) override {
+        auto& popped_messages_queue { messages_queues[client_token] }; // Creates queue if it doesn't exist yet
 
-        messages_queues[client_token] = std::move(client_messages_queue);
+        while (client_messages_queue.hasNext()) // Flushes each RPTL message
+            popped_messages_queue.push(client_messages_queue.next());
     }
 
     /// Retrieves `NoneEvent` triggered by actor with UID == 0 when queue is empty
