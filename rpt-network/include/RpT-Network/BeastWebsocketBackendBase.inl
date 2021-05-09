@@ -413,8 +413,9 @@ protected:
         while (client_messages_queue.hasNext())
             merged_remaining_messages_.push({ client_token, client_messages_queue.next() });
 
-        // Initiates recursive calls if no recursive async calls are already sending RPTL messages inside queue
-        if (!sending_messages)
+        // Initiates recursive calls if no recursive async calls are already sending RPTL messages inside queue and
+        // there is new messages to send
+        if (!sending_messages && !merged_remaining_messages_.empty())
             sendRemainingMessages();
     }
 
