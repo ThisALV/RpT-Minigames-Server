@@ -175,14 +175,22 @@ private:
     void sendRemainingMessages() {
         // Shared_ptr for RPTL message is not popped from queue, so message data is still valid during async_write
         const QueuedMessage message_owner { merged_remaining_messages_.front() };
-        // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
-        // is owned by RPTL message shared pointer, alive until queued message is popped from queue
-        const boost::asio::const_buffer message_buffer {
-            message_owner.rptlMessage->data(), message_owner.rptlMessage->size()
-        };
 
-        clients_stream_.at(message_owner.client).async_write(
-                message_buffer, SentMessageHandler { *this, message_owner.client });
+        if (clients_stream_.count(message_owner.client) == 1) { // If destination client is still connected, send msg
+            // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
+            // is owned by RPTL message shared pointer, alive until queued message is popped from queue
+            const boost::asio::const_buffer message_buffer {
+                    message_owner.rptlMessage->data(), message_owner.rptlMessage->size()
+            };
+
+            clients_stream_.at(message_owner.client).async_write(
+                    message_buffer, SentMessageHandler { *this, message_owner.client });
+        } else { // If client is disconnected, skip this message and go to next message if any
+            merged_remaining_messages_.pop(); // Skip this RPTL message
+
+            if (!merged_remaining_messages_.empty())
+                sendRemainingMessages();
+        }
     }
 
     /// Accepts next incoming TCP client connection, then wait for next client again
