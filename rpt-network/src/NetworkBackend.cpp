@@ -215,7 +215,7 @@ void NetworkBackend::synchronize() {
     // For each client messages queue
     for (auto& [client_token, messages_queue] : clients_remaining_messages_) {
         // Syncs current client providing an access to queue for messages that need to be sent
-        syncClient(client_token, messages_queue);
+        syncClient(client_token, MessagesQueueView { messages_queue });
     }
 }
 
