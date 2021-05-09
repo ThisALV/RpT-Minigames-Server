@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <RpT-Core/InputOutputInterface.hpp>
+#include <RpT-Network/MessagesQueueView.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 #include <RpT-Utils/TextProtocolParser.hpp>
 
@@ -456,9 +457,11 @@ protected:
      *
      * Called by `synchronize()` to sync each client after messages queue has been flushed, must be overridden by
      * `NetworkBackend` implementations, but not called.
+     *
+     * @param client_token Token for client to send messages for
+     * @param client_messages_queue Real_time pop-only queue for messages that still need to be sent
      */
-    virtual void syncClient(std::uint64_t client_token,
-                            std::queue<std::shared_ptr<std::string>> flushed_messages_queue) = 0;
+    virtual void syncClient(std::uint64_t client_token, MessagesQueueView client_messages_queue) = 0;
 
     /**
      * @brief Checks if `waitForInput()` will immediately return or if it still has to wait for input event

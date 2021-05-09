@@ -214,17 +214,8 @@ bool NetworkBackend::inputReady() const {
 void NetworkBackend::synchronize() {
     // For each client messages queue
     for (auto& [client_token, messages_queue] : clients_remaining_messages_) {
-        // Queue provided for implementation to send remaining messages
-        std::queue<std::shared_ptr<std::string>> messages_to_send;
-
-        // Flushes queue, message by message
-        while (!messages_queue.empty()) {
-            messages_to_send.push(messages_queue.front());
-            messages_queue.pop();
-        }
-
-        // Syncs current client
-        syncClient(client_token, std::move(messages_to_send)); // Moves pointers to queue provided for implementation
+        // Syncs current client providing an access to queue for messages that need to be sent
+        syncClient(client_token, MessagesQueueView { messages_queue });
     }
 }
 
