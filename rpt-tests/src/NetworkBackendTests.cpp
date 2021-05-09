@@ -72,10 +72,10 @@ constexpr std::string_view REGISTERED_TEST_NAME { "TestingActor" };
 class SimpleNetworkBackend : public NetworkBackend {
 protected:
     /// Saves flushed messages queue into public dictionary
-    void syncClient(const std::uint64_t client_token,
-                    std::queue<std::shared_ptr<std::string>> flushed_messages_queue) override {
+    void syncClient(uint64_t client_token,
+                    MessagesQueueView client_messages_queue) override {
 
-        messages_queues[client_token] = std::move(flushed_messages_queue);
+        messages_queues[client_token] = std::move(client_messages_queue);
     }
 
     /// Retrieves `NoneEvent` triggered by actor with UID == 0 when queue is empty
