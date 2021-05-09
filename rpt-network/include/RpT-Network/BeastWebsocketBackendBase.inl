@@ -52,7 +52,6 @@ private:
     private:
         BeastWebsocketBackendBase& protocol_instance_;
         const std::uint64_t client_token_;
-        MessagesQueueView remaining_messages_;
 
     public:
         /**
@@ -60,16 +59,15 @@ private:
          *
          * @param protocol_instance Instance which sent message to client
          * @param client_token Client who must receive instance message
-         * @param remaining_messages Queue owning messages which will be recursively sent to given client, including
-         * message currently being sent
          */
-        SentMessageHandler(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t client_token,
-                           MessagesQueueView remaining_messages)
-        : protocol_instance_ { protocol_instance }, client_token_ { client_token },
-        remaining_messages_ { remaining_messages } {}
+        SentMessageHandler(BeastWebsocketBackendBase& protocol_instance, const std::uint64_t client_token)
+        : protocol_instance_ { protocol_instance }, client_token_ { client_token } {}
 
         /// Makes handler callable object
         void operator()(const boost::system::error_code& err, std::size_t) {
+            // No matter if async_write succeeded or not, RPTL message should not be handled twice, so pop it from queue
+            protocol_instance_.merged_remaining_messages_.pop();
+
             // If client was disconnected, sending message to it is useless
             if (protocol_instance_.clients_stream_.count(client_token_) == 0)
                 return;
@@ -79,6 +77,7 @@ private:
                 return;
 
             // Handles error with connection closure, as specified by RPTL protocol
+            // An error for one RPTL message must NOT crash other client connections, so error is fatal for client only
             if (err) {
                 std::string error_message { err.message() }; // Retrieves Asio error code associated message
 
@@ -90,10 +89,8 @@ private:
             }
 
             // If no error occurred, checks for messages queue and send next message recursively if any
-            if (remaining_messages_.hasNext()) // Handler completed, remaining messages pointers are given to next call
-                protocol_instance_.sendNextMessage(client_token_, remaining_messages_);
-            else // No longer messages to send, stop recursive async calls, sendNextMessage() can be called again
-                protocol_instance_.sending_messages_ = false;
+            if (!protocol_instance_.merged_remaining_messages_.empty())
+                protocol_instance_.sendRemainingMessages();
         }
     };
 
@@ -144,6 +141,12 @@ private:
         return caught_signals;
     }
 
+    /// RPTL message with client destination token so it can be saved inside global protocol queue
+    struct QueuedMessage {
+        std::uint64_t client;
+        std::shared_ptr<std::string> rptlMessage;
+    };
+
     // Provides logging features
     Utils::LoggerView logger_;
 
@@ -157,9 +160,9 @@ private:
     boost::asio::ip::tcp::acceptor tcp_acceptor_;
     // Keep total clients count so an unique token can be given to each new client
     std::uint64_t tokens_count_;
-    // Flag to indicate if recursive async calls are currently sending RPTL messages queue, or if a new call for
-    // sendNextMessage() can be performed
-    bool sending_messages_;
+    // As only one async_write operation at once is allowed, every queue should be synced by merging them into one
+    // single queue
+    std::queue<QueuedMessage> merged_remaining_messages_;
 
     /**
      * @brief Starts listening for incoming client TCP connection on local endpoint
@@ -177,17 +180,17 @@ private:
      * @param client_token Token for queue to send messages from
      * @param remaining_messages Pop-only queue for PRTL messages to send once next message have been sent successfully
      */
-    void sendNextMessage(const std::uint64_t client_token, MessagesQueueView remaining_messages) {
-        sending_messages_ = true; // Recursive async calls are running until queue is empty
-
+    void sendRemainingMessages() {
         // Using shared_ptr stored inside queue, data will be valid during async handler execution
-        const auto message_owner { remaining_messages.next() };
-        // Data owned
-        // Buffer read by Asio to send message, data must be valid until handler call finished
-        const boost::asio::const_buffer message_buffer { message_owner->data(), message_owner->size() };
+        const QueuedMessage message_owner { merged_remaining_messages_.front() };
+        // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
+        // is owned by RPTL message shared pointer, alive until queued message is popped from queue
+        const boost::asio::const_buffer message_buffer {
+            message_owner.rptlMessage->data(), message_owner.rptlMessage->size()
+        };
 
-        clients_stream_.at(client_token).async_write(
-                message_buffer, SentMessageHandler { *this, client_token, remaining_messages });
+        clients_stream_.at(message_owner.client).async_write(
+                message_buffer, SentMessageHandler { *this, message_owner.client });
     }
 
     /// Accepts next incoming TCP client connection, then wait for next client again
@@ -402,11 +405,17 @@ protected:
     }
 
     /// Syncs client state with server state by sending recursively each flushed message to given client
-    void syncClient(uint64_t client_token, MessagesQueueView client_messages_queue) final {
-        // Initiates recursive calls if there is any message to send and if no recursive async calls are already
-        // sending RPTL messages inside queue
-        if (client_messages_queue.hasNext() && !sending_messages_)
-            sendNextMessage(client_token, client_messages_queue);
+    void syncClient(const std::uint64_t client_token, MessagesQueueView client_messages_queue) final {
+        // If there is any message inside merged queue, then recursive async calls are still running
+        const bool sending_messages { !merged_remaining_messages_.empty() };
+
+        // Merges this client queue with global queue, saving client token destination
+        while (client_messages_queue.hasNext())
+            merged_remaining_messages_.push({ client_token, client_messages_queue.next() });
+
+        // Initiates recursive calls if no recursive async calls are already sending RPTL messages inside queue
+        if (!sending_messages)
+            sendRemainingMessages();
     }
 
     /**
@@ -455,8 +464,7 @@ public:
     logger_ { "WS-Backend", logging_context },
     stop_signals_handling_ { async_io_context_ },
     tcp_acceptor_ { async_io_context_, local_endpoint },
-    tokens_count_ { 0 },
-    sending_messages_ { false } {
+    tokens_count_ { 0 } {
         Utils::LoggerView logger { getLogger() }; // Avoid to create LoggerView for each added signal
 
         // For each Posix signal that must be caught
