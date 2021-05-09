@@ -68,17 +68,9 @@ private:
             // No matter if async_write succeeded or not, RPTL message should not be handled twice, so pop it from queue
             protocol_instance_.merged_remaining_messages_.pop();
 
-            // If client was disconnected, sending message to it is useless
-            if (protocol_instance_.clients_stream_.count(client_token_) == 0)
-                return;
-
-            // Ignores if server stopped
-            if (err == boost::asio::error::operation_aborted)
-                return;
-
             // Handles error with connection closure, as specified by RPTL protocol
             // An error for one RPTL message must NOT crash other client connections, so error is fatal for client only
-            if (err) {
+            if (err && err != boost::asio::error::operation_aborted) { // Ignores if server stopped
                 std::string error_message { err.message() }; // Retrieves Asio error code associated message
 
                 protocol_instance_.logger_.error("Unable to send message to client {}: {}", client_token_, error_message);
