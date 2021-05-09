@@ -142,10 +142,10 @@ private:
     // Provides logging features
     Utils::LoggerView logger_;
 
-    // Websocket stream using given TCP stream for each client token
-    std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Provides running context for all async IO operations
     boost::asio::io_context async_io_context_;
+    // Websocket stream using given TCP stream for each client token
+    std::unordered_map<std::uint64_t, WebsocketStream> clients_stream_;
     // Posix signals handling to stop server
     boost::asio::signal_set stop_signals_handling_;
     // Provides ready TCP connection to open WS stream from
@@ -173,7 +173,7 @@ private:
      * @param remaining_messages Pop-only queue for PRTL messages to send once next message have been sent successfully
      */
     void sendRemainingMessages() {
-        // Using shared_ptr stored inside queue, data will be valid during async handler execution
+        // Shared_ptr for RPTL message is not popped from queue, so message data is still valid during async_write
         const QueuedMessage message_owner { merged_remaining_messages_.front() };
         // Buffer read by Asio to send message, data must be valid until handler call finished, so const buffer data
         // is owned by RPTL message shared pointer, alive until queued message is popped from queue
