@@ -4,7 +4,6 @@ set(MINIGAMES_SERVER_SOURCES
 find_package(Boost REQUIRED COMPONENTS filesystem) # Filesystem requirement, must be statically linked
 
 add_executable(minigames-server ${RPT_SERVER_HEADERS} ${MINIGAMES_SERVER_SOURCES})
-target_include_directories(minigames-server PRIVATE include)
 target_link_libraries(minigames-server PRIVATE rpt-core rpt-network rpt-utils Boost::filesystem)
 
 install(TARGETS minigames-server RUNTIME)
