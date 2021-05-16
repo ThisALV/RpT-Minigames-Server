@@ -81,6 +81,7 @@ configure_file(${RPT_CONFIG} ${RPT_CONFIG_OUTPUT})
 add_subdirectory(rpt-core)
 add_subdirectory(rpt-utils)
 add_subdirectory(rpt-network)
+add_subdirectory(minigames-services)
 add_subdirectory(minigames-server)
 
 # Enable tests sources directory if debug features are ON
