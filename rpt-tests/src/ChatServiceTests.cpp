@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(NormalMessageWithCooldownNotFree) {
 
     // Checks for second message to not have been sent
     BOOST_CHECK(!second_was_sent);
-    BOOST_CHECK_EQUAL(second_was_sent.errorMessage(), "Last message when sent less than 2500 ms ago");
+    BOOST_CHECK_EQUAL(second_was_sent.errorMessage(), "Last message when sent less than 2000 ms ago");
     // Only first message should have been sent
     BOOST_CHECK_EQUAL(service.pollEvent(), "MESSAGE_FROM 0 Hello world!");
     BOOST_CHECK(!service.checkEvent().has_value()); // No second message
