@@ -133,7 +133,7 @@ public:
     /**
      * @brief Marks timer as Ready
      *
-     * @throws BadTimerState if timer is not Ready
+     * @throws BadTimerState if timer is not Disabled
      */
     void requestCountdown();
 
