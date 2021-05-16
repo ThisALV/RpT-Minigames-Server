@@ -49,6 +49,8 @@ RpT::Utils::HandlingResult ChatService::handleRequestCommand(const std::uint64_t
 
     // Sends message to actors
     emitEvent("MESSAGE_FROM " + std::to_string(actor) + ' ' + chat_message);
+    // Starts messages cooldown, next message not before given milliseconds delay
+    cooldown_.requestCountdown();
 
     return {}; // Request successfully handled
 }
