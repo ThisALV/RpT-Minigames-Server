@@ -18,6 +18,14 @@ namespace MinigamesServices {
 struct Coordinates {
     int line;
     int column;
+
+    constexpr bool operator==(const Coordinates& rhs) const {
+        return line == rhs.line && column == rhs.column;
+    }
+
+    constexpr bool operator!=(const Coordinates& rhs) const {
+        return !(*this == rhs);
+    }
 };
 
 
