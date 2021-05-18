@@ -87,6 +87,11 @@ private:
         return direction;
     }
 
+    /// Because std::abs() if from C Standard which doesn't provides constexpr
+    static constexpr int abs(const int x) {
+        return x >= 0 ? x : -x;
+    }
+
     /// Calculates the axis linking two given squares
     static constexpr AxisType axisBetween(const Coordinates& from, const Coordinates& to) {
         const auto [from_x, from_y] { from };
@@ -97,7 +102,7 @@ private:
         const int relative_y { static_cast<int>(to_y - from_y) };
 
         // Axis must either be diagonal or orthogonal
-        if (std::abs(relative_x) != std::abs(relative_y) && relative_x != 0 && relative_y != 0)
+        if (abs(relative_x) != abs(relative_y) && relative_x != 0 && relative_y != 0)
             throw BadCoordinates { "No orthogonal or diagonal axis linking these two squares" };
 
         // Appropriate flags will be enabled when differences will have been compared
