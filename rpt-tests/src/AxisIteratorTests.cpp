@@ -145,19 +145,19 @@ BOOST_AUTO_TEST_CASE(VerticalAxisBetween) {
     // 1st iterator can move 3 times before it reaches destination, 4 times before the end
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -3);
-    BOOST_CHECK_EQUAL(it1.moveForward(), BLACK);
+    BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -2);
-    BOOST_CHECK_EQUAL(it1.moveForward(), BLACK);
+    BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -1);
-    BOOST_CHECK_EQUAL(it1.moveForward(), BLACK);
+    BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 0);
-    BOOST_CHECK_EQUAL(it1.moveForward(), BLACK);
+    BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
     BOOST_CHECK(!it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 1);
