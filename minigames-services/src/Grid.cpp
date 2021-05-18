@@ -35,7 +35,7 @@ bool Grid::isInsideGrid(const Coordinates& coords) const {
     const auto [line, col] { coords };
 
     // Checks if line number if not above lines count, same for column number
-    return line > 0 && line < lines_count && col > 0 && col < columns_count;
+    return line > 0 && line <= lines_count && col > 0 && col <= columns_count;
 }
 
 Square& Grid::operator[](const Coordinates& coords) {
