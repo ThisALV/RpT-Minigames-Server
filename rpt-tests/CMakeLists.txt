@@ -51,5 +51,6 @@ target_link_libraries(${network_EXEC} PRIVATE rpt-network)
 
 register_test(minigames-services
         "src/MinigamesServicesTests.cpp"
-        "src/ChatServiceTests.cpp")
+        "src/ChatServiceTests.cpp"
+        "src/GridTests.cpp")
 target_link_libraries(${minigames-services_EXEC} PRIVATE minigames-services)
