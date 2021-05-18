@@ -106,8 +106,6 @@ public:
      * @param coords Coordinates to search a square from
      *
      * @returns `true` if square exists inside grid, `false` otherwise
-     *
-     * @throws BadCoordinates is given coordinates aren't valid
      */
     bool isInsideGrid(const Coordinates& coords) const;
 
@@ -118,7 +116,7 @@ public:
      *
      * @returns Reference to `Square` inside grid at given position
      *
-     * @throws BadCoordinates if given `coords` are out of bound for current grid or aren't valid
+     * @throws BadCoordinates if given `coords` are out of bound for current grid
      */
     Square& operator[](const Coordinates& coords);
 };
