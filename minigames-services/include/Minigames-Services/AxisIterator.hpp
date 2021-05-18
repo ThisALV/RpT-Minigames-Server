@@ -94,8 +94,8 @@ private:
 
     /// Calculates the axis linking two given squares
     static constexpr AxisType axisBetween(const Coordinates& from, const Coordinates& to) {
-        const auto [from_x, from_y] { from };
-        const auto [to_x, to_y] { to };
+        const auto [from_y, from_x] { from };
+        const auto [to_y, to_x] { to };
 
         // Calculates differences between the two squares coordinates
         const int relative_x { static_cast<int>(to_x - from_x) };
