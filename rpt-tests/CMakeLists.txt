@@ -53,5 +53,7 @@ register_test(minigames-services
         "src/MinigamesServicesTests.cpp"
         "src/ChatServiceTests.cpp"
         "src/GridTests.cpp"
-        "src/AxisIteratorTests.cpp")
+        "src/AxisIteratorTests.cpp"
+        "src/MinigamesServicesTestingUtils.cpp"
+        "${RPT_TESTING_HEADERS_DIR}/MinigamesServicesTestingUtils.hpp")
 target_link_libraries(${minigames-services_EXEC} PRIVATE minigames-services)

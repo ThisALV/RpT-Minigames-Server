@@ -1,4 +1,5 @@
 #include <RpT-Testing/TestingUtils.hpp>
+#include <RpT-Testing/MinigamesServicesTestingUtils.hpp>
 
 #include <Minigames-Services/AxisIterator.hpp>
 
@@ -27,16 +28,6 @@ std::ostream& operator<<(std::ostream& out, const AxisType axis_type) {
         stringified += "Right";
 
     return out << stringified;
-}
-
-// Required by BOOST_CHECK_EQUAL macro usage
-std::ostream& operator<<(std::ostream& out, const Square square_state) {
-    if (square_state == Square::Free)
-        return out << "Free";
-    else if (square_state == Square::White)
-        return out << "White";
-    else
-        return out << "Black";
 }
 
 

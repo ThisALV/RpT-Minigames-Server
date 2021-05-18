@@ -1,27 +1,10 @@
 #include <RpT-Testing/TestingUtils.hpp>
+#include <RpT-Testing/MinigamesServicesTestingUtils.hpp>
 
 #include <Minigames-Services/Grid.hpp>
 
 
 using namespace MinigamesServices;
-
-
-// Required for ADL to detect operator<< for Square inside MinigamesServices namespace
-namespace MinigamesServices {
-
-
-// Required by BOOST_CHECK_EQUAL macro usage
-std::ostream& operator<<(std::ostream& out, const Square square_state) {
-    if (square_state == Square::Free)
-        return out << "Free";
-    else if (square_state == Square::White)
-        return out << "White";
-    else
-        return out << "Black";
-}
-
-
-}
 
 
 BOOST_AUTO_TEST_SUITE(GridTests)
