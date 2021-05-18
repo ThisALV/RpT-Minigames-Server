@@ -28,12 +28,12 @@ AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinate
 
     std::size_t scan_pos { 0 };
     // Moves coordinates with axis vector to scan for every square into this axis inside given grid
-    for (Coordinates axis_square { from }; grid.isInsideGrid(axis_square); axis_vector.moves(axis_square)) {
+    for (Coordinates square { from }; grid.isInsideGrid(square); square = axis_vector.moves(square)) {
         // Adds next square inside this axis
-        axis_.emplace_back(grid[axis_square]);
+        axis_.emplace_back(grid[square]);
 
         // If destination has been reach inside axis
-        if (axis_square == to) {
+        if (square == to) {
             assert(scan_pos != 0); // It must be impossible as it would mean that from == to
             destination_pos_ = scan_pos;
         }
