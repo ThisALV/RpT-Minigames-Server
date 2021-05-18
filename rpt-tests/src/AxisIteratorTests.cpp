@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(HorizontalAxisBetween) {
 
 BOOST_AUTO_TEST_CASE(VerticalAxisBetween) {
     AxisIterator it1 { // 3 lines to the bottom
-            grid, { 1, 2 }, { 4, 2 }, AxisIterator::EVERY_ORTHOGONAL_DIRECTION
+            grid, { 6, 2 }, { 9, 2 }, AxisIterator::EVERY_ORTHOGONAL_DIRECTION
     };
     AxisIterator it2 { // 1 line to the top
             grid, { 2, 5 }, { 1, 5 }, AxisIterator::EVERY_ORTHOGONAL_DIRECTION
