@@ -48,7 +48,7 @@ AxisType AxisIterator::direction() const {
 
 bool AxisIterator::hasNext() const {
     // If current position isn't at the axis last square, then it can move to next position
-    return current_pos_ < axis_.size();
+    return (current_pos_ + 1) < axis_.size();
 }
 
 int AxisIterator::distanceFromDestination() const {
