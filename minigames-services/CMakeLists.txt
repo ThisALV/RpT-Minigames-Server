@@ -3,11 +3,13 @@ set(MINIGAMES_SERVICES_HEADERS_DIR
 
 set(MINIGAMES_SERVICES_HEADERS
         "${MINIGAMES_SERVICES_HEADERS_DIR}/ChatService.hpp"
-        "${MINIGAMES_SERVICES_HEADERS_DIR}/Grid.hpp")
+        "${MINIGAMES_SERVICES_HEADERS_DIR}/Grid.hpp"
+        "${MINIGAMES_SERVICES_HEADERS_DIR}/AxisIterator.hpp")
 
 set(MINIGAMES_SERVICES_SOURCES
         "src/ChatService.cpp"
-        "src/Grid.cpp")
+        "src/Grid.cpp"
+        "src/AxisIterator.cpp")
 
 add_library(minigames-services STATIC ${MINIGAMES_SERVICES_SOURCES} ${MINIGAMES_SERVICES_HEADERS})
 target_include_directories(minigames-services PUBLIC include)
