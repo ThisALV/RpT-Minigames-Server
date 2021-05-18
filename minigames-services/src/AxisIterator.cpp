@@ -52,7 +52,7 @@ bool AxisIterator::hasNext() const {
 }
 
 int AxisIterator::distanceFromDestination() const {
-    return static_cast<int>(destination_pos_ - current_pos_);
+    return static_cast<int>(current_pos_ - destination_pos_);
 }
 
 Square& AxisIterator::moveForward() {
