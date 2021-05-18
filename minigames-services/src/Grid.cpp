@@ -27,8 +27,12 @@ Grid::Grid(const std::initializer_list<std::initializer_list<Square>> initial_co
 }
 
 bool Grid::isInsideGrid(const Coordinates& coords) const {
+    const int lines_count { static_cast<int>(squares_matrix_.size()) };
+    const int columns_count { static_cast<int>(squares_matrix_.at(0).size()) };
+    const auto [line, col] { coords };
+
     // Checks if line number if not above lines count, same for column number
-    return coords.line > squares_matrix_.size() || coords.column > squares_matrix_.at(0).size();
+    return line > 0 && line < lines_count && col > 0 && col < columns_count;
 }
 
 Square& Grid::operator[](const Coordinates& coords) {

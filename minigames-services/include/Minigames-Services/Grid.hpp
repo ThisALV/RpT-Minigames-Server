@@ -16,8 +16,8 @@ namespace MinigamesServices {
 
 /// Represents coordinates of a square, for example `{ 2, 3 }` for the 3rd column inside the 2nd line
 struct Coordinates {
-    unsigned int line;
-    unsigned int column;
+    int line;
+    int column;
 };
 
 
