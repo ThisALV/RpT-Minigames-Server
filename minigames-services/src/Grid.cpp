@@ -13,6 +13,9 @@ Grid::Grid(const std::initializer_list<std::initializer_list<Square>> initial_co
     // Other line dimension may differ, but we're sure there is at least one line and one column
     const std::size_t expected_columns_count { initial_configuration.begin()->size() };
 
+    if (lines_count > 26 || expected_columns_count > 26)
+        throw BadDimensions { "A grid dimension cannot exceed 26" };
+
     squares_matrix_.reserve(lines_count);
 
     // For each line inside given game board matrix
