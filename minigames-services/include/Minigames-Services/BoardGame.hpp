@@ -41,6 +41,7 @@ protected:
      */
     BoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid);
 
+public:
     /**
      * @brief Switch current player to other player, definitely terminating current player round
      *
