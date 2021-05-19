@@ -44,6 +44,8 @@ protected:
     /**
      * @brief Switch current player to other player, definitely terminating current player round
      *
+     * @note Can be called even if `isRoundTerminated() == false`, will terminates the round anyways.
+     *
      * @returns Player who's current round player after method call
      */
     Player nextRound();
@@ -58,7 +60,7 @@ protected:
     /**
      * @brief Checks if current player can do other actions or not
      *
-     * @returns `true` if current player can no longer do anything and `nextRound()` can be called, `false` otherwise
+     * @returns `true` if current player can no longer do anything and `nextRound()` should be called, `false` otherwise
      */
     virtual bool isRoundTerminated() const = 0;
 
