@@ -52,7 +52,7 @@ private:
     const Minigame rpt_minigame_type_;
 
     std::unique_ptr<BoardGame> current_game_;
-    std::optional<std::uint64_t> while_player_actor_;
+    std::optional<std::uint64_t> white_player_actor_;
     std::optional<std::uint64_t> black_player_actor_;
 
 public:
