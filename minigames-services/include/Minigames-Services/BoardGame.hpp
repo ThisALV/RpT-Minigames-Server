@@ -74,6 +74,9 @@ public:
      * @throws std::exception depending on implementation, means that this move cannot be done
      */
     virtual void play(const Coordinates& from, const Coordinates& to) = 0;
+
+    /// `virtual` for polymorphism without memory leaks
+    virtual ~BoardGame() = default;
 };
 
 
