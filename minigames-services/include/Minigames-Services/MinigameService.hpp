@@ -94,6 +94,12 @@ private:
     std::optional<std::uint64_t> white_player_actor_;
     std::optional<std::uint64_t> black_player_actor_;
 
+    /// Goes to next round for board game and emits ROUND_FOR %Service Event
+    void terminateRound();
+
+    /// Handler for move action command
+    void handleMove(std::string_view move_command_args);
+
 public:
     /**
      * @brief Constructs service for given `Minigame`

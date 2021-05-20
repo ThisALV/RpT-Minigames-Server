@@ -110,7 +110,7 @@ public:
 
     std::optional<Player> victoryFor() const override { return {}; }
     bool isRoundTerminated() const override { return false; }
-    void play(const Coordinates& from, const Coordinates& to) override {}
+    void play(const Coordinates&, const Coordinates&) override {}
 };
 
 class Acores : public UnimplementedBoardGame {};
@@ -122,6 +122,12 @@ class Canaries : public UnimplementedBoardGame {};
  */
 
 void MinigameService::start() {
+    if (current_game_) // Checks for another game to not be currently running
+        throw BadBoardGameState { "Game is already running" };
+
+    if (!white_player_actor_ || !black_player_actor_) // Checks for 2 players to have an associated actor
+        throw BadPlayersState { "Requires 2 players to start" };
+
     // Initializes RpT-Minigame board game depending on configured minigame type
     switch (rpt_minigame_type_) {
     case Minigame::Acores:
@@ -134,12 +140,89 @@ void MinigameService::start() {
         current_game_ = std::make_unique<Canaries>();
         break;
     }
+
+    // Sends to clients so they know minigame has begun, and which actor is which player
+    emitEvent("START " + std::to_string(*white_player_actor_)
+              + ' ' + std::to_string(*black_player_actor_));
+}
+
+void MinigameService::terminateRound() {
+    const Player next_player { current_game_->nextRound() }; // Tries to go for next round, might fail
+
+    std::string round_command_arg;
+    // Sets command argument depending on next round player
+    if (next_player == Player::White)
+        round_command_arg = "WHITE";
+    else
+        round_command_arg = "BLACK";
+
+    // If nextRound() succeeded, sync clients with that information
+    emitEvent("ROUND_FOR " + round_command_arg);
 }
 
 RpT::Utils::HandlingResult MinigameService::handleRequestCommand(
         const std::uint64_t actor, const std::string_view sr_command_data) {
 
-    return {};
+    if (!current_game_) // Cannot handle any request if a game is not running to perform any action
+        return RpT::Utils::HandlingResult { "Game is stopped" };
+
+    /*
+     * Checks for SR author to be the actor who's currently playing
+     */
+
+    std::uint64_t expected_actor;
+    if (current_game_->currentRound() == Player::White)
+        expected_actor = *white_player_actor_;
+    else
+        expected_actor = *black_player_actor_;
+
+    if (actor != expected_actor)
+        return RpT::Utils::HandlingResult { "This is not your turn" };
+
+    // Parses SR command
+    const MinigameRequestParser command_parser { sr_command_data };
+
+    // Calls correct handler depending on performed action
+    switch (command_parser.action()) {
+    case Action::Move:
+        handleMove(command_parser.moveCommand());
+        break;
+    case Action::End:
+        terminateRound();
+        break;
+    }
+
+    return {}; // Command was handled successfully, nothing more to do
+}
+
+void MinigameService::handleMove(const std::string_view move_command_args) {
+    // Parses coordinates arguments
+    const MoveActionParser move_parser { move_command_args };
+
+    // Checks that any move can still be performed
+    if (current_game_->isRoundTerminated())
+        throw BadBoardGameState { "Cannot make any move, round terminated" };
+
+    // Plays move for received coordinates
+    current_game_->play(move_parser.from(), move_parser.to());
+
+    // Checks if move caused any Player to win the game
+    const std::optional<Player> possible_winner { current_game_->victoryFor() };
+    if (possible_winner.has_value()) { // If a player won, stops the game and sync clients with new session state
+        current_game_.reset(); // Stops current game by deleting it
+
+        std::string victory_command_arg;
+        // Sets command argument depending on next round player
+        if (*possible_winner == Player::White)
+            victory_command_arg = "WHITE";
+        else
+            victory_command_arg = "BLACK";
+
+        emitEvent("VICTORY_FOR " + victory_command_arg); // Sync clients
+    } else if (current_game_->isRoundTerminated()) { // If this move caused round to terminate...
+        // ...go to next round, syncing clients with new board game state
+        terminateRound();
+    }
 }
 
 }
