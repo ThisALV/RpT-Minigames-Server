@@ -5,10 +5,19 @@
  * @file BoardGame.hpp
  */
 
+#include <stdexcept>
 #include <Minigames-Services/Grid.hpp>
 
 
 namespace MinigamesServices {
+
+
+/// Thrown by `BoardGame::nextRound()` if current player hasn't play any move during current round
+class MoveRequired : public std::logic_error {
+public:
+    /// Constructs error with basic error message
+    MoveRequired() : std::logic_error { "Player can't skip a round" } {}
+};
 
 
 /// Represents a player into board game which is owning a specific kind of pawns inside grid
@@ -28,6 +37,7 @@ enum struct Player {
 class BoardGame {
 private:
     Player current_player_;
+    bool has_moved_;
 
 protected:
     Grid game_grid_;
@@ -41,6 +51,12 @@ protected:
      */
     BoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid);
 
+    /**
+     * @brief Enables moved flags, means that player into current round did at least one move, expected to be called
+     * from `play()` implementation
+     */
+    void moved();
+
 public:
     /**
      * @brief Switch current player to other player, definitely terminating current player round
@@ -48,6 +64,8 @@ public:
      * @note Can be called even if `isRoundTerminated() == false`, will terminates the round anyways.
      *
      * @returns Player who's current round player after method call
+     *
+     * @throws MoveRequired if no move was done using `play()` before this call
      */
     Player nextRound();
 
