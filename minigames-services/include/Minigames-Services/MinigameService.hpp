@@ -59,9 +59,10 @@ public:
     /**
      * @brief Constructs service for given `Minigame`
      *
+     * @param run_context Context into which Services run
      * @param rpt_minigame_type RoT-Minigame to run with %Service
      */
-    MinigameService(Minigame rpt_minigame_type);
+    MinigameService(RpT::Core::ServiceContext& run_context, Minigame rpt_minigame_type);
 
     /// Retrieves service name "Minigame"
     std::string_view name() const override;
