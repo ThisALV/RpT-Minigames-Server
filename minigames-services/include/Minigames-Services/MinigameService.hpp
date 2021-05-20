@@ -79,6 +79,15 @@ public:
     Player assignPlayerActor(std::uint64_t actor_uid);
 
     /**
+     * @brief Removes actor for given player color
+     *
+     * @param player Color of player to remove actor for
+     *
+     * @throws BadPlayersState if given player isn't assigned
+     */
+    void removePlayerActor(Player player);
+
+    /**
      * @brief Starts RpT-Minigame board game session depending on `Minigame` type, with assigned players/actors
      *
      * @throws BadBoardGameState if a game is already running
