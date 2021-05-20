@@ -70,6 +70,13 @@ public:
     Player nextRound();
 
     /**
+     * @brief Retrieves current round player
+     *
+     * @returns Current `Player`
+     */
+    Player currentRound() const;
+
+    /**
      * @brief Retrieves player who won this game, if terminated
      *
      * @returns Uninitialized if game isn't terminated, otherwise `Player` who won

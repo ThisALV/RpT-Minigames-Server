@@ -27,5 +27,9 @@ Player BoardGame::nextRound() {
     return current_player_;
 }
 
+Player BoardGame::currentRound() const {
+    return current_player_;
+}
+
 
 }
