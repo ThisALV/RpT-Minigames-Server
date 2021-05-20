@@ -61,13 +61,16 @@ public:
     /**
      * @brief Switch current player to other player, definitely terminating current player round
      *
+     * You can override this method calling the base-class method inside implementation to add some routine to
+     * execute each time a round is terminated.
+     *
      * @note Can be called even if `isRoundTerminated() == false`, will terminates the round anyways.
      *
      * @returns Player who's current round player after method call
      *
      * @throws MoveRequired if no move was done using `play()` before this call
      */
-    Player nextRound();
+    virtual Player nextRound();
 
     /**
      * @brief Retrieves current round player
