@@ -5,7 +5,7 @@ namespace MinigamesServices {
 
 
 BoardGame::BoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid)
-: current_player_ { Player::White }, game_grid_ { initial_grid }, has_moved_ { false } {}
+: current_player_ { Player::White }, has_moved_ { false }, game_grid_ { initial_grid } {}
 
 void BoardGame::moved() {
     has_moved_ = true;
