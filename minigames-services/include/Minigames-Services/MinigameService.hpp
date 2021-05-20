@@ -8,6 +8,7 @@
 #include <memory>
 #include <Minigames-Services/BoardGame.hpp>
 #include <RpT-Core/Service.hpp>
+#include <RpT-Utils/TextProtocolParser.hpp>
 
 
 namespace MinigamesServices {
@@ -49,6 +50,44 @@ enum struct Minigame {
  */
 class MinigameService : public RpT::Core::Service {
 private:
+    /// An action the player wants to perform at his round (moving a pawn, or going to the next round)
+    enum struct Action {
+        Move, End
+    };
+
+    /// Parses an action to perform for current player round
+    class MinigameRequestParser : public RpT::Utils::TextProtocolParser {
+    private:
+        Action parsed_action_;
+
+    public:
+        /// Parses given SR command
+        explicit MinigameRequestParser(std::string_view sr_command);
+
+        /// `Action` requested by given SR command
+        Action action() const;
+
+        /// Retrieves unparsed coordinates given as arguments for `MOVE` command
+        std::string_view moveCommand() const;
+    };
+
+    /// Parses a player movement (a pawn from a square to another)
+    class MoveActionParser : public RpT::Utils::TextProtocolParser {
+    private:
+        Coordinates parsed_from_;
+        Coordinates parsed_to_;
+
+    public:
+        /// Parses given Move action
+        explicit MoveActionParser(std::string_view move_action_command);
+
+        /// Parsed coordinates for square with pawn to move
+        Coordinates from() const;
+
+        /// Parsed coordinates for square to move pawn into
+        Coordinates to() const;
+    };
+
     const Minigame rpt_minigame_type_;
 
     std::unique_ptr<BoardGame> current_game_;

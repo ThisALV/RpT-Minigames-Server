@@ -1,7 +1,67 @@
 #include <Minigames-Services/MinigameService.hpp>
 
+#include <array>
+#include <RpT-Core/ServiceEventRequestProtocol.hpp> // For BadServiceRequest exception
+
 
 namespace MinigamesServices {
+
+
+MinigameService::MinigameRequestParser::MinigameRequestParser(const std::string_view sr_command)
+: RpT::Utils::TextProtocolParser { sr_command, 1 } {
+    const std::string_view unparsed_action { getParsedWord(0) };
+
+    // Tries to parse for each available command
+    if (unparsed_action == "MOVE")
+        parsed_action_ = Action::Move;
+    else if (unparsed_action == "END")
+        parsed_action_ = Action::End;
+    else // If no known command could have been parsed, then request is ill-formed
+        throw RpT::Core::BadServiceRequest { "Unknown action: " + std::string { unparsed_action } };
+}
+
+MinigameService::Action MinigameService::MinigameRequestParser::action() const {
+    return parsed_action_;
+}
+
+std::string_view MinigameService::MinigameRequestParser::moveCommand() const {
+    // To access move command arguments, we must be sure to have a MOVE command in the first place
+    if (parsed_action_ != Action::Move)
+        throw RpT::Core::BadServiceRequest { "Cannot get args for a non-MOVE action command" };
+
+    return unparsedWords(); // MOVE command, retrieves unparsed arguments
+}
+
+
+MinigameService::MoveActionParser::MoveActionParser(const std::string_view move_action_command)
+: RpT::Utils::TextProtocolParser { move_action_command, 4 }, parsed_from_ {}, parsed_to_ {} {
+
+    // Access for each integer to be parsed into that command, into the right apparition order
+    const std::array<int*, 4> coordinates_to_parse {
+        &parsed_from_.line, &parsed_from_.column, &parsed_to_.line, &parsed_to_.column
+    };
+
+    // Parses each integer argument in the right order
+    for (std::size_t arg_i { 0 }; arg_i < coordinates_to_parse.size(); arg_i++) {
+        const std::string arg_copy { getParsedWord(arg_i) }; // Arg needs to be copied for integer conversion
+
+        try { // Tries to parse as integer
+            *(coordinates_to_parse[arg_i]) = std::stoi(arg_copy);
+        } catch (const std::logic_error& err) { // If failed, throw custom error with message
+            throw RpT::Core::BadServiceRequest {
+                "Unable to parse MOVE arg #" + std::to_string(arg_i) + ": " + err.what()
+            };
+        }
+    }
+}
+
+Coordinates MinigameService::MoveActionParser::from() const {
+    return parsed_from_;
+}
+
+Coordinates MinigameService::MoveActionParser::to() const {
+    return parsed_to_;
+}
 
 
 MinigameService::MinigameService(RpT::Core::ServiceContext& run_context, const Minigame rpt_minigame_type)
@@ -81,6 +141,5 @@ RpT::Utils::HandlingResult MinigameService::handleRequestCommand(
 
     return {};
 }
-
 
 }
