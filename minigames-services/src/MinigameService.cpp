@@ -195,4 +195,13 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
     }
 }
 
+void MinigameService::stop() {
+    if (!current_game_) // Checks for a game to be currently running
+        throw BadBoardGameState { "Game is not running" };
+
+    current_game_.reset(); // Stops current game by deleting it
+
+    emitEvent("STOP"); // Sync clients with new game state
+}
+
 }

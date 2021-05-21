@@ -140,6 +140,13 @@ public:
      */
     void start();
 
+    /**
+     * @brief Stops RpT-Minigame board game session
+     *
+     * @throws BadBoardGameState if game isn't running
+     */
+    void stop();
+
     /// Handles play from current player to make board game progress
     RpT::Utils::HandlingResult handleRequestCommand(std::uint64_t actor, std::string_view sr_command_data) override;
 };
