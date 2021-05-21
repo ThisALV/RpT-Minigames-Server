@@ -73,6 +73,9 @@ std::string_view MinigameService::name() const {
 }
 
 Player MinigameService::assignPlayerActor(const std::uint64_t actor_uid) {
+    if (current_game_) // Cannot modify assigned actors during game run
+        throw BadBoardGameState { "Game is currently running" };
+
     if (!white_player_actor_.has_value()) { // Tries to assign white player first
         white_player_actor_ = actor_uid;
         return Player::White;
@@ -85,6 +88,9 @@ Player MinigameService::assignPlayerActor(const std::uint64_t actor_uid) {
 }
 
 void MinigameService::removePlayerActor(const Player player) {
+    if (current_game_) // Cannot modify assigned actors during game run
+        throw BadBoardGameState { "Game is currently running" };
+
     std::optional<std::uint64_t>* selected_player;
 
     // Selects correct actor valeu depending on given color

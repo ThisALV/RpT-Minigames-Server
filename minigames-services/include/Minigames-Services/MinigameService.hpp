@@ -119,6 +119,7 @@ public:
      * @returns `Player` assigned with given UID
      *
      * @throws BadPlayersState if black and white players both are already assigned
+     * @throws BadBoardGameState if game is running
      */
     Player assignPlayerActor(std::uint64_t actor_uid);
 
@@ -128,6 +129,7 @@ public:
      * @param player Color of player to remove actor for
      *
      * @throws BadPlayersState if given player isn't assigned
+     * @throws BadBoardGameState if game is running
      */
     void removePlayerActor(Player player);
 
