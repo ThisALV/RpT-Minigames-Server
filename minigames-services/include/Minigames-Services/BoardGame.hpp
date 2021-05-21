@@ -58,6 +58,15 @@ protected:
     void moved();
 
 public:
+    /*
+     * Entity class semantic
+     */
+
+    BoardGame(const BoardGame&) = delete;
+    BoardGame& operator=(const BoardGame&) = delete;
+
+    bool operator==(const BoardGame&) const = delete;
+
     /**
      * @brief Switch current player to other player, definitely terminating current player round
      *

@@ -164,6 +164,15 @@ private:
     std::unordered_map<std::string_view, std::reference_wrapper<Service>> running_services_;
 
 public:
+    /*
+     * Entity class semantic
+     */
+
+    ServiceEventRequestProtocol(const ServiceEventRequestProtocol&) = delete;
+    ServiceEventRequestProtocol& operator=(const ServiceEventRequestProtocol&) = delete;
+
+    bool operator==(const ServiceEventRequestProtocol&) const = delete;
+
     /**
      * @brief Initialize SER Protocol with given services to run
      *
