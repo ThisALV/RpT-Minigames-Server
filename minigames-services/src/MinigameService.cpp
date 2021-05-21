@@ -2,6 +2,7 @@
 
 #include <array>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp> // For BadServiceRequest exception
+#include <utility>
 
 
 namespace MinigamesServices {
@@ -64,8 +65,8 @@ Coordinates MinigameService::MoveActionParser::to() const {
 }
 
 
-MinigameService::MinigameService(RpT::Core::ServiceContext& run_context, const Minigame rpt_minigame_type)
-: RpT::Core::Service { run_context }, rpt_minigame_type_ { rpt_minigame_type } {}
+MinigameService::MinigameService(RpT::Core::ServiceContext& run_context, BoardGameProvider rpt_minigame_provider)
+: RpT::Core::Service { run_context }, rpt_minigame_provider_ { std::move(rpt_minigame_provider) } {}
 
 std::string_view MinigameService::name() const {
     return "Minigame";
@@ -100,27 +101,6 @@ void MinigameService::removePlayerActor(const Player player) {
     selected_player->reset();
 }
 
-/*
- * Temporary: deleted when classes will be created. =>
- */
-
-class UnimplementedBoardGame : public BoardGame {
-public:
-    UnimplementedBoardGame() : BoardGame { { Square::Free } } {}
-
-    std::optional<Player> victoryFor() const override { return {}; }
-    bool isRoundTerminated() const override { return false; }
-    void play(const Coordinates&, const Coordinates&) override {}
-};
-
-class Acores : public UnimplementedBoardGame {};
-class Bermudes : public UnimplementedBoardGame {};
-class Canaries : public UnimplementedBoardGame {};
-
-/*
- * <= Temporary: deleted when classes will be created.
- */
-
 void MinigameService::start() {
     if (current_game_) // Checks for another game to not be currently running
         throw BadBoardGameState { "Game is already running" };
@@ -128,18 +108,8 @@ void MinigameService::start() {
     if (!white_player_actor_ || !black_player_actor_) // Checks for 2 players to have an associated actor
         throw BadPlayersState { "Requires 2 players to start" };
 
-    // Initializes RpT-Minigame board game depending on configured minigame type
-    switch (rpt_minigame_type_) {
-    case Minigame::Acores:
-        current_game_ = std::make_unique<Acores>();
-        break;
-    case Minigame::Bermudes:
-        current_game_ = std::make_unique<Bermudes>();
-        break;
-    case Minigame::Canaries:
-        current_game_ = std::make_unique<Canaries>();
-        break;
-    }
+    // Initializes RpT-Minigame board game with polymorphic value returned by provider
+    current_game_ = rpt_minigame_provider_();
 
     // Sends to clients so they know minigame has begun, and which actor is which player
     emitEvent("START " + std::to_string(*white_player_actor_)

@@ -5,6 +5,7 @@
  * @file MinigameService.hpp
  */
 
+#include <functional>
 #include <memory>
 #include <Minigames-Services/BoardGame.hpp>
 #include <RpT-Core/Service.hpp>
@@ -31,14 +32,12 @@ public:
 };
 
 
-/// Represents a specific RpT-Minigame to run with service
-enum struct Minigame {
-    Acores, Bermudes, Canaries
-};
+/// These functions are used by `MinigameService` to obtain `BoardGame` objects from user
+using BoardGameProvider = std::function<std::unique_ptr<BoardGame>()>;
 
 
 /**
- * @brief Runs specified `Minigame` when 2 actors are ready
+ * @brief Runs `BoardGame` minigame returned by given provider when 2 actors are ready
  *
  * This %Service controls the basic execution flow of a RpT-Minigame by calling it's virtual methods depending on
  * it's current state.
@@ -88,7 +87,7 @@ private:
         Coordinates to() const;
     };
 
-    const Minigame rpt_minigame_type_;
+    const BoardGameProvider rpt_minigame_provider_;
 
     std::unique_ptr<BoardGame> current_game_;
     std::optional<std::uint64_t> white_player_actor_;
@@ -105,9 +104,9 @@ public:
      * @brief Constructs service for given `Minigame`
      *
      * @param run_context Context into which Services run
-     * @param rpt_minigame_type RoT-Minigame to run with %Service
+     * @param rpt_minigame_provider Function which return new RpT-Minigame to run with %Service
      */
-    MinigameService(RpT::Core::ServiceContext& run_context, Minigame rpt_minigame_type);
+    MinigameService(RpT::Core::ServiceContext& run_context, BoardGameProvider rpt_minigame_provider);
 
     /// Retrieves service name "Minigame"
     std::string_view name() const override;
@@ -133,7 +132,8 @@ public:
     void removePlayerActor(Player player);
 
     /**
-     * @brief Starts RpT-Minigame board game session depending on `Minigame` type, with assigned players/actors
+     * @brief Starts RpT-Minigame board game session using RpT-Minigame returned by given provider, with assigned
+     * players/actors
      *
      * @throws BadBoardGameState if a game is already running
      * @throws BadPlayersState if at least one of the 2 players isn't assigned to an actor
