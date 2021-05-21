@@ -15,14 +15,6 @@
 namespace MinigamesServices {
 
 
-/// Thrown by `MinigameService` methods when players aren't into expected state (assigned/not assigned)
-class BadPlayersState : public std::logic_error {
-public:
-    /// Constructs error with user-provided message
-    explicit BadPlayersState(const std::string& reason)
-    : std::logic_error { "Bad players state: " + reason } {}
-};
-
 /// Thrown by `MinigameService` methods when game isn't into expected state (started/not started)
 class BadBoardGameState : public std::logic_error {
 public:
