@@ -66,60 +66,25 @@ Coordinates MinigameService::MoveActionParser::to() const {
 
 
 MinigameService::MinigameService(RpT::Core::ServiceContext& run_context, BoardGameProvider rpt_minigame_provider)
-: RpT::Core::Service { run_context }, rpt_minigame_provider_ { std::move(rpt_minigame_provider) } {}
+: RpT::Core::Service { run_context }, rpt_minigame_provider_ { std::move(rpt_minigame_provider) },
+white_player_actor_ { 0 }, black_player_actor_ { 0 } {} // Game didn't start, UID assigned to players doesn't matter
 
 std::string_view MinigameService::name() const {
     return "Minigame";
 }
 
-Player MinigameService::assignPlayerActor(const std::uint64_t actor_uid) {
-    if (current_game_) // Cannot modify assigned actors during game run
-        throw BadBoardGameState { "Game is currently running" };
-
-    if (!white_player_actor_.has_value()) { // Tries to assign white player first
-        white_player_actor_ = actor_uid;
-        return Player::White;
-    } else if (!black_player_actor_.has_value()) { // If unavailable, tries to assign black player second
-        black_player_actor_ = actor_uid;
-        return Player::Black;
-    } else { // If both are unavailable, operation isn't allowed
-        throw BadPlayersState { "Both 2 players are already assigned" };
-    }
-}
-
-void MinigameService::removePlayerActor(const Player player) {
-    if (current_game_) // Cannot modify assigned actors during game run
-        throw BadBoardGameState { "Game is currently running" };
-
-    std::optional<std::uint64_t>* selected_player;
-
-    // Selects correct actor valeu depending on given color
-    if (player == Player::White)
-        selected_player = &white_player_actor_;
-    else
-        selected_player = &black_player_actor_;
-
-    // On selected actor value, try to reset it, if and only if it already has a value, if not, player can't be
-    // removed as it wasn't assigned in the first place
-    if (!selected_player->has_value())
-        throw BadPlayersState { "Player with given color isn't assigned" };
-
-    selected_player->reset();
-}
-
-void MinigameService::start() {
+void MinigameService::start(const std::uint64_t white_player_actor, const std::uint64_t black_player_actor) {
     if (current_game_) // Checks for another game to not be currently running
         throw BadBoardGameState { "Game is already running" };
 
-    if (!white_player_actor_ || !black_player_actor_) // Checks for 2 players to have an associated actor
-        throw BadPlayersState { "Requires 2 players to start" };
+    white_player_actor_ = white_player_actor;
+    black_player_actor_ = black_player_actor;
 
     // Initializes RpT-Minigame board game with polymorphic value returned by provider
     current_game_ = rpt_minigame_provider_();
 
     // Sends to clients so they know minigame has begun, and which actor is which player
-    emitEvent("START " + std::to_string(*white_player_actor_)
-              + ' ' + std::to_string(*black_player_actor_));
+    emitEvent("START " + std::to_string(white_player_actor_) + ' ' + std::to_string(black_player_actor_));
 }
 
 void MinigameService::terminateRound() {
@@ -148,9 +113,9 @@ RpT::Utils::HandlingResult MinigameService::handleRequestCommand(
 
     std::uint64_t expected_actor;
     if (current_game_->currentRound() == Player::White)
-        expected_actor = *white_player_actor_;
+        expected_actor = white_player_actor_;
     else
-        expected_actor = *black_player_actor_;
+        expected_actor = black_player_actor_;
 
     if (actor != expected_actor)
         return RpT::Utils::HandlingResult { "This is not your turn" };

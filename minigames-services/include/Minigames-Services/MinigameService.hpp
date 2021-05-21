@@ -42,8 +42,8 @@ using BoardGameProvider = std::function<std::unique_ptr<BoardGame>()>;
  * This %Service controls the basic execution flow of a RpT-Minigame by calling it's virtual methods depending on
  * it's current state.
  *
- * Each connected actor will be assigned to a `Player` (black or white) and when the two players are assigned, the
- * game can be started at any moment using `start()` method.
+ * Each connected actor will be assigned to a `Player` (black or white) when starting the game using the `start()`
+ * method.
  *
  * @author ThisALV, https://github.com/ThisALV/
  */
@@ -90,8 +90,8 @@ private:
     const BoardGameProvider rpt_minigame_provider_;
 
     std::unique_ptr<BoardGame> current_game_;
-    std::optional<std::uint64_t> white_player_actor_;
-    std::optional<std::uint64_t> black_player_actor_;
+    std::uint64_t white_player_actor_;
+    std::uint64_t black_player_actor_;
 
     /// Goes to next round for board game and emits ROUND_FOR %Service Event
     void terminateRound();
@@ -112,35 +112,15 @@ public:
     std::string_view name() const override;
 
     /**
-     * @brief Assigns given actor UID to the next available player
-     *
-     * @param actor_uid UID to assign for an available player
-     *
-     * @returns `Player` assigned with given UID
-     *
-     * @throws BadPlayersState if black and white players both are already assigned
-     * @throws BadBoardGameState if game is running
-     */
-    Player assignPlayerActor(std::uint64_t actor_uid);
-
-    /**
-     * @brief Removes actor for given player color
-     *
-     * @param player Color of player to remove actor for
-     *
-     * @throws BadPlayersState if given player isn't assigned
-     * @throws BadBoardGameState if game is running
-     */
-    void removePlayerActor(Player player);
-
-    /**
      * @brief Starts RpT-Minigame board game session using RpT-Minigame returned by given provider, with assigned
      * players/actors
      *
+     * @param white_player_actor UID for actor playing as white
+     * @param black_player_actor UID for actor playing as black
+     *
      * @throws BadBoardGameState if a game is already running
-     * @throws BadPlayersState if at least one of the 2 players isn't assigned to an actor
      */
-    void start();
+    void start(std::uint64_t white_player_actor, std::uint64_t black_player_actor);
 
     /**
      * @brief Stops RpT-Minigame board game session
