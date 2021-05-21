@@ -22,5 +22,9 @@ std::ostream& operator<<(std::ostream& out, const Player player) {
         return out << "Black";
 }
 
+std::ostream& operator<<(std::ostream& out, const Coordinates& coordinates) {
+    return out << "Line=" << std::to_string(coordinates.line) << " Col=" << std::to_string(coordinates.column);
+}
+
 
 }

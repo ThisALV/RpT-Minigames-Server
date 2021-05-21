@@ -17,7 +17,8 @@ namespace MinigamesServices {
 std::ostream& operator<<(std::ostream& out, Square square_state);
 /// Required by BOOST_CHECK_EQUAL macro usage with Player enum type
 std::ostream& operator<<(std::ostream& out, Player player);
-
+/// Required by BOOST_CHECK_EQUAL macro usage with Coordinates type, format: "Line=<line> Col=<column>"
+std::ostream& operator<<(std::ostream& out, const Coordinates& coordinates);
 
 }
 
