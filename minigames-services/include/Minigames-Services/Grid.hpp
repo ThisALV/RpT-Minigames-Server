@@ -83,6 +83,14 @@ constexpr Square flip(const Square currentSquare) {
         throw BadSquareState { "Flippable only if it is kept by a player" };
 }
 
+/*
+ * Constant shortcuts for squares inside grid
+ */
+
+constexpr Square EMPTY { Square::Free };
+constexpr Square WHITE { Square::White };
+constexpr Square BLACK { Square::Black };
+
 
 /**
  * @brief Abstraction for a grid of squares which may contain pawns, used by minigames to make their game board
