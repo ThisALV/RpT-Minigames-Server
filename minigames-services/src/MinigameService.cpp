@@ -159,7 +159,9 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
         else
             victory_command_arg = "BLACK";
 
-        emitEvent("VICTORY_FOR " + victory_command_arg); // Sync clients
+        // Sync clients and stop game as a player has won
+        emitEvent("VICTORY_FOR " + victory_command_arg);
+        stop();
     } else if (current_game_->isRoundTerminated()) { // If this move caused round to terminate...
         // ...go to next round, syncing clients with new board game state
         terminateRound();
