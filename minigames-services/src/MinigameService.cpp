@@ -176,8 +176,6 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
     // Checks if move caused any Player to win the game
     const std::optional<Player> possible_winner { current_game_->victoryFor() };
     if (possible_winner.has_value()) { // If a player won, stops the game and sync clients with new session state
-        current_game_.reset(); // Stops current game by deleting it
-
         std::string victory_command_arg;
         // Sets command argument depending on next round player
         if (*possible_winner == Player::White)
@@ -188,6 +186,8 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
         // Sync clients and stop game as a player has won
         emitEvent("VICTORY_FOR " + victory_command_arg);
         stop();
+
+        current_game_.reset(); // Stops current game by deleting it once it has been stopped properly with SE sent
     } else if (current_game_->isRoundTerminated()) { // If this move caused round to terminate...
         // ...go to next round, syncing clients with new board game state
         terminateRound();
