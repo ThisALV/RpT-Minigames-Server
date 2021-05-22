@@ -248,8 +248,8 @@ BOOST_AUTO_TEST_CASE(MakeVictory) {
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "MOVE 1 2 3 4"));
 
     // Expect grid updates, victory and stop to be sync with clients with exactly 5 Service Events
-    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_UPDATE 2 3 FREE");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_UPDATE 5 5 WHITE");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 2 3 FREE");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 5 5 WHITE");
     BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 3 3 1 3");
     BOOST_CHECK_EQUAL(service.pollEvent(), "VICTORY_FOR BLACK");
     BOOST_CHECK_EQUAL(service.pollEvent(), "STOP");
