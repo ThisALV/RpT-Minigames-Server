@@ -5,6 +5,7 @@
  * @file BoardGame.hpp
  */
 
+#include <optional>
 #include <stdexcept>
 #include <Minigames-Services/Grid.hpp>
 
