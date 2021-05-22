@@ -35,6 +35,24 @@ public:
 };
 
 
+/*
+ * colorFor() free function unit tests
+ */
+BOOST_AUTO_TEST_SUITE(ColorFor)
+
+
+BOOST_AUTO_TEST_CASE(WhitePlayer) {
+    BOOST_CHECK_EQUAL(colorFor(Player::White), Square::White);
+}
+
+BOOST_AUTO_TEST_CASE(BlackPlayer) {
+    BOOST_CHECK_EQUAL(colorFor(Player::Black), Square::Black);
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
 BOOST_AUTO_TEST_SUITE(Constructor)
 
 

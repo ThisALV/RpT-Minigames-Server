@@ -26,6 +26,14 @@ enum struct Player {
     White, Black
 };
 
+/// Retrieves pawn color associated with given player color
+constexpr Square colorFor(const Player player_color) {
+    if (player_color == Player::White)
+        return Square::White;
+    else
+        return Square::Black;
+}
+
 
 /**
  * @brief Represents an update about a `Square` inside a `Grid` after a call to `BoardGame::play()`
