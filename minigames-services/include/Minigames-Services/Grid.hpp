@@ -16,13 +16,17 @@ namespace MinigamesServices {
 
 /// Represents coordinates of a square, for example `{ 2, 3 }` for the 3rd column inside the 2nd line
 struct Coordinates {
+    /// Number of square line, beginning at 1
     int line;
+    /// Number of square column, beginning at 1
     int column;
 
+    /// Checks if `line` and `column` are both equals
     constexpr bool operator==(const Coordinates& rhs) const {
         return line == rhs.line && column == rhs.column;
     }
 
+    /// Checks if `operator==` return `false`
     constexpr bool operator!=(const Coordinates& rhs) const {
         return !(*this == rhs);
     }
@@ -83,12 +87,11 @@ constexpr Square flip(const Square currentSquare) {
         throw BadSquareState { "Flippable only if it is kept by a player" };
 }
 
-/*
- * Constant shortcuts for squares inside grid
- */
-
+/// Constant shortcut for `Square::Free`
 constexpr Square EMPTY { Square::Free };
+/// Constant shortcut for `Square::White`
 constexpr Square WHITE { Square::White };
+/// Constant shortcut for `Square::Black`
 constexpr Square BLACK { Square::Black };
 
 

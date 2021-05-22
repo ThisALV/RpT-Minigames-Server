@@ -64,6 +64,8 @@ private:
     bool has_moved_;
 
 protected:
+    /// Grid used to store and manipulate squares and pawns for board game, should be modified inside `play()` by
+    /// move actions
     Grid game_grid_;
 
     /**
