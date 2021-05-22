@@ -31,7 +31,7 @@ public:
 
     std::optional<Player> victoryFor() const override { return {}; }
     bool isRoundTerminated() const override { return false; }
-    void play(const Coordinates&, const Coordinates&) override {}
+    GridUpdate play(const Coordinates&, const Coordinates&) override { return {}; }
 };
 
 

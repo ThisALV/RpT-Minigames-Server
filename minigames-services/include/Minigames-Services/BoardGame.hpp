@@ -27,6 +27,29 @@ enum struct Player {
 
 
 /**
+ * @brief Represents an update about a `Square` inside a `Grid` after a call to `BoardGame::play()`
+ */
+struct SquareUpdate {
+    /// Which square has been updated inside grid
+    Coordinates square;
+    /// The new state of that square
+    Square updatedState;
+};
+
+/**
+ * @brief Represents every update about a `Grid` after a call to `BoardGame::play()`
+ */
+struct GridUpdate {
+    /// Every square which has been updated with that move, moved pawn excluded
+    std::vector<SquareUpdate> updatedSquares;
+    /// Square of moved pawn
+    Coordinates moveOrigin;
+    /// Square of this pawn after it was moved
+    Coordinates moveDestination;
+};
+
+
+/**
  * @brief Base class to implement a round-by-round board minigame played with 2 players onto a `Grid`
  *
  * Minigame implementations must overrides virtual methods to define game's behavior. A %Service can access public
@@ -108,9 +131,11 @@ public:
      * @param from Square containing the moved pawn before method call
      * @param to Square containing the moved pawn after method call
      *
+     * @returns Every update which occurred into the game grid and that the clients must be synced with
+     *
      * @throws std::exception depending on implementation, means that this move cannot be done
      */
-    virtual void play(const Coordinates& from, const Coordinates& to) = 0;
+    virtual GridUpdate play(const Coordinates& from, const Coordinates& to) = 0;
 
     /// `virtual` for polymorphism without memory leaks
     virtual ~BoardGame() = default;

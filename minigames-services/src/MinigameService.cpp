@@ -144,8 +144,34 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
     if (current_game_->isRoundTerminated())
         throw BadBoardGameState { "Cannot make any move, round terminated" };
 
-    // Plays move for received coordinates
-    current_game_->play(move_parser.from(), move_parser.to());
+    // Plays move for received coordinates saving every update which occurred into the grid
+    const GridUpdate unsync_updates { current_game_->play(move_parser.from(), move_parser.to()) };
+
+    // Syncs every square that were updated by this move
+    for (const auto& [square, updatedState] : unsync_updates.updatedSquares) {
+        std::string square_state_sync_arg; // Argument for SQUARE_STATE command corresponding to stringified state
+        switch (updatedState) { // Stringifies new state to append it to command
+        case Square::Free:
+            square_state_sync_arg = "FREE";
+            break;
+        case Square::White:
+            square_state_sync_arg = "WHITE";
+            break;
+        case Square::Black:
+            square_state_sync_arg = "BLACK";
+            break;;
+        }
+
+        emitEvent("SQUARE_STATE " + std::to_string(square.line) + ' ' + std::to_string(square.column)
+                  + ' ' + square_state_sync_arg);
+    }
+
+    const auto [from_line, from_column] { unsync_updates.moveOrigin };
+    const auto [to_line, to_column] { unsync_updates.moveDestination };
+
+    // Syncs client with pawn concerned by this move
+    emitEvent("MOVED " + std::to_string(from_line) + ' ' + std::to_string(from_column)
+              + ' ' + std::to_string(to_line) + ' ' + std::to_string(to_column));
 
     // Checks if move caused any Player to win the game
     const std::optional<Player> possible_winner { current_game_->victoryFor() };
