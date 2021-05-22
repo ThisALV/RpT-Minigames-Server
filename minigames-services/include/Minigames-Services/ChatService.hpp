@@ -24,7 +24,7 @@ std::string trim(std::string_view chat_message);
 
 
 /**
- * @brief
+ * @brief Basic messaging service with actors which implements a cooldown (minimal delay) between each sent message
  */
 class ChatService : public RpT::Core::Service {
 private:

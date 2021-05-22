@@ -10,10 +10,6 @@ using namespace MinigamesServices;
 BOOST_AUTO_TEST_SUITE(GridTests)
 
 
-// Constant shortcut for empty square inside grid
-constexpr Square EMPTY { Square::Free };
-
-
 /// Provides an empty grid of dimensions 5x10
 class EmptyGridFixture {
 public:

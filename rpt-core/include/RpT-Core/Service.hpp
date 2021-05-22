@@ -73,6 +73,15 @@ protected:
     void emitEvent(std::string event_command);
 
 public:
+    /*
+     * Entity class semantic
+     */
+
+    Service(const Service&) = delete;
+    Service& operator=(const Service&) = delete;
+
+    bool operator==(const Service&) const = delete;
+
     /// Returned by `checkEvent()` when service events queue is empty
     static constexpr std::optional<std::size_t> EMPTY_QUEUE {};
 

@@ -34,15 +34,6 @@ std::ostream& operator<<(std::ostream& out, const AxisType axis_type) {
 }
 
 
-/*
- * Constant shortcuts for squares inside grid
- */
-
-constexpr Square EMPTY { Square::Free };
-constexpr Square WHITE { Square::White };
-constexpr Square BLACK { Square::Black };
-
-
 /// Provides a grid of dimensions 5x10 where 1st, 3rd and 5th columns are empty, and 2nd and 4th are respectively
 /// white and black
 class SampleGridFixture {
