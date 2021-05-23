@@ -60,16 +60,6 @@ Player Acores::nextRound() {
     return BoardGame::nextRound();
 }
 
-std::optional<Player> Acores::victoryFor() const {
-    // If a player hasn't any pawn on grid, he lose the game
-    if (white_pawns_ == 0)
-        return Player::Black;
-    else if (black_pawns_ == 0)
-        return Player::White;
-    else // Otherwise game must continue
-        return {};
-}
-
 bool Acores::isRoundTerminated() const {
     // Round is terminated inevitably terminated if there is no jumps chaining to perform (=> an action has been
     // performed and it is normal move)

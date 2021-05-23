@@ -42,9 +42,6 @@ public:
     /// Resets jumps chain and switch to next player
     Player nextRound() override;
 
-    /// A player won if his opponent no longer have any pawn on the grid
-    std::optional<Player> victoryFor() const override;
-
     /// Round is terminated if either last move if normal or player manually ended round
     bool isRoundTerminated() const override;
 

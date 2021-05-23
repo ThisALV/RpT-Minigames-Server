@@ -91,16 +91,6 @@ Player Bermudes::nextRound() {
     return BoardGame::nextRound();
 }
 
-std::optional<Player> Bermudes::victoryFor() const {
-    // If a player has less than 6 pawns on grid, he lose the game
-    if (white_pawns_ < 6)
-        return Player::White;
-    else if (black_pawns_ < 6)
-        return Player::Black;
-    else // Otherwise game must continue
-        return {};
-}
-
 bool Bermudes::isRoundTerminated() const {
     // Round is inevitably terminated if an elimination-take is performed because it will forbid any flips-take
     // chaining during this round

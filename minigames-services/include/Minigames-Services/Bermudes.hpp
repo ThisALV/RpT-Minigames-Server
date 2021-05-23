@@ -50,9 +50,6 @@ public:
     /// Resets flips-take chain and switch to next player
     Player nextRound() override;
 
-    /// A player won if his opponent has less then 6 pawns inside the grid
-    std::optional<Player> victoryFor() const override;
-
     /// Round is necessarily terminated if player did a elimination-take move
     bool isRoundTerminated() const override;
 
