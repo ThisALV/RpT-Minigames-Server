@@ -63,9 +63,9 @@ Player Acores::nextRound() {
 std::optional<Player> Acores::victoryFor() const {
     // If a player hasn't any pawn on grid, he lose the game
     if (white_pawns_ == 0)
-        return Player::White;
-    else if (black_pawns_ == 0)
         return Player::Black;
+    else if (black_pawns_ == 0)
+        return Player::White;
     else // Otherwise game must continue
         return {};
 }
