@@ -30,7 +30,7 @@ AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinate
     // Moves coordinates with axis vector to scan for every square into this axis inside given grid
     for (Coordinates square { from }; grid.isInsideGrid(square); square = axis_vector.moves(square)) {
         // Adds next square inside this axis
-        axis_.emplace_back(grid[square]);
+        axis_.push_back({ square, grid[square] });
 
         // If destination has been reach inside axis
         if (square == to) {
@@ -44,6 +44,10 @@ AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinate
 
 AxisType AxisIterator::direction() const {
     return direction_;
+}
+
+Coordinates AxisIterator::currentPosition() const {
+    return axis_.at(current_pos_).position;
 }
 
 bool AxisIterator::hasNext() const {
@@ -62,7 +66,7 @@ Square& AxisIterator::moveForward() {
     current_pos_++; // Go te next coordinates inside iterated axis
 
     // Get square state for next square inside iterated axis
-    return axis_.at(current_pos_).get();
+    return axis_.at(current_pos_).state;
 }
 
 }

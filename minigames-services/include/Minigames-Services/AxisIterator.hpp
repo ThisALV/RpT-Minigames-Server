@@ -59,6 +59,12 @@ constexpr bool hasFlagOf(const AxisType axis, const AxisType direction) {
  */
 class AxisIterator {
 private:
+    /// Elements iterated by this class, composed of a square inside this axis, and its position inside ctor grid
+    struct IteratedElement {
+        Coordinates position;
+        Square& state;
+    };
+
     /// Direction to move the iterator coordinates forward
     struct DirectionVector {
         int x;
@@ -124,7 +130,7 @@ private:
 
     const AxisType direction_;
 
-    std::vector<std::reference_wrapper<Square>> axis_;
+    std::vector<IteratedElement> axis_;
     std::size_t current_pos_;
     std::size_t destination_pos_;
 
@@ -165,6 +171,13 @@ public:
      * @returns `AxisType` representing forward direction of this iterator
      */
     AxisType direction() const;
+
+    /**
+     * @brief Retrieves position of current square inside grid
+     *
+     * @returns Coordinates for square at current iterator position
+     */
+    Coordinates currentPosition() const;
 
     /**
      * @brief Checks if there is any square remaining in that direction
