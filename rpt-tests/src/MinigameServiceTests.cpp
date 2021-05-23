@@ -32,7 +32,7 @@ public:
     std::function<void()> playCallRoutine;
 
     /// Constructs game with unset method-called flags and defaulted mocked return values
-    /// Pawns count and threshold doesn't matter as `victoryFor()` and pawns count are mocked by this subclass.
+    /// Pawns count and threshold at ctor doesn't matter as `victoryFor()` and pawns count are mocked by this subclass.
     MockedBoardGame() : BoardGame { { { EMPTY } }, 0, 0, 1 },
     nextRoundCalled { false }, playCallArguments {}, victoryForReturn {}, isRoundTerminatedReturn { false },
     playReturn {}, playCallRoutine {} {}
@@ -69,6 +69,16 @@ public:
     /// Mocks a move which have been done successfully
     void makeMove() {
         moved();
+    }
+
+    /// Mocks a specific number of pawns inside grid for white player
+    void whitePawns(const unsigned int white_pawns) {
+        white_pawns_ = white_pawns;
+    }
+
+    /// Mocks a specific number of pawns inside grid for black player
+    void blackPawns(const unsigned int black_pawns) {
+        black_pawns_ = black_pawns;
     }
 };
 
@@ -241,18 +251,23 @@ BOOST_AUTO_TEST_CASE(MakeVictory) {
             { 3, 3 }, { 1, 3 }
     };
     boardGame->playCallRoutine = [this]() {
-        boardGame->victoryForReturn = Player::Black;
+        boardGame->victoryForReturn = Player::White;
         boardGame->makeMove();
+
+        // Mocks pawn counts after this action to check for pawns message to clients
+        boardGame->whitePawns(12);
+        boardGame->blackPawns(0);
     };
 
     // Makes a move which will give victory to the black player
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "MOVE 1 2 3 4"));
 
-    // Expect grid updates, victory and stop to be sync with clients with exactly 5 Service Events
+    // Expect grid updates, pawn counts, victory and stop to be sync with clients with exactly 6 Service Events
     BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 2 3 FREE");
     BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 5 5 WHITE");
     BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 3 3 1 3");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "VICTORY_FOR BLACK");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 0");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "VICTORY_FOR WHITE");
     BOOST_CHECK_EQUAL(service.pollEvent(), "STOP");
     BOOST_CHECK(!service.checkEvent().has_value());
 
@@ -268,6 +283,10 @@ BOOST_AUTO_TEST_CASE(TerminatedRound) {
     boardGame->playCallRoutine = [this]() {
         boardGame->isRoundTerminatedReturn = true;
         boardGame->makeMove(); // At least one mocked move required to go for the next round
+
+        // Mocks pawn counts after this action to check for pawns message to clients
+        boardGame->whitePawns(12);
+        boardGame->blackPawns(12);
     };
 
     // Makes a move which will terminate the current round
@@ -275,8 +294,9 @@ BOOST_AUTO_TEST_CASE(TerminatedRound) {
 
     // Expect nextRound() to have been called
     BOOST_CHECK(boardGame->nextRoundCalled);
-    // Expect grid update and nextRound() call to be sync with clients with exactly 2 Service Events
+    // Expect grid update, pawn counts and nextRound() call to be sync with clients with exactly 3 Service Events
     BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 5 5 1 1");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 12");
     BOOST_CHECK_EQUAL(service.pollEvent(), "ROUND_FOR BLACK");
     BOOST_CHECK(!service.checkEvent().has_value());
     // play() should have been called with parsed coordinates
@@ -290,13 +310,18 @@ BOOST_AUTO_TEST_CASE(StillInsideRound) {
     };
     boardGame->playCallRoutine = [this]() {
         boardGame->makeMove(); // At least one mocked move required to go for the next round
+
+        // Mocks pawn counts after this action to check for pawns message to clients
+        boardGame->whitePawns(12);
+        boardGame->blackPawns(12);
     };
 
     // Makes a move which just perform a pawn move, neither round termination nor victory
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "MOVE 1 2 3 4"));
 
-    // Just 1 SE emitted by play() call move
+    // Just 2 usual SE emitted by play() call move
     BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 5 5 1 1");
+    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 12");
     BOOST_CHECK(!service.checkEvent().has_value());
     // play() should have been called with parsed coordinates
     boostCheckPlayCall(*boardGame, { 1, 2 }, { 3, 4 });
