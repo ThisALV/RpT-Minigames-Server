@@ -43,6 +43,11 @@ struct SquareUpdate {
     Coordinates square;
     /// The new state of that square
     Square updatedState;
+
+    /// Checks if `square` and `updatedState` fields are both equals with corresponding fields for given `rhs`
+    constexpr bool operator==(const SquareUpdate& rhs) const {
+        return square == rhs.square && updatedState == rhs.updatedState;
+    }
 };
 
 /**

@@ -19,6 +19,8 @@ std::ostream& operator<<(std::ostream& out, Square square_state);
 std::ostream& operator<<(std::ostream& out, Player player);
 /// Required by BOOST_CHECK_EQUAL macro usage with Coordinates type, format: "Line=<line> Col=<column>"
 std::ostream& operator<<(std::ostream& out, const Coordinates& coordinates);
+/// Required by BOOST_CHECK_EQUAL macro usage with Coordinates type, format: "Coords={<square>} State={updatedState}"
+std::ostream& operator<<(std::ostream& out, const SquareUpdate& square_update);
 
 }
 
