@@ -32,7 +32,8 @@ public:
     std::function<void()> playCallRoutine;
 
     /// Constructs game with unset method-called flags and defaulted mocked return values
-    MockedBoardGame() : BoardGame { { EMPTY } },
+    /// Pawns count and threshold doesn't matter as `victoryFor()` and pawns count are mocked by this subclass.
+    MockedBoardGame() : BoardGame { { { EMPTY } }, 0, 0, 1 },
     nextRoundCalled { false }, playCallArguments {}, victoryForReturn {}, isRoundTerminatedReturn { false },
     playReturn {}, playCallRoutine {} {}
 

@@ -22,7 +22,7 @@ void Bermudes::checkFreeTrajectory(AxisIterator& move_trajectory, const int unti
     }
 }
 
-Bermudes::Bermudes() : BoardGame { INITIAL_GRID_ }, white_pawns_ { 27 }, black_pawns_ { 27 } {}
+Bermudes::Bermudes() : BoardGame { INITIAL_GRID_, 27, 27, 6 } {}
 
 void Bermudes::playElimination(GridUpdate& updates, AxisIterator move) {
     const Player current_player { currentRound() };

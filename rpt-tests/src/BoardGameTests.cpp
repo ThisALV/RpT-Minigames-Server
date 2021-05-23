@@ -12,8 +12,10 @@ BOOST_AUTO_TEST_SUITE(BoardGameTests)
 /// Sample child class with empty method implementations to test for non-virtual methods of `BoardGame` class
 class SampleBoardGame : public BoardGame {
 public:
-    /// Accessible ctor for protected parent ctor
-    SampleBoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid) : BoardGame { initial_grid } {}
+    /// Accessible ctor for protected parent ctor with a customizable threshold to test parent ctor threshold checking
+    /// Initial numbers of pawns: White=5, Black=4
+    SampleBoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid, const unsigned int threshold = 1)
+    : BoardGame { initial_grid, 5, 4, threshold } {}
 
     /// Accessor for protected inherited grid member variable
     Grid& grid() {
@@ -25,11 +27,20 @@ public:
         moved();
     }
 
+    /// Mocks a specific number of pawns inside grid for white player
+    void whitePawns(const unsigned int white_pawns) {
+        white_pawns_ = white_pawns;
+    }
+
+    /// Mocks a specific number of pawns inside grid for black player
+    void blackPawns(const unsigned int black_pawns) {
+        black_pawns_ = black_pawns;
+    }
+
     /*
      * These methods are defined by implementation, not tested in this unit tests file
      */
 
-    std::optional<Player> victoryFor() const override { return {}; }
     bool isRoundTerminated() const override { return false; }
     GridUpdate play(const Coordinates&, const Coordinates&) override { return {}; }
 };
@@ -53,12 +64,17 @@ BOOST_AUTO_TEST_CASE(BlackPlayer) {
 BOOST_AUTO_TEST_SUITE_END()
 
 
-BOOST_AUTO_TEST_SUITE(Constructor)
-
-
 /*
  * Ctor unit tests
  */
+BOOST_AUTO_TEST_SUITE(Constructor)
+
+
+BOOST_AUTO_TEST_CASE(ZeroPawnsThreshold) {
+    BOOST_CHECK_THROW((SampleBoardGame { { { EMPTY } }, 0 }), std::invalid_argument);
+}
+
+
 BOOST_AUTO_TEST_CASE(ValidInitialGrid) {
     SampleBoardGame game {
             { EMPTY, EMPTY, EMPTY, EMPTY },
@@ -87,6 +103,66 @@ BOOST_AUTO_TEST_CASE(ValidInitialGrid) {
             BOOST_CHECK_EQUAL(grid[currently_checked_square], expected_state);
         }
     }
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+/*
+ * pawnsFor() method unit tests
+ */
+BOOST_AUTO_TEST_SUITE(PawnsFor)
+
+
+BOOST_AUTO_TEST_CASE(WhitePlayer) {
+    const SampleBoardGame game { { EMPTY } };
+
+    BOOST_CHECK_EQUAL(game.pawnsFor(Player::White), 5); // Mocked BoardGame initialized with 5 white pawns
+}
+
+BOOST_AUTO_TEST_CASE(BlackPlayer) {
+    const SampleBoardGame game { { EMPTY } };
+
+    BOOST_CHECK_EQUAL(game.pawnsFor(Player::Black), 4); // Mocked BoardGame initialized with 5 white pawns
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+/*
+ * victoryFor() method unit tests
+ */
+BOOST_AUTO_TEST_SUITE(VictoryFor)
+
+
+BOOST_AUTO_TEST_CASE(EverybodyAboveOrEqualThreshold) {
+    SampleBoardGame game { { { EMPTY } }, 5 };
+    game.whitePawns(5); // whitePawns == threshold
+    game.blackPawns(6); // blackPawns > threshold
+
+    BOOST_CHECK(!game.victoryFor().has_value());
+}
+
+BOOST_AUTO_TEST_CASE(WhiteBehindThreshold) {
+    SampleBoardGame game { { { EMPTY } }, 5 };
+    game.whitePawns(4); // whitePawns < threshold, his opponent (black) won
+    game.blackPawns(6); // blackPawns > threshold
+
+    const std::optional<Player> winner { game.victoryFor() };
+    BOOST_REQUIRE(winner.has_value());
+    BOOST_CHECK_EQUAL(*winner, Player::Black);
+}
+
+BOOST_AUTO_TEST_CASE(BlackBehindThreshold) {
+    SampleBoardGame game { { { EMPTY } }, 5 };
+    game.whitePawns(5); // whitePawns == threshold
+    game.blackPawns(4); // blackPawns < threshold, his opponent (white) won
+
+    const std::optional<Player> winner { game.victoryFor() };
+    BOOST_REQUIRE(winner.has_value());
+    BOOST_CHECK_EQUAL(*winner, Player::White);
 }
 
 

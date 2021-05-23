@@ -28,8 +28,6 @@ private:
             { WHITE, WHITE, BLACK, BLACK, BLACK },
     };
 
-    unsigned int white_pawns_;
-    unsigned int black_pawns_;
     std::optional<Move> last_move_;
 
     /// Tries to perform given move as normal, saving grid modifications into given reference argument

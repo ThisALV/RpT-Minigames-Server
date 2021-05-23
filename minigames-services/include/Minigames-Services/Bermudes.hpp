@@ -36,8 +36,6 @@ private:
     /// specified, to be empty
     static void checkFreeTrajectory(AxisIterator& move_trajectory, int until = 0);
 
-    unsigned int white_pawns_;
-    unsigned int black_pawns_;
     std::optional<Move> last_move_;
 
     /// Tries to perform given move as elimination-take, saving grid modifications into given reference argument

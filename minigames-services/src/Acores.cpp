@@ -6,7 +6,7 @@
 namespace MinigamesServices {
 
 
-Acores::Acores() : BoardGame { INITIAL_GRID_ }, white_pawns_ { 12 }, black_pawns_ { 12 } {}
+Acores::Acores() : BoardGame { INITIAL_GRID_, 12, 12, 1 } {}
 
 void Acores::playNormal(GridUpdate& updates, AxisIterator move) {
     Square& destination { move.moveForward() }; // Tries to go for 1 square toward movement direction
