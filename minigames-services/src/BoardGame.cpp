@@ -12,6 +12,10 @@ game_grid_ { initial_grid }, white_pawns_ { white_pawns }, black_pawns_ { black_
         throw std::invalid_argument { "Pawns count loose threshold must be positive strict" };
 }
 
+const Grid& BoardGame::grid() const {
+    return game_grid_;
+}
+
 void BoardGame::moved() {
     has_moved_ = true;
 }

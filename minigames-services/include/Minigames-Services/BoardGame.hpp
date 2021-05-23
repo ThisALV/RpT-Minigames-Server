@@ -121,6 +121,13 @@ public:
     bool operator==(const BoardGame&) const = delete;
 
     /**
+     * @brief Accessor for immutable underlying `Grid`, used for testing purposes
+     *
+     * @returns Immutable underlying `Grid` object
+     */
+    const Grid& grid() const;
+
+    /**
      * @brief Switch current player to other player, definitely terminating current player round
      *
      * You can override this method calling the base-class method inside implementation to add some routine to
