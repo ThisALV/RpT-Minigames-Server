@@ -8,11 +8,37 @@ namespace MinigamesServices {
 
 
 void Canaries::playNormal(GridUpdate& updates, AxisIterator move) {
+    Square& destination { move.moveForward() }; // Tries to go for 1 square toward movement direction
 
+    if (destination != Square::Free) // Target pawn should be moved to an empty square
+        throw BadSquareState { "Movement destination is kept by another pawn" };
+
+    // Applies movement modifications to grid
+    game_grid_[updates.moveOrigin] = Square::Free; // Target pawn no longer into origin square
+    destination = colorFor(currentRound()); // It appears into destination square
 }
 
 void Canaries::playEat(GridUpdate& updates, AxisIterator move) {
+    const Player current_player { currentRound() };
+    const Square current_player_color { colorFor(current_player) };
 
+    // Tries to go for the pawn which will be jumped over, it must have the color of current player
+    if (move.moveForward() != current_player_color)
+        throw BadSquareState { "Jumped over square doesn't contain one of your pawns" };
+
+    Square& eaten { move.moveForward() }; // Tries to got for the pawn which will be eaten by current player
+    if (eaten != flip(current_player_color)) // Eaten pawn must belong to the opponent
+        throw BadSquareState { "Movement destination doesn't contain an opponent pawn to eat" };
+
+    // Applies movement modifications to grid
+    game_grid_[updates.moveOrigin] = Square::Free;
+    eaten = current_player_color; // Square where opponent's pawn is eaten now contain our moved pawn
+
+    // Saves stats updates
+    if (current_player == Player::White)
+        black_pawns_--;
+    else
+        white_pawns_--;
 }
 
 bool Canaries::isBlocked(const Player player) const {
@@ -20,7 +46,7 @@ bool Canaries::isBlocked(const Player player) const {
 
     // For each square kept by given player, tests for every possible move if it is available
     for (int line { 1 }; line <= 4; line++) {
-        for (int column { 0 }; column <= 4; column++) {
+        for (int column { 1 }; column <= 4; column++) {
             const Coordinates checked_square { line, column };
 
             // For a move to be available from current square, it must be kept by given player
@@ -78,7 +104,7 @@ GridUpdate Canaries::play(const Coordinates& from, const Coordinates& to) {
     // A pawn will be moved from `from` to `to`, no square update as grid isn't modified yet
     GridUpdate updates { {}, from, to };
     // Move along axis selected by player, if any
-    AxisIterator move { game_grid_, from, to };
+    AxisIterator move { game_grid_, from, to, AxisIterator::EVERY_ORTHOGONAL_DIRECTION };
 
     // Origin square must contains a pawn of current player color
     if (game_grid_[from] != colorFor(currentRound()))
