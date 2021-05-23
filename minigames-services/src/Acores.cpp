@@ -99,6 +99,9 @@ GridUpdate Acores::play(const Coordinates& from, const Coordinates& to) {
         throw BadCoordinates { "Selected squares are too far, no available move" };
     }
 
+    // At this point, a move is performed: round can now be terminated
+    moved();
+
     return updates;
 }
 
