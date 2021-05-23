@@ -16,6 +16,10 @@ void BoardGame::moved() {
     has_moved_ = true;
 }
 
+bool BoardGame::hasMoved() {
+    return has_moved_;
+}
+
 Player BoardGame::nextRound() {
     if (!has_moved_) // Checks for at one move to have been done, as skipping turn isn't allowed
         throw MoveRequired {};

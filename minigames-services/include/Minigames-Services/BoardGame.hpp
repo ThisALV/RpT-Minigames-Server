@@ -103,6 +103,13 @@ protected:
      */
     void moved();
 
+    /**
+     * @brief Accessor for `moved()` flag
+     *
+     * @returns `true` if `moved()` was called, `false` otherwise
+     */
+    bool hasMoved();
+
 public:
     /*
      * Entity class semantic
