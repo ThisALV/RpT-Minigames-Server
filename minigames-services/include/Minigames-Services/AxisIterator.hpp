@@ -11,6 +11,21 @@
 namespace MinigamesServices {
 
 
+/// Thrown by `AxisIterator` operation if it requires a mutable/immutable grid but underlying grid is immutable/mutable
+class BadMutableFlag : public std::logic_error {
+private:
+    /// Returns string object to allow easy concatenation for error message
+    std::string to_string(const bool value) {
+        return value ? "true" : "false";
+    }
+
+public:
+    /// Constructs error with basic message depending on expected flag value
+    explicit BadMutableFlag(const bool expected_flag_value)
+    : std::logic_error { "Expected mutable=" + to_string(expected_flag_value) } {}
+};
+
+
 /**
  * @brief Represents a direction from one square to another inside a grid using bitflags
  *
@@ -60,9 +75,10 @@ constexpr bool hasFlagOf(const AxisType axis, const AxisType direction) {
 class AxisIterator {
 private:
     /// Elements iterated by this class, composed of a square inside this axis, and its position inside ctor grid
+    template<typename Element>
     struct IteratedElement {
         Coordinates position;
-        Square& state;
+        Element& state;
     };
 
     /// Direction to move the iterator coordinates forward
@@ -128,11 +144,18 @@ private:
         return static_cast<AxisType>(axis_flags);
     }
 
+    const bool mutable_grid_;
     const AxisType direction_;
 
-    std::vector<IteratedElement> axis_;
+    std::vector<IteratedElement<Square>> axis_;
+    std::vector<IteratedElement<const Square>> const_axis_;
     std::size_t current_pos_;
     std::size_t destination_pos_;
+
+    /// Called by both constructors to build iterable constant or not axis vector depending on mutable_grid_ flag set
+    /// by each constructor
+    void initializeAxis(const Grid& grid, const Coordinates& from, const Coordinates& to,
+                        std::initializer_list<AxisType> allowed_directions);
 
 public:
     /// 8 diagonal AND orthogonal directions
@@ -163,6 +186,10 @@ public:
      * doesn't exist inside given `grid`
      */
     explicit AxisIterator(Grid& grid, const Coordinates& from, const Coordinates& to,
+                          std::initializer_list<AxisType> allowed_directions = EVERY_DIRECTION);
+
+    /// Same as mutable grid constructor but retrieved `Square` states cannot be modified
+    explicit AxisIterator(const Grid& grid, const Coordinates& from, const Coordinates& to,
                           std::initializer_list<AxisType> allowed_directions = EVERY_DIRECTION);
 
     /**
@@ -199,8 +226,12 @@ public:
      * @returns Square state at iterator new position
      *
      * @throws BadCoordinates if `hasNext()` returns `false` (no longer square inside axis)
+     * @throws BadMutableFlag if underlying grid is immutable
      */
     Square& moveForward();
+
+    /// Same as `moveForward()` but returning a const reference as underlying grid is immutable
+    const Square& moveForwardImmutable();
 };
 
 

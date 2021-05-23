@@ -12,10 +12,8 @@ Coordinates AxisIterator::DirectionVector::moves(const Coordinates& from) const 
 }
 
 
-AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinates& to,
-                           std::initializer_list<AxisType> allowed_directions) :
-        direction_ { axisBetween(from, to) },
-        current_pos_ { 0 } {
+void AxisIterator::initializeAxis(const Grid& grid, const Coordinates& from, const Coordinates& to,
+                                  std::initializer_list<AxisType> allowed_directions) {
 
     if (!grid.isInsideGrid(from) || !grid.isInsideGrid(to)) // Every square in the axis must be inside the grid
         throw BadCoordinates { "Both of the two squares forming the axis must be inside grid" };
@@ -30,7 +28,10 @@ AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinate
     // Moves coordinates with axis vector to scan for every square into this axis inside given grid
     for (Coordinates square { from }; grid.isInsideGrid(square); square = axis_vector.moves(square)) {
         // Adds next square inside this axis
-        axis_.push_back({ square, grid[square] });
+        if (mutable_grid_) // Const_cast allowed as mutable_grid_ flag means grid ref is from mutable grid constructor
+            axis_.push_back({ square, const_cast<Square&>(grid[square]) });
+        else
+            const_axis_.push_back({ square, grid[square] });
 
         // If destination has been reach inside axis
         if (square == to) {
@@ -42,6 +43,20 @@ AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinate
     }
 }
 
+AxisIterator::AxisIterator(Grid& grid, const Coordinates& from, const Coordinates& to,
+                           const std::initializer_list<AxisType> allowed_directions) :
+        mutable_grid_ { true }, direction_ { axisBetween(from, to) }, current_pos_ { 0 } {
+
+    initializeAxis(grid, from, to, allowed_directions);
+}
+
+AxisIterator::AxisIterator(const Grid& grid, const Coordinates& from, const Coordinates& to,
+                           const std::initializer_list<AxisType> allowed_directions) :
+        mutable_grid_ { false }, direction_ { axisBetween(from, to) }, current_pos_ { 0 } {
+
+    initializeAxis(grid, from, to, allowed_directions);
+}
+
 AxisType AxisIterator::direction() const {
     return direction_;
 }
@@ -51,8 +66,15 @@ Coordinates AxisIterator::currentPosition() const {
 }
 
 bool AxisIterator::hasNext() const {
+    std::size_t elements_count;
+    // Elements container depending on mutable flag
+    if (mutable_grid_)
+        elements_count = axis_.size();
+    else
+        elements_count = const_axis_.size();
+
     // If current position isn't at the axis last square, then it can move to next position
-    return (current_pos_ + 1) < axis_.size();
+    return (current_pos_ + 1) < elements_count;
 }
 
 int AxisIterator::distanceFromDestination() const {
@@ -60,13 +82,29 @@ int AxisIterator::distanceFromDestination() const {
 }
 
 Square& AxisIterator::moveForward() {
+    if (!mutable_grid_) // Checks for grid mutability as non-const ref is returned
+        throw BadMutableFlag { true };
+
     if (!hasNext()) // Can the iterator be moved forward onto coordinates ?
         throw BadCoordinates { "End of axis reached" };
 
     current_pos_++; // Go te next coordinates inside iterated axis
 
-    // Get square state for next square inside iterated axis
+    // Get square state for next square inside iterated axis inside mutable grid
     return axis_.at(current_pos_).state;
+}
+
+const Square& AxisIterator::moveForwardImmutable() {
+    if (!mutable_grid_) // Checks for grid mutability as non-const ref is returned
+        throw BadMutableFlag { false };
+
+    if (!hasNext()) // Can the iterator be moved forward onto coordinates ?
+        throw BadCoordinates { "End of axis reached" };
+
+    current_pos_++; // Go te next coordinates inside iterated axis
+
+    // Get square state for next square inside iterated axis inside immutable (const) grid
+    return const_axis_.at(current_pos_).state;
 }
 
 }
