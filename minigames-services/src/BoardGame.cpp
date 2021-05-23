@@ -16,7 +16,7 @@ void BoardGame::moved() {
     has_moved_ = true;
 }
 
-bool BoardGame::hasMoved() {
+bool BoardGame::hasMoved() const {
     return has_moved_;
 }
 

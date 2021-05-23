@@ -108,7 +108,7 @@ protected:
      *
      * @returns `true` if `moved()` was called, `false` otherwise
      */
-    bool hasMoved();
+    bool hasMoved() const;
 
 public:
     /*
