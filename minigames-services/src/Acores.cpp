@@ -71,8 +71,9 @@ std::optional<Player> Acores::victoryFor() const {
 }
 
 bool Acores::isRoundTerminated() const {
-    // Round is terminated inevitably terminated if there is no jumps chaining to perform
-    return last_move_ == Move::Normal;
+    // Round is terminated inevitably terminated if there is no jumps chaining to perform (=> an action has been
+    // performed and it is normal move)
+    return last_move_.has_value() && *last_move_ == Move::Normal;
 }
 
 GridUpdate Acores::play(const Coordinates& from, const Coordinates& to) {
