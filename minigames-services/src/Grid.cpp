@@ -39,6 +39,14 @@ bool Grid::isInsideGrid(const Coordinates& coords) const {
 }
 
 Square& Grid::operator[](const Coordinates& coords) {
+    // Required to call const-qualified subscript operator
+    const Grid& constant_this { const_cast<const Grid&>(*this) };
+
+    // *this was initially non-const, so const_coast is exceptionally allowed here
+    return const_cast<Square&>(constant_this[coords]);
+}
+
+const Square& Grid::operator[](const Coordinates& coords) const {
     if (!isInsideGrid(coords)) // Checks for a square to be associated with given coordinates
         throw BadCoordinates { "These coordinates aren't inside grid" };
 

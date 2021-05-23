@@ -138,6 +138,9 @@ public:
      * @throws BadCoordinates if given `coords` are out of bound for current grid
      */
     Square& operator[](const Coordinates& coords);
+
+    /// Same as non-const subscript operator, but with constness guarantee
+    const Square& operator[](const Coordinates& coords) const;
 };
 
 
