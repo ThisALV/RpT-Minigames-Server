@@ -57,6 +57,7 @@ register_test(minigames-services
         "src/BoardGameTests.cpp"
         "src/MinigameServiceTests.cpp"
         "src/AcoresTests.cpp"
+        "src/BermudesTests.cpp"
         "src/MinigamesServicesTestingUtils.cpp"
         "${RPT_TESTING_HEADERS_DIR}/MinigamesServicesTestingUtils.hpp")
 target_link_libraries(${minigames-services_EXEC} PRIVATE minigames-services)
