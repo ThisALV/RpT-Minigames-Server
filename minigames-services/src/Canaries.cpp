@@ -50,7 +50,7 @@ bool Canaries::isBlocked(const Player player) const {
             const Coordinates checked_square { line, column };
 
             // For a move to be available from current square, it must be kept by given player
-            if (game_grid_[checked_square] != player_color) {
+            if (game_grid_[checked_square] == player_color) {
                 // Each orthogonal axis will be checked for available moves
                 const std::array<std::pair<int, int>, 4> orthogonal_vectors {
                         std::make_pair<int, int>(1, 0),
@@ -62,18 +62,28 @@ bool Canaries::isBlocked(const Player player) const {
                 for (const auto& [line_offset, col_offset] : orthogonal_vectors) {
                     // Next orthogonal direction to check for
                     const Coordinates neighbour { line + line_offset, column + col_offset };
+                    // Possible destination for a jump move, one square after the direct neighbour calculated previously
+                    const Coordinates after_neighbour { line + 2 * line_offset, column + 2 * col_offset };
 
-                    AxisIterator move_direction { game_grid_, checked_square, neighbour };
+                    // No move is possible if grid border is met right into current direction
+                    if (!game_grid_.isInsideGrid(neighbour))
+                        continue;
 
-                    // Go to direct neighbour
-                    const Square direct_neighbour { move_direction.moveForwardImmutable() };
+                    // Get content of 1st neighbour
+                    const Square direct_neighbour { game_grid_[neighbour] };
                     // If it is empty, then a normal move can be performed, player isn't blocked
                     if (direct_neighbour == Square::Free)
                         return false;
 
                     // If it is kept by a player's own pawn, a jump/eat move might be possible if and only if next
-                    // square is a pawn of the opponent color
-                    if (direct_neighbour == player_color && move_direction.moveForwardImmutable() == flip(player_color))
+                    // square is inside grid and is a pawn of the opponent color
+                    const bool jump_eat_available {
+                        direct_neighbour == player_color &&
+                        game_grid_.isInsideGrid(after_neighbour) &&
+                        game_grid_[after_neighbour] == flip(player_color)
+                    };
+
+                    if (jump_eat_available)
                         return false;
                 }
             }
