@@ -52,10 +52,10 @@ void Bermudes::playFlip(GridUpdate& updates, AxisIterator move) {
 
     checkFreeTrajectory(move, -1); // Every squares between the square before which is flipped must be empty
 
-    // Move forward to reach flipped square
-    Square& flipped { move.moveForward() };
     // Saves position of flipped square for later grid updates notification
     const Coordinates flipped_position { move.currentPosition() };
+    // Flipped square reached, get its current state through iterator current position (because it's already there)
+    Square& flipped { game_grid_[flipped_position] };
     // One square after the flipped square is the movement destination
     Square& destination { move.moveForward() };
 
