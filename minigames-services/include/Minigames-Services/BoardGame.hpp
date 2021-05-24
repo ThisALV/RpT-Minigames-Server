@@ -26,6 +26,14 @@ enum struct Player {
     White, Black
 };
 
+/// Retrieves pawn color associated with given player color
+constexpr Square colorFor(const Player player_color) {
+    if (player_color == Player::White)
+        return Square::White;
+    else
+        return Square::Black;
+}
+
 
 /**
  * @brief Represents an update about a `Square` inside a `Grid` after a call to `BoardGame::play()`
@@ -35,6 +43,11 @@ struct SquareUpdate {
     Coordinates square;
     /// The new state of that square
     Square updatedState;
+
+    /// Checks if `square` and `updatedState` fields are both equals with corresponding fields for given `rhs`
+    constexpr bool operator==(const SquareUpdate& rhs) const {
+        return square == rhs.square && updatedState == rhs.updatedState;
+    }
 };
 
 /**
@@ -60,6 +73,8 @@ struct GridUpdate {
  */
 class BoardGame {
 private:
+    const unsigned int pawns_count_thershold;
+
     Player current_player_;
     bool has_moved_;
 
@@ -67,21 +82,38 @@ protected:
     /// Grid used to store and manipulate squares and pawns for board game, should be modified inside `play()` by
     /// move actions
     Grid game_grid_;
+    /// Number of pawns inside grid for white player
+    unsigned int white_pawns_;
+    /// Number of pawns inside grid for black player
+    unsigned int black_pawns_;
 
     /**
      * @brief Constructs a game with a specific initial grid
      *
      * @param initial_grid Grid state at the beginning of a new game
+     * @param white_pawns Number of white pawns inside the `initial_grid`
+     * @param black_pawns Number of black pawns inside the `initial_grid`
+     * @param pawns_count_threshold A minimum of pawns to have for a player. If current count is less than threshold,
+     * opponent wins the game.
      *
      * @throws BadDimensions if initial grid is invalid
+     * @throws std::invalid_argument if `pawns_count_threshold == 0`
      */
-    BoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid);
+    BoardGame(std::initializer_list<std::initializer_list<Square>> initial_grid,
+              unsigned int white_pawns, unsigned int black_pawns, unsigned int pawns_count_threshold);
 
     /**
      * @brief Enables moved flags, means that player into current round did at least one move, expected to be called
      * from `play()` implementation
      */
     void moved();
+
+    /**
+     * @brief Accessor for `moved()` flag
+     *
+     * @returns `true` if `moved()` was called, `false` otherwise
+     */
+    bool hasMoved() const;
 
 public:
     /*
@@ -92,6 +124,13 @@ public:
     BoardGame& operator=(const BoardGame&) = delete;
 
     bool operator==(const BoardGame&) const = delete;
+
+    /**
+     * @brief Accessor for immutable underlying `Grid`, used for testing purposes
+     *
+     * @returns Immutable underlying `Grid` object
+     */
+    const Grid& grid() const;
 
     /**
      * @brief Switch current player to other player, definitely terminating current player round
@@ -115,11 +154,22 @@ public:
     Player currentRound() const;
 
     /**
+     * @brief Retrieves number of pawns inside grid for given player
+     *
+     * @param pawns_owner `Player` to check pawns count for
+     *
+     * @returns Number of pawns
+     */
+    unsigned int pawnsFor(Player pawns_owner) const;
+
+    /**
      * @brief Retrieves player who won this game, if terminated
+     *
+     * Default behavior returns opponent victory is a player has less than pawns constructor threshold.
      *
      * @returns Uninitialized if game isn't terminated, otherwise `Player` who won
      */
-    virtual std::optional<Player> victoryFor() const = 0;
+    virtual std::optional<Player> victoryFor() const;
 
     /**
      * @brief Checks if current player can do other actions or not

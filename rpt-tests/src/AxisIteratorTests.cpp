@@ -102,22 +102,27 @@ BOOST_AUTO_TEST_CASE(HorizontalAxisBetween) {
     BOOST_CHECK_EQUAL(it2.direction(), AxisType::Left);
 
     // 1st iterator can move 2 times before it reaches destination, 4 times before the end
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 1 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -2);
     BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -1);
     BOOST_CHECK_EQUAL(it1.moveForward(), EMPTY);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 3 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 0);
     BOOST_CHECK_EQUAL(it1.moveForward(), BLACK);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 4 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 1);
     BOOST_CHECK_EQUAL(it1.moveForward(), EMPTY);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 5 }));
     BOOST_CHECK(!it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 2);
 }
@@ -134,18 +139,22 @@ BOOST_AUTO_TEST_CASE(VerticalAxisBetween) {
     BOOST_CHECK_EQUAL(it2.direction(), AxisType::Up);
 
     // 1st iterator can move 3 times before it reaches destination, 4 times before the end
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 6, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -3);
     BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 7, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -2);
     BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 8, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -1);
     BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 9, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 0);
     BOOST_CHECK_EQUAL(it1.moveForward(), WHITE);
@@ -174,10 +183,12 @@ BOOST_AUTO_TEST_CASE(DiagonalAxisBetween) {
     BOOST_CHECK_EQUAL(it4.direction(), AxisType::DownLeft);
 
     // 1st iterator can move 1 time before it reaches destination, 1 time before the end
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 2, 2 }));
     BOOST_CHECK(it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), -1);
     BOOST_CHECK_EQUAL(it1.moveForward(), EMPTY);
 
+    BOOST_CHECK_EQUAL(it1.currentPosition(), (Coordinates { 1, 3 }));
     BOOST_CHECK(!it1.hasNext());
     BOOST_CHECK_EQUAL(it1.distanceFromDestination(), 0);
 }

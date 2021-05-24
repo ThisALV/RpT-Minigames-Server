@@ -26,5 +26,9 @@ std::ostream& operator<<(std::ostream& out, const Coordinates& coordinates) {
     return out << "Line=" << coordinates.line << " Col=" << coordinates.column;
 }
 
+std::ostream& operator<<(std::ostream& out, const SquareUpdate& square_update) {
+    return out << "Coords={" << square_update.square << "} State=" << square_update.updatedState;
+}
+
 
 }

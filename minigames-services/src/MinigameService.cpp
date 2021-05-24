@@ -169,9 +169,13 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
     const auto [from_line, from_column] { unsync_updates.moveOrigin };
     const auto [to_line, to_column] { unsync_updates.moveDestination };
 
-    // Syncs client with pawn concerned by this move
+    // Syncs clients with pawn concerned by this move
     emitEvent("MOVED " + std::to_string(from_line) + ' ' + std::to_string(from_column)
               + ' ' + std::to_string(to_line) + ' ' + std::to_string(to_column));
+
+    // Syncs clients with new pawns count for each player, so they don't need to recalculate it themselves
+    emitEvent("PAWN_COUNTS " + std::to_string(current_game_->pawnsFor(Player::White)) + ' '
+              + std::to_string(current_game_->pawnsFor(Player::Black)));
 
     // Checks if move caused any Player to win the game
     const std::optional<Player> possible_winner { current_game_->victoryFor() };
