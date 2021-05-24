@@ -66,14 +66,14 @@ bool Canaries::isBlocked(const Player player) const {
                     AxisIterator move_direction { game_grid_, checked_square, neighbour };
 
                     // Go to direct neighbour
-                    const Square direct_neighbour { move_direction.moveForward() };
+                    const Square direct_neighbour { move_direction.moveForwardImmutable() };
                     // If it is empty, then a normal move can be performed, player isn't blocked
                     if (direct_neighbour == Square::Free)
                         return false;
 
                     // If it is kept by a player's own pawn, a jump/eat move might be possible if and only if next
                     // square is a pawn of the opponent color
-                    if (direct_neighbour == player_color && move_direction.moveForward() == flip(player_color))
+                    if (direct_neighbour == player_color && move_direction.moveForwardImmutable() == flip(player_color))
                         return false;
                 }
             }
