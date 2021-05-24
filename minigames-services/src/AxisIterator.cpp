@@ -95,7 +95,7 @@ Square& AxisIterator::moveForward() {
 }
 
 const Square& AxisIterator::moveForwardImmutable() {
-    if (!mutable_grid_) // Checks for grid mutability as non-const ref is returned
+    if (mutable_grid_) // Checks for grid mutability as non-const ref is returned
         throw BadMutableFlag { false };
 
     if (!hasNext()) // Can the iterator be moved forward onto coordinates ?
