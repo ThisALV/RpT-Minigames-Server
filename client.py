@@ -6,12 +6,12 @@ from sys import argv
 
 
 url = argv[1]  # 1st argument is wss:// URL for game server
-# certificate = argv[2]  # 2nd argument is path to custom certificate required for localhost self-signed PEM
+certificate = argv[2]  # 2nd argument is path to custom certificate required for localhost self-signed PEM
 
 # Enables TLS features
-# tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-# tls_context.keylog_filename = "keylog.pem"  # Wireshark will need that for debugging
-# tls_context.load_verify_locations(certificate)  # localhost requires self-signed PEM cert
+tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+tls_context.keylog_filename = "keylog.pem"  # Wireshark will need that for debugging
+tls_context.load_verify_locations(certificate)  # localhost requires self-signed PEM cert
 
 
 def require_input(input_required: asyncio.Event):
@@ -69,7 +69,7 @@ async def rptl_connection(connection: websockets.WebSocketClientProtocol):
 
 async def websocket_connection(host_url: str, security_context: ssl.SSLContext):
     # Wait for WSS client connection to be made
-    connection = await websockets.connect(uri=host_url)
+    connection = await websockets.connect(uri=host_url, ssl=security_context)
 
     print(f"Connected to {host_url}.")
 
@@ -77,4 +77,4 @@ async def websocket_connection(host_url: str, security_context: ssl.SSLContext):
     await rptl_connection(connection)
 
 
-asyncio.run(websocket_connection(url, None))
+asyncio.run(websocket_connection(url, tls_context))
