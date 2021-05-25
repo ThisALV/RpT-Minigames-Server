@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <queue>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -39,6 +40,15 @@ public:
 };
 
 
+/// Thrown by `Service` timers-related methods when timer of a given cannot be watched or forgotten
+class BadWatchedToken : public std::logic_error {
+public:
+    /// Constructs error with formatted message from given Timer token and given failure reason
+    BadWatchedToken(const Timer& timer, const std::string& reason)
+    : std::logic_error { "Timer " + std::to_string(timer.token()) + ':' + reason } {}
+};
+
+
 /**
  * @brief Service ran by `ServiceEventRequestProtocol`
  *
@@ -62,7 +72,7 @@ class Service {
 private:
     ServiceContext& run_context_;
     std::queue<std::pair<std::size_t, std::string>> events_queue_;
-    std::vector<std::reference_wrapper<Timer>> watched_timers_;
+    std::set<Timer*> watched_timers_; // Using pointers because reference_wrapper doesn't offer == operator
 
 protected:
     /**
@@ -93,7 +103,28 @@ public:
      * Ready state
      */
     explicit Service(ServiceContext& run_context,
-                     const std::initializer_list<std::reference_wrapper<Timer>>& watched_timers = {});
+                     std::initializer_list<std::reference_wrapper<Timer>> watched_timers = {});
+
+    /**
+     * @brief Watches Ready state for given timer, it can now be returned by `getWatchingTimers()`
+     *
+     * @param timer_to_watch Disabled timer to watch for
+     *
+     * @throws BadTimerState if timer isn't `Disabled`
+     * @throws BadWatchedToken if given timer is already watched
+     */
+    void watchTimer(Timer& timer_to_watch);
+
+    /**
+     * @brief Stops watching for Ready state, given timer can no longer be returned by `getWatchingTimers()`
+     *
+     * @param watched_timer Watched timer to stop being watching for
+     *
+     * @note If given timer was `Pending`, it will not be automatically cancelled.
+     *
+     * @throws BadWatchedToken if given timer isn't watched by this %Service
+     */
+    void forgetTimer(Timer& watched_timer);
 
     /**
      * @brief Get next event ID so check for newest event between services can be performed

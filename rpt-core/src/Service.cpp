@@ -5,8 +5,28 @@ namespace RpT::Core {
 
 
 Service::Service(ServiceContext& run_context,
-                 const std::initializer_list<std::reference_wrapper<Timer>>& watched_timers)
-                 : run_context_ { run_context }, watched_timers_ { watched_timers } {}
+                 const std::initializer_list<std::reference_wrapper<Timer>> watched_timers) :
+                 run_context_ { run_context } {
+
+    for (Timer& timer_to_watch : watched_timers) // Safe method with checks to watch each required timer
+        watchTimer(timer_to_watch);
+}
+
+void Service::watchTimer(Timer& timer_to_watch) {
+    // Watches timer from address obtained with given reference
+    const auto insertion_result { watched_timers_.insert(&timer_to_watch) };
+
+    if (!insertion_result.second) // If insertion failed because it is already watched...
+        throw BadWatchedToken { timer_to_watch, "Already watched" };
+}
+
+void Service::forgetTimer(Timer& watched_timer) {
+    // Removes timer using address obtained from given reference
+    const std::size_t removed_count { watched_timers_.erase(&watched_timer) };
+
+    if (removed_count != 1) // If given timer have NOT been removed because it isn't watched...
+        throw BadWatchedToken { watched_timer, "Not watched" };
+}
 
 void Service::emitEvent(std::string event_command) {
     const std::size_t event_id { run_context_.newEventPushed() }; // Event counter is growing, ID is given so trigger order is kept
@@ -34,9 +54,11 @@ std::vector<std::reference_wrapper<Timer>> Service::getWaitingTimers() {
     std::vector<std::reference_wrapper<Timer>> ready_timers;
     ready_timers.reserve(watched_timers_.size()); // Max number of ready timers is number of current timers
 
-    // Copies each watched timer which is waiting for IO interface to begin countdown, using push_back()
-    std::copy_if(watched_timers_.cbegin(), watched_timers_.cend(), std::back_inserter(ready_timers),
-                 [](const Timer& t) { return t.isWaitingCountdown(); });
+    // Copies reference for each watched timer which is waiting for IO interface to begin countdown
+    for (Timer* watched_timer : watched_timers_) {
+        if (watched_timer->isWaitingCountdown()) // Filtering to get timers waiting for their countdown to begin
+            ready_timers.emplace_back(*watched_timer);
+    }
 
     return ready_timers;
 }
