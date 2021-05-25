@@ -8,7 +8,9 @@ set(MINIGAMES_SERVICES_HEADERS
         "${MINIGAMES_SERVICES_HEADERS_DIR}/BoardGame.hpp"
         "${MINIGAMES_SERVICES_HEADERS_DIR}/MinigameService.hpp"
         "${MINIGAMES_SERVICES_HEADERS_DIR}/Acores.hpp"
-        "${MINIGAMES_SERVICES_HEADERS_DIR}/Bermudes.hpp" src/Canaries.cpp include/Minigames-Services/Canaries.hpp)
+        "${MINIGAMES_SERVICES_HEADERS_DIR}/Bermudes.hpp"
+        "${MINIGAMES_SERVICES_HEADERS_DIR}/Canaries.hpp"
+        "${MINIGAMES_SERVICES_HEADERS_DIR}/Lobby.hpp")
 
 set(MINIGAMES_SERVICES_SOURCES
         "src/ChatService.cpp"
@@ -17,7 +19,9 @@ set(MINIGAMES_SERVICES_SOURCES
         "src/BoardGame.cpp"
         "src/MinigameService.cpp"
         "src/Acores.cpp"
-        "src/Bermudes.cpp" src/Canaries.cpp include/Minigames-Services/Canaries.hpp)
+        "src/Bermudes.cpp"
+        "src/Canaries.cpp"
+        "src/Lobby.cpp")
 
 add_library(minigames-services STATIC ${MINIGAMES_SERVICES_SOURCES} ${MINIGAMES_SERVICES_HEADERS})
 target_include_directories(minigames-services PUBLIC include)
