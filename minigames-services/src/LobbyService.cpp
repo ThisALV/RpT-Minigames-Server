@@ -1,4 +1,4 @@
-#include <Minigames-Services/Lobby.hpp>
+#include <Minigames-Services/LobbyService.hpp>
 
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
 
