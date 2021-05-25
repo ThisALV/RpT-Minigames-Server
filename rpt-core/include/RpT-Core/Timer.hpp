@@ -1,14 +1,16 @@
 #ifndef RPT_MINIGAMES_SERVER_TIMER_HPP
 #define RPT_MINIGAMES_SERVER_TIMER_HPP
 
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <RpT-Core/ServiceContext.hpp>
-
 /**
  * @file Timer.hpp
  */
+
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <RpT-Core/ServiceContext.hpp>
 
 
 namespace RpT::Core {
@@ -84,13 +86,16 @@ private:
     std::size_t countdown_ms_;
     TimerState current_state_;
 
+    std::vector<std::function<void()>> clear_callbacks_;
+    std::vector<std::function<void()>> trigger_callbacks_;
+
     /// Throws `BadTimerState` if current state is not the one expected for given operation name
     void checkStateForOperation(std::string_view operation_name);
 
 public:
     /**
      * @brief Constructs timer object with token provided by given `ServiceContext`, with given countdown, in disabled
-     * state
+     * state and without any callbacks
      *
      * @param token_provider `ServiceContext` of service using and owning this timer
      * @param countdown_ms Time in milliseconds to stay into pending mode once countdown has begun
@@ -129,6 +134,20 @@ public:
     bool isPending() const;
     /// Checks if current state is Triggered
     bool hasTriggered() const;
+
+    /**
+     * @brief Calls given routine next time and only next time state is updated to `Disabled`
+     *
+     * @param callback Routine to call
+     */
+    void onNextClear(std::function<void()> callback);
+
+    /**
+     * @brief Calls given routine next time and only next time state is updated to `Triggered`
+     *
+     * @param callback Routine to call
+     */
+    void onNextTrigger(std::function<void()> callback);
 
     /**
      * @brief Marks timer as Disabled
