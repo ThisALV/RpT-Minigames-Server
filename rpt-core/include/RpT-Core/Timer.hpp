@@ -54,6 +54,13 @@ public:
  * - Triggered: `TimerEvent` with corresponding token emitted, countdown is done and timer can be cleared to Disabled
  * again
  *
+ * `Disabled` state can be reach at any moment using `clear()` method which will basically cancel the timer no matter
+ * the current state
+ *
+ * Callbacks can be registered for both `Triggered` and `Disabled` state, then the next time one of these state will
+ * be matched, every registered callbacks will be consumed. Callbacks are *consumed*, so running a callback twice
+ * requires to registering it twice too.
+ *
  * @author ThisALV, https://github.com/ThisALV
  */
 class Timer {
@@ -115,7 +122,7 @@ public:
     std::size_t countdown() const;
 
     /// Checks if current state is Disabled
-    bool isFree();
+    bool isFree() const;
     /// Checks if current state is Ready
     bool isWaitingCountdown() const;
     /// Checks if current state is Pending
@@ -125,8 +132,6 @@ public:
 
     /**
      * @brief Marks timer as Disabled
-     *
-     * @throws BadTimerState if timer is not Triggered
      */
     void clear();
 

@@ -98,7 +98,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Disabled state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.beginCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.trigger(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.requestCountdown());
@@ -106,7 +105,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Ready state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.trigger(), BadTimerState);
         BOOST_REQUIRE_EQUAL(timer.beginCountdown(), 42); // Retrieved countdown is 42 ms
@@ -114,7 +112,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Pending state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.beginCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.trigger());
@@ -127,6 +124,40 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.clear());
     }
+}
+
+/*
+ * Checks that clear() can be called at any lifecycle state
+ */
+
+BOOST_AUTO_TEST_CASE(Clear) {
+    Timer timer { tokens_provider, 42 };
+
+    /*
+     * Performing check for each state, pushing timer until another state each time
+     */
+
+    // Checks from Disabled
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Ready
+    timer.requestCountdown();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Pending
+    timer.requestCountdown();
+    timer.beginCountdown();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Triggered
+    timer.requestCountdown();
+    timer.beginCountdown();
+    timer.trigger();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

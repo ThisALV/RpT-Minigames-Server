@@ -22,7 +22,7 @@ std::size_t Timer::countdown() const {
     return countdown_ms_;
 }
 
-bool Timer::isFree() {
+bool Timer::isFree() const {
     return current_state_ == TimerState::Disabled;
 }
 
@@ -39,7 +39,6 @@ bool Timer::hasTriggered() const {
 }
 
 void Timer::clear() {
-    checkStateForOperation("clear");
     current_state_ = TimerState::Disabled;
 }
 
