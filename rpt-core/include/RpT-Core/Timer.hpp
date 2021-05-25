@@ -1,14 +1,16 @@
 #ifndef RPT_MINIGAMES_SERVER_TIMER_HPP
 #define RPT_MINIGAMES_SERVER_TIMER_HPP
 
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <RpT-Core/ServiceContext.hpp>
-
 /**
  * @file Timer.hpp
  */
+
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
+#include <RpT-Core/ServiceContext.hpp>
 
 
 namespace RpT::Core {
@@ -54,6 +56,13 @@ public:
  * - Triggered: `TimerEvent` with corresponding token emitted, countdown is done and timer can be cleared to Disabled
  * again
  *
+ * `Disabled` state can be reach at any moment using `clear()` method which will basically cancel the timer no matter
+ * the current state
+ *
+ * Callbacks can be registered for both `Triggered` and `Disabled` state, then the next time one of these state will
+ * be matched, every registered callbacks will be consumed. Callbacks are *consumed*, so running a callback twice
+ * requires to registering it twice too.
+ *
  * @author ThisALV, https://github.com/ThisALV
  */
 class Timer {
@@ -77,13 +86,16 @@ private:
     std::size_t countdown_ms_;
     TimerState current_state_;
 
+    std::vector<std::function<void()>> clear_callbacks_;
+    std::vector<std::function<void()>> trigger_callbacks_;
+
     /// Throws `BadTimerState` if current state is not the one expected for given operation name
     void checkStateForOperation(std::string_view operation_name);
 
 public:
     /**
      * @brief Constructs timer object with token provided by given `ServiceContext`, with given countdown, in disabled
-     * state
+     * state and without any callbacks
      *
      * @param token_provider `ServiceContext` of service using and owning this timer
      * @param countdown_ms Time in milliseconds to stay into pending mode once countdown has begun
@@ -115,7 +127,7 @@ public:
     std::size_t countdown() const;
 
     /// Checks if current state is Disabled
-    bool isFree();
+    bool isFree() const;
     /// Checks if current state is Ready
     bool isWaitingCountdown() const;
     /// Checks if current state is Pending
@@ -124,9 +136,21 @@ public:
     bool hasTriggered() const;
 
     /**
-     * @brief Marks timer as Disabled
+     * @brief Calls given routine next time and only next time state is updated to `Disabled`
      *
-     * @throws BadTimerState if timer is not Triggered
+     * @param callback Routine to call
+     */
+    void onNextClear(std::function<void()> callback);
+
+    /**
+     * @brief Calls given routine next time and only next time state is updated to `Triggered`
+     *
+     * @param callback Routine to call
+     */
+    void onNextTrigger(std::function<void()> callback);
+
+    /**
+     * @brief Marks timer as Disabled
      */
     void clear();
 

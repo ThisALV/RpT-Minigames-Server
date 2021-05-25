@@ -35,6 +35,8 @@ public:
 /**
  * @brief Provides `TestingService` instance with just initialized `ServiceContext` required for Service construction.
  *
+ * Also provides a facility te create new timers using the underlying private `ServiceContext`.
+ *
  * Also, few timers are provided to test `getWatchingTimers()` features and manipulate directly timers without using
  * %Service.
  */
@@ -51,6 +53,11 @@ public:
     ServiceTestFixture() : context_ {},
     timerA { context_, 0 }, timerB { context_, 0 }, timerC { context_, 0 },
     service { context_, timerA, timerB, timerC } {}
+
+    /// Provides a new timer using underlying `ServiceContext`
+    Timer timer() {
+        return Timer { context_, 0 };
+    }
 };
 
 
@@ -143,6 +150,55 @@ BOOST_AUTO_TEST_CASE(AllTimersReady) {
     BOOST_CHECK_EQUAL(waiting_timers.at(0).get().token(), 0); // 1st one is A
     BOOST_CHECK_EQUAL(waiting_timers.at(1).get().token(), 1); // 2nd one is B
     BOOST_CHECK_EQUAL(waiting_timers.at(2).get().token(), 2); // 3rd one is C
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * watchTimer() method unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(WatchTimer)
+
+BOOST_AUTO_TEST_CASE(AlreadyWatched) {
+    BOOST_CHECK_THROW(service.watchTimer(timerB), BadWatchedToken);
+}
+
+BOOST_AUTO_TEST_CASE(NotWatched) {
+    Timer timerD { timer() };
+
+    BOOST_CHECK_NO_THROW(service.watchTimer(timerD));
+
+    // Puts new timer into Ready state so we can check if it is returned by getWatchingTimers()
+    timerD.requestCountdown();
+    const std::vector<std::reference_wrapper<Timer>> watching_timers { service.getWaitingTimers() };
+    // Only timerD was put into Ready state
+    BOOST_CHECK_EQUAL(watching_timers.size(), 1);
+    BOOST_CHECK_EQUAL(watching_timers.at(0).get().token(), timerD.token());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+/*
+ * forgetTimer() method unit tests
+ */
+
+BOOST_AUTO_TEST_SUITE(ForgetTimer)
+
+BOOST_AUTO_TEST_CASE(Watched) {
+    BOOST_CHECK_NO_THROW(service.forgetTimer(timerA));
+
+    // Puts timerA into Ready state so we can check if it is not returned by getWatchingTimers()
+    timerA.requestCountdown();
+    const std::vector<std::reference_wrapper<Timer>> watching_timers { service.getWaitingTimers() };
+    // Only timerA was put into Ready state, and it is no longer watched
+    BOOST_CHECK_EQUAL(watching_timers.size(), 0);
+}
+
+BOOST_AUTO_TEST_CASE(NotWatched) {
+    Timer timerD { timer() };
+
+    BOOST_CHECK_THROW(service.forgetTimer(timerD), BadWatchedToken);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

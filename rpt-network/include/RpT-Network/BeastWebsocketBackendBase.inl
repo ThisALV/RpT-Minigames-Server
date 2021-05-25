@@ -504,6 +504,11 @@ public:
         // Must NOT on the stack as timer will be pending asynchronously, owning shared with Asio timer async handler
         const auto asio_timer { std::make_shared<boost::asio::steady_timer>(async_io_context_, countdown) };
 
+        // If RpT timer is cancelled (clear()), then this Boost.Asio steady_timer must also be cancelled
+        ready_timer.onNextClear([asio_timer]() {
+            asio_timer->cancel();
+        });
+
         // Does timer countdown
         asio_timer->async_wait([this, token, asio_timer](const boost::system::error_code& err) {
             if (err == boost::asio::error::operation_aborted) // Ignores if server stopped

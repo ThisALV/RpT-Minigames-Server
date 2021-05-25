@@ -22,7 +22,7 @@ std::size_t Timer::countdown() const {
     return countdown_ms_;
 }
 
-bool Timer::isFree() {
+bool Timer::isFree() const {
     return current_state_ == TimerState::Disabled;
 }
 
@@ -38,9 +38,24 @@ bool Timer::hasTriggered() const {
     return current_state_ == TimerState::Triggered;
 }
 
+void Timer::onNextClear(std::function<void()> callback) {
+    // Pushes routine at end of array
+    clear_callbacks_.push_back(std::move(callback));
+}
+
+void Timer::onNextTrigger(std::function<void()> callback) {
+    // Pushes routine at end of array
+    trigger_callbacks_.push_back(std::move(callback));
+}
+
 void Timer::clear() {
-    checkStateForOperation("clear");
     current_state_ = TimerState::Disabled;
+
+    // Disabled reached, calls every routine (or callbacks)...
+    for (const std::function<void()>& state_callback : clear_callbacks_)
+        state_callback();
+    // ...then consumes all of them by cleaning their array
+    clear_callbacks_.clear();
 }
 
 void Timer::requestCountdown() {
@@ -58,6 +73,12 @@ std::size_t Timer::beginCountdown() {
 void Timer::trigger() {
     checkStateForOperation("trigger");
     current_state_ = TimerState::Triggered;
+
+    // Disabled reached, calls every routine (or callbacks)...
+    for (const std::function<void()>& state_callback : trigger_callbacks_)
+        state_callback();
+    // ...then consumes all of them by cleaning their array
+    trigger_callbacks_.clear();
 }
 
 

@@ -98,7 +98,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Disabled state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.beginCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.trigger(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.requestCountdown());
@@ -106,7 +105,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Ready state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.trigger(), BadTimerState);
         BOOST_REQUIRE_EQUAL(timer.beginCountdown(), 42); // Retrieved countdown is 42 ms
@@ -114,7 +112,6 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         /*
          * Pending state
          */
-        BOOST_REQUIRE_THROW(timer.clear(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.beginCountdown(), BadTimerState);
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.trigger());
@@ -127,6 +124,83 @@ BOOST_AUTO_TEST_CASE(Lifecycle) {
         BOOST_REQUIRE_THROW(timer.requestCountdown(), BadTimerState);
         BOOST_REQUIRE_NO_THROW(timer.clear());
     }
+}
+
+/*
+ * Checks that clear() can be called at any lifecycle state
+ */
+
+BOOST_AUTO_TEST_CASE(Clear) {
+    Timer timer { tokens_provider, 42 };
+
+    /*
+     * Performing check for each state, pushing timer until another state each time
+     */
+
+    // Checks from Disabled
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Ready
+    timer.requestCountdown();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Pending
+    timer.requestCountdown();
+    timer.beginCountdown();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+
+    // Checks from Triggered
+    timer.requestCountdown();
+    timer.beginCountdown();
+    timer.trigger();
+    timer.clear();
+    BOOST_REQUIRE(timer.isFree());
+}
+
+/*
+ * Checks for callbacks routine to be called when expected state is reached
+ */
+
+/// Performs a complete states lifecycle for given timer, this routine is used many times inside next feature test
+void completeLifeCycle(Timer& timer) {
+    timer.requestCountdown();
+    timer.beginCountdown();
+    timer.trigger();
+    timer.clear();
+}
+
+BOOST_AUTO_TEST_CASE(Callbacks) {
+    Timer timer { tokens_provider, 42 };
+
+    // Ready to register each callback invocation
+    unsigned int clear_routines_count { 0 };
+    unsigned int trigger_routines_count { 0 };
+
+    // Increments appropriate count for each invocation
+    const std::function<void()> clear_routine { [&clear_routines_count]() { clear_routines_count++; } };
+    const std::function<void()> trigger_routine { [&trigger_routines_count]() { trigger_routines_count++; } };
+
+    for (int i { 0 }; i < 3; i++) // Expects 3 calls to clear routine because it is registered 3 times
+        timer.onNextClear(clear_routine);
+    for (int i { 0 }; i < 2; i++) // Expects 2 calls to trigger routine because it is registered 2 times
+        timer.onNextTrigger(trigger_routine);
+
+    completeLifeCycle(timer); // Reaches clear and trigger states once
+    BOOST_CHECK_EQUAL(clear_routines_count, 3);
+    BOOST_CHECK_EQUAL(trigger_routines_count, 2);
+
+    timer.onNextClear(clear_routine);
+    completeLifeCycle(timer); // This time, only clear routine will be called and it has been registered only once
+    BOOST_CHECK_EQUAL(clear_routines_count, 4);
+    BOOST_CHECK_EQUAL(trigger_routines_count, 2);
+
+    timer.onNextTrigger(trigger_routine);
+    completeLifeCycle(timer); // Same thing than previously, but this time with the trigger routine
+    BOOST_CHECK_EQUAL(clear_routines_count, 4);
+    BOOST_CHECK_EQUAL(trigger_routines_count, 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
