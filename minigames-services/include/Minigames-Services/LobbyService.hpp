@@ -57,6 +57,9 @@ private:
     /// Retrieves actor associated with given UID
     std::optional<Entrant>& playerFor(std::uint64_t actor_uid);
 
+    /// If it has begun, starting countdown will be stopped and players will be synced with that countdown cancellation
+    void cancelCountdown();
+
 public:
     /**
      * @brief Initializes service to run given RpT-Minigame

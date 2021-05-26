@@ -26,6 +26,15 @@ std::optional<LobbyService::Entrant>& LobbyService::playerFor(const std::uint64_
         throw std::invalid_argument { "Actor " + std::to_string(actor_uid) + " isn't assigned to any player" };
 }
 
+void LobbyService::cancelCountdown() {
+    // Clients will be notified if they were waiting for minigame to start
+    if (starting_countdown_.isPending())
+        emitEvent("END_COUNTDOWN");
+
+    // If countdown hasn't begun, it will not have any effect, can be called in any state
+    starting_countdown_.clear();
+}
+
 LobbyService::LobbyService(RpT::Core::ServiceContext& run_context, MinigameService& rpt_minigame,
                            const std::size_t countdown_ms) :
                            RpT::Core::Service { run_context, { starting_countdown_ } },
@@ -55,8 +64,9 @@ void LobbyService::removeActor(const std::uint64_t actor_uid) {
     try {
         std::optional<Entrant>& entrant_for_actor { playerFor(actor_uid) }; // Tries to get player assigned with UID
 
-        if (entrant_for_actor->isReady) // If removed player was ready, then count needs to be decremented to be synced
-            ready_players_--;
+        // If removed player was ready, then count needs to be decremented and contdown to be updated
+        if (entrant_for_actor->isReady)
+            cancelCountdown();
 
         entrant_for_actor.reset(); // After that check, player can be removed from minigame entrants
     } catch (const std::invalid_argument& err) { // Catches if given actor doesn't correspond to any player
@@ -95,10 +105,7 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
         // Syncs clients with beginning countdown so they can perform a countdown on their side too
         emitEvent("BEGIN_COUNTDOWN");
     } else { // If not every player is ready, cancel countdown
-        // If countdown hasn't begun, it will not have any effect, can be called in any state
-        starting_countdown_.clear();
-        // Clients will have to handle this command even if countdown wasn't running
-        emitEvent("END_COUNTDOWN");
+        cancelCountdown();
     }
 
     return {}; // If SR command contains READY command, there is no way it could fail, success should be guaranteed
