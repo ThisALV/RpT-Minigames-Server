@@ -122,13 +122,13 @@ private:
             // Checks for each supported type
             if constexpr (std::is_same_v<NoneEvent, InputEventT>)
                 updatedHandler = &userNoneHandler;
-            if constexpr (std::is_same_v<ServiceRequestEvent, InputEventT>)
+            else if constexpr (std::is_same_v<ServiceRequestEvent, InputEventT>)
                 updatedHandler = &userServiceRequestHandler;
-            if constexpr (std::is_same_v<TimerEvent, InputEventT>)
+            else if constexpr (std::is_same_v<TimerEvent, InputEventT>)
                 updatedHandler = &userTimerHandler;
-            if constexpr (std::is_same_v<JoinedEvent, InputEventT>)
+            else if constexpr (std::is_same_v<JoinedEvent, InputEventT>)
                 updatedHandler = &userJoinedHandler;
-            if constexpr (std::is_same_v<LeftEvent, InputEventT>)
+            else if constexpr (std::is_same_v<LeftEvent, InputEventT>)
                 updatedHandler = &userLeftHandler;
             else // Other are unsupported
                 throw std::logic_error { "Unsupported InputEvenT" };
