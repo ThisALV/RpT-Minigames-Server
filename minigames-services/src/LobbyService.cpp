@@ -103,7 +103,7 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
         });
 
         // Syncs clients with beginning countdown so they can perform a countdown on their side too
-        emitEvent("BEGIN_COUNTDOWN");
+        emitEvent("BEGIN_COUNTDOWN " + std::to_string(starting_countdown_.countdown()));
     } else { // If not every player is ready, cancel countdown
         cancelCountdown();
     }
