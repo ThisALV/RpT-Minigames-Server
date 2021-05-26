@@ -207,4 +207,10 @@ void MinigameService::stop() {
     emitEvent("STOP"); // Sync clients with new game state
 }
 
+bool MinigameService::isStarted() const {
+    // If pointer is holding a value to a board game, then it is currently running
+    return static_cast<bool>(current_game_);
+}
+
+
 }

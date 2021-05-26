@@ -130,13 +130,16 @@ BOOST_AUTO_TEST_CASE(GameAlreadyRunning) {
     // Starts game a first time
     service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
 
-    // Should fail to start it a second time
+    // Should fails to start it a second time
     BOOST_CHECK_THROW(service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR), BadBoardGameState);
+    // Should remains running
+    BOOST_CHECK(service.isStarted());
 }
 
 BOOST_AUTO_TEST_CASE(GameStopped) {
     service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
 
+    BOOST_CHECK(service.isStarted());
     // Starting game should emit exactly one event to sync clients with new state
     BOOST_CHECK_EQUAL(service.pollEvent(), "START 0 1");
     BOOST_CHECK(!service.checkEvent().has_value());
@@ -155,6 +158,8 @@ BOOST_AUTO_TEST_SUITE(Stop)
 BOOST_AUTO_TEST_CASE(GameAlreadyStopped) {
     // No game running right after construction, shouldn't be able to stop
     BOOST_CHECK_THROW(service.stop(), BadBoardGameState);
+    // Should remains stopped
+    BOOST_CHECK(!service.isStarted());
 }
 
 BOOST_AUTO_TEST_CASE(GameRunning) {
@@ -164,6 +169,7 @@ BOOST_AUTO_TEST_CASE(GameRunning) {
 
     // Stop should sync with clients for new state by sending exactly one event
     service.stop();
+    BOOST_CHECK(!service.isStarted());
     BOOST_CHECK_EQUAL(service.pollEvent(), "STOP");
     BOOST_CHECK(!service.checkEvent().has_value());
 }

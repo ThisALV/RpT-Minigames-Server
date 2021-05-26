@@ -121,6 +121,13 @@ public:
      */
     void stop();
 
+    /**
+     * @brief Checks if a game session is currently running or not
+     *
+     * @returns `true` if `start()` was called without a later call to `stop()`, `false` otherwise
+     */
+    bool isStarted() const;
+
     /// Handles play from current player to make board game progress
     RpT::Utils::HandlingResult handleRequestCommand(std::uint64_t actor, std::string_view sr_command_data) override;
 };
