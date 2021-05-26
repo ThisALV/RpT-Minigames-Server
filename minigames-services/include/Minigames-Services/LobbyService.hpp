@@ -2,7 +2,7 @@
 #define RPT_MINIGAMES_SERVICES_LOBBY_HPP
 
 /**
- * @file Lobby.hpp
+ * @file LobbyService.hpp
  */
 
 #include <Minigames-Services/MinigameService.hpp>
