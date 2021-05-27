@@ -69,7 +69,7 @@ async def rptl_connection(connection: websockets.WebSocketClientProtocol):
 
 async def websocket_connection(host_url: str, security_context: ssl.SSLContext):
     # Wait for WSS client connection to be made
-    connection = await websockets.connect(uri=host_url, ssl=security_context)
+    connection = await websockets.connect(uri=host_url, ssl=security_context, ping_interval=None)
 
     print(f"Connected to {host_url}.")
 
