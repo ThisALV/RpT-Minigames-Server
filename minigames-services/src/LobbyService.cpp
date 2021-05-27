@@ -64,9 +64,11 @@ void LobbyService::removeActor(const std::uint64_t actor_uid) {
     try {
         std::optional<Entrant>& entrant_for_actor { playerFor(actor_uid) }; // Tries to get player assigned with UID
 
-        // If removed player was ready, then count needs to be decremented and contdown to be updated
-        if (entrant_for_actor->isReady)
+        // If removed player was ready, then count needs to be decremented and countdown to be updated
+        if (entrant_for_actor->isReady) {
             cancelCountdown();
+            ready_players_--;
+        }
 
         entrant_for_actor.reset(); // After that check, player can be removed from minigame entrants
     } catch (const std::invalid_argument& err) { // Catches if given actor doesn't correspond to any player
