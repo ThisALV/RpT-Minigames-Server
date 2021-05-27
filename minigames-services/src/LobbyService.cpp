@@ -102,6 +102,11 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
         // When countdown is done, starts minigame with configured/assigned players
         starting_countdown_.onNextTrigger([this]() {
             minigame_session_.start(white_player_actor_->actorUid, black_player_actor_->actorUid);
+
+            // Resets state for preparation of next game after the current one
+            ready_players_ = 0;
+            white_player_actor_->isReady = false;
+            black_player_actor_->isReady = false;
         });
 
         // Syncs clients with beginning countdown so they can perform a countdown on their side too
