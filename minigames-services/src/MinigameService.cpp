@@ -159,7 +159,7 @@ void MinigameService::handleMove(const std::string_view move_command_args) {
             break;
         case Square::Black:
             square_state_sync_arg = "BLACK";
-            break;;
+            break;
         }
 
         emitEvent("SQUARE_STATE " + std::to_string(square.line) + ' ' + std::to_string(square.column)
