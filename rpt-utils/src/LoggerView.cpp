@@ -22,6 +22,9 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
                 "logs/minigames-server", 0, 0)
     };
 
+    // Configures colored output for console sink
+    stdout_sink->set_color(spdlog::level::trace, stdout_sink->black);
+
     // Signal backend logger to context and retrieve next available UID
     const std::size_t uid { context_.get().newLoggerFor(generic_name) };
     // Required for concatenation when creating unique logger name
@@ -34,7 +37,7 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
 
     // Logger settings
     refreshLoggingLevel();
-    backend_->set_pattern("[%T.%e/%^%L%$] %-15n : %v");
+    backend_->set_pattern("%^[%T.%e/%L] %-15n : %v%$");
     backend_->set_error_handler(handleError);
 }
 
