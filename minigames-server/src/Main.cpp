@@ -3,9 +3,15 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <boost/filesystem.hpp>
+#include <Minigames-Services/Acores.hpp>
+#include <Minigames-Services/Bermudes.hpp>
+#include <Minigames-Services/Canaries.hpp>
 #include <Minigames-Services/ChatService.hpp>
+#include <Minigames-Services/LobbyService.hpp>
+#include <Minigames-Services/MinigameService.hpp>
 #include <RpT-Config/Config.hpp>
 #include <RpT-Core/Executor.hpp>
+#include <RpT-Core/InputEvent.hpp>
 #include <RpT-Network/SafeBeastWebsocketBackend.hpp>
 #include <RpT-Network/UnsafeBeastWebsocketBackend.hpp>
 #include <RpT-Utils/CommandLineOptionsParser.hpp>
@@ -16,6 +22,41 @@ constexpr int INVALID_ARGS { 1 };
 constexpr int RUNTIME_ERROR { 2 };
 
 constexpr std::uint16_t DEFAULT_PORT { 35555 };
+
+
+/// Represents a parsed option for one of the 3 available RpT Minigames
+enum struct Minigame {
+    Acores, Bermudes, Canaries
+};
+
+
+/**
+ * @brief Parses RpT Minigame string and converts it to enum value.
+ *
+ * @param rpt_minigame String representing initial letter of selected minigame
+ *
+ * @throws std::invalid_argument if `rpt_minigame` first char isn't 'a', 'b' or 'c' or it has not a length of 1
+ *
+ * @returns Corresponding `Minigame` enum value
+ */
+constexpr Minigame parseMinigame(const std::string_view rpt_minigame) {
+    if (rpt_minigame.length() != 1) // An abbreviation is the first letter so it must be a single char string
+        throw std::invalid_argument { "RpT Minigame abbreviation must be a single letter" };
+
+    const char minigame_initial_letter { rpt_minigame.at(0) };
+
+    if (minigame_initial_letter == 'a')
+        return Minigame::Acores;
+    else if (minigame_initial_letter == 'b')
+        return Minigame::Bermudes;
+    else if (minigame_initial_letter == 'c')
+        return Minigame::Canaries;
+    else {
+        throw std::invalid_argument {
+            std::string { "Unable to parse minigame name for abbreviation " } + minigame_initial_letter
+        };
+    }
+}
 
 
 /**
@@ -54,10 +95,11 @@ int main(const int argc, const char** argv) {
             argc, argv, { "game", "log-level", "testing", "ip", "port", "net-backend", "crt", "privkey" }
         };
 
-        // Get game name from command line options
-        const std::string_view game_name { cmd_line_options.get("game") };
+        // Get game name from command line options and parses it to an available RpT Minigame
+        const std::string_view game_abbreviation { cmd_line_options.get("game") };
+        const Minigame selected_minigame { parseMinigame(game_abbreviation) };
 
-        logger.info("Playing on {}", game_name);
+        logger.info("Playing on game {}", game_abbreviation);
 
         // Try to get and parse logging level from command line options
         if (cmd_line_options.has("log-level")) { // Only if option is enabled
@@ -182,10 +224,42 @@ int main(const int argc, const char** argv) {
          * Initializes online services
          */
 
+        // Provides a polymorphic minigame depending on command line parsed options
+        MinigamesServices::BoardGameProvider game_provider {
+                [selected_minigame]() -> std::unique_ptr<MinigamesServices::BoardGame> {
+                    switch (selected_minigame) {
+                    case Minigame::Acores:
+                        return std::make_unique<MinigamesServices::Acores>();
+                    case Minigame::Bermudes:
+                        return std::make_unique<MinigamesServices::Bermudes>();
+                    case Minigame::Canaries:
+                        return std::make_unique<MinigamesServices::Canaries>();
+                    }
+                }
+        };
+
         RpT::Core::ServiceContext services_context;
         MinigamesServices::ChatService chat_svc { services_context, 2000 };
+        MinigamesServices::MinigameService minigame_svc { services_context, std::move(game_provider) };
+        MinigamesServices::LobbyService lobby_svc { services_context, minigame_svc, 5000 };
 
-        const bool done_successfully { rpt_executor.run({ chat_svc }) };
+        /*
+         * Adds and removes players from Lobby when actors connects or disconnects to server
+         */
+
+        rpt_executor.handle<RpT::Core::JoinedEvent>([&lobby_svc](const RpT::Core::JoinedEvent& event) {
+            lobby_svc.assignActor(event.actor());
+        });
+
+        rpt_executor.handle<RpT::Core::LeftEvent>([&lobby_svc, &minigame_svc](const RpT::Core::LeftEvent& event) {
+            lobby_svc.removeActor(event.actor());
+
+            // If one of the two players is disconnected during a game, then it should stop or it would never end
+            if (minigame_svc.isStarted())
+                minigame_svc.stop();
+        });
+
+        const bool done_successfully { rpt_executor.run({ chat_svc, minigame_svc, lobby_svc }) };
 
         // Process exit code depends on main loop result
         if (done_successfully) {
