@@ -106,12 +106,17 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
             // Handlers on services might have been called, checks for waiting timers
             for (auto service : services) {
                 for (auto waiting_timer : service.get().getWaitingTimers()) { // For each Ready timer in each service
-                    const auto insert_result {
-                        pending_timers_.insert({ waiting_timer.get().token(), waiting_timer })
-                    };
+                    const std::size_t timer_token { waiting_timer.get().token() };
+                    const auto insert_result { pending_timers_.insert({ timer_token, waiting_timer }) };
 
                     assert(insert_result.second); // Checks for token and timer ref insertion into registry
 
+                    waiting_timer.get().onNextClear([this, timer_token]() {
+                        // If timer is set to Disabled without having been triggered, then executor didn't remove its
+                        // entry from pending timers dictionary, it must be done otherwise it cannot be enabled used
+
+                        pending_timers_.erase(timer_token); // Will erase if not removed by begin triggered before
+                    });
                     io_interface_.beginTimer(waiting_timer.get()); // Will be set to pending by implementation
                 }
             }
