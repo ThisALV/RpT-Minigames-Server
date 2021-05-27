@@ -56,6 +56,9 @@ void Timer::clear() {
         state_callback();
     // ...then consumes all of them by cleaning their array
     clear_callbacks_.clear();
+
+    // Triggered step was ignored, so routines will not be consumed
+    trigger_callbacks_.clear();
 }
 
 void Timer::requestCountdown() {

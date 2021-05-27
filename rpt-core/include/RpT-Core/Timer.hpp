@@ -60,8 +60,11 @@ public:
  * the current state
  *
  * Callbacks can be registered for both `Triggered` and `Disabled` state, then the next time one of these state will
- * be matched, every registered callbacks will be consumed. Callbacks are *consumed*, so running a callback twice
- * requires to registering it twice too.
+ * be matched *inside current lifecycle*, every registered callbacks will be consumed. Callbacks are *consumed*, so
+ * running a callback twice requires to registering it twice too.
+ *
+ * @note As routines are only available for one lifecycle, each `clear()` resets `Triggered` state registered
+ * routines even if `Triggered` state wasn't reach at any moment.
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -136,7 +139,7 @@ public:
     bool hasTriggered() const;
 
     /**
-     * @brief Calls given routine next time and only next time state is updated to `Disabled`
+     * @brief Calls given routine next time and only next time state is updated to `Disabled` *inside current lifecycle*
      *
      * @param callback Routine to call
      */
@@ -144,6 +147,7 @@ public:
 
     /**
      * @brief Calls given routine next time and only next time state is updated to `Triggered`
+     * *inside current lifecycle*
      *
      * @param callback Routine to call
      */

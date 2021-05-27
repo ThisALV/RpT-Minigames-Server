@@ -201,6 +201,13 @@ BOOST_AUTO_TEST_CASE(Callbacks) {
     completeLifeCycle(timer); // Same thing than previously, but this time with the trigger routine
     BOOST_CHECK_EQUAL(clear_routines_count, 4);
     BOOST_CHECK_EQUAL(trigger_routines_count, 3);
+
+    timer.onNextClear(clear_routine);
+    timer.onNextTrigger(trigger_routine);
+    // As Disabled state is reached without going through triggered state, triggered routine shout NOT be called
+    timer.clear();
+    BOOST_CHECK_EQUAL(clear_routines_count, 5);
+    BOOST_CHECK_EQUAL(trigger_routines_count, 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
