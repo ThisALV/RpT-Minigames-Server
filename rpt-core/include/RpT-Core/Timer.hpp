@@ -66,6 +66,8 @@ public:
  * @note As routines are only available for one lifecycle, each `clear()` resets `Triggered` state registered
  * routines even if `Triggered` state wasn't reach at any moment.
  *
+ * @note Timer state modification inside state specific routine/callback results in undefined behavior.
+ *
  * @author ThisALV, https://github.com/ThisALV
  */
 class Timer {
