@@ -97,6 +97,7 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
     }
 
     if (ready_players_ == 2) { // If all players are ready now, begins countdown for minigame to start
+        starting_countdown_.clear(); // If a game has been started once, then timer needs to be puts into Disabled state
         starting_countdown_.requestCountdown();
 
         // When countdown is done, starts minigame with configured/assigned players
