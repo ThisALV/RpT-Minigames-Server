@@ -23,7 +23,11 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
     };
 
     // Configures colored output for console sink
+#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_UNIX
     stdout_sink->set_color(spdlog::level::trace, stdout_sink->black);
+#else
+    stdout_sink->set_color(spdlog::level::trace, BACKGROUND_BLUE | BACKGROUND_INTENSITY);
+#endif
 
     // Signal backend logger to context and retrieve next available UID
     const std::size_t uid { context_.get().newLoggerFor(generic_name) };
