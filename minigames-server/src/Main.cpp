@@ -259,6 +259,19 @@ int main(const int argc, const char** argv) {
                 minigame_svc.stop();
         });
 
+        bool game_was_running { false }; // Previous loop iteration MinigameService state
+        rpt_executor.make([&game_was_running, &lobby_svc, &minigame_svc]() {
+            const bool is_game_running { minigame_svc.isStarted() }; // Current loop iteration MinigameService state
+
+            // For each loop iteration, if the game go from running to not running, it stopped and clients must be
+            // notified about that
+            if (game_was_running && !is_game_running)
+                lobby_svc.notifyWaiting();
+
+            // Save this loop iteration result for the next iteration check
+            game_was_running = is_game_running;
+        });
+
         const bool done_successfully { rpt_executor.run({ chat_svc, minigame_svc, lobby_svc }) };
 
         // Process exit code depends on main loop result
