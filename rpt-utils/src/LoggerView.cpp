@@ -6,6 +6,10 @@
 #include <spdlog/sinks/daily_file_sink.h>
 #include <RpT-Config/Config.hpp>
 
+#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_WIN32
+#include <windows.h>
+#endif
+
 
 namespace RpT::Utils {
 
@@ -23,9 +27,10 @@ LoggerView::LoggerView(const std::string_view generic_name, LoggingContext& cont
     };
 
     // Configures colored output for console sink
-#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_UNIX
+#if RPT_RUNTIME_PLATFORM == RPT_RUNTIME_UNIX // Unix and Win32 color modes aren't configurable in the same way
     stdout_sink->set_color(spdlog::level::trace, stdout_sink->black);
 #else
+    // spdlog uses SetConsoleColorAttr() API function, so black isn't available for Win32 builds
     stdout_sink->set_color(spdlog::level::trace, BACKGROUND_BLUE | BACKGROUND_INTENSITY);
 #endif
 
