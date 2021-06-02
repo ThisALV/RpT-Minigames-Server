@@ -31,6 +31,23 @@ public:
  * As soon as both players are ready, the underlying timer is started, then at its time out RpT-Minigame session can
  * start with the 2 assigned actors to players.
  *
+ * The players list is identical to the server actors list. Each logged in actor is a member inside Lobby.
+ *
+ * Protocol:
+ *
+ * Service Requests:
+ * - READY: used to toggle Ready/Not ready player state
+ *
+ * Service Events:
+ * - `READY_PLAYER <uid>`: player for this actor is ready to start
+ * - `WAITING_FOR_PLAYER <uid>`: player for this actor is no longer ready to start
+ * - `BEGIN_COUNTDOWN <delay_ms>`: In delay_ms milliseconds, if no END_COUNTDOWN is received, game will start
+ * - `END_COUNTDOWN`: Countdown initiated by BEGIN_COUNTDOWN is cancelled
+ * - `PLAYING`: A game is now running
+ * - `WAITING`: Game was stopped, Lobby is now waiting for actors to be ready. State for every player is reset.
+ *
+ * @note User must ensures that `notifyWaiting()` is called as soon as underlying minigame is stopped.
+ *
  * @author ThisALV, https://github.com/ThisALV/
  */
 class LobbyService : public RpT::Core::Service {
@@ -98,6 +115,15 @@ public:
 
     /// Handles READY command from actors to start the minigame, only READY command is available
     RpT::Utils::HandlingResult handleRequestCommand(std::uint64_t actor, std::string_view sr_command_data) override;
+
+    /**
+     * @brief Emits a `WAITING` Service Event.
+     *
+     * *Must be called by user as soon as underlying minigame stopped.*
+     *
+     * @throws BoardBoardGameState if Lobby is playing a minigame
+     */
+    void notifyWaiting();
 };
 
 

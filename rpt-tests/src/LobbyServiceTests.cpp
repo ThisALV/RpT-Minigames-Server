@@ -220,4 +220,29 @@ BOOST_AUTO_TEST_CASE(StartCancelledWas1Ready) {
 BOOST_AUTO_TEST_SUITE_END()
 
 
+/*
+ * notifyWaiting() method unit tests
+ */
+BOOST_AUTO_TEST_SUITE(NotifyWaiting)
+
+
+BOOST_AUTO_TEST_CASE(GameRunning) {
+    // Mocks game is already started
+    minigame.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
+
+    BOOST_CHECK_THROW(service.notifyWaiting(), BadBoardGameState);
+}
+
+BOOST_AUTO_TEST_CASE(GameStopped) {
+    service.notifyWaiting(); // Send WAITING Service Event
+
+    // Checks it has been sent as expected, in only 1 Service Event command
+    BOOST_CHECK_EQUAL(service.pollEvent(), "WAITING");
+    BOOST_CHECK(!service.checkEvent().has_value());
+}
+
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
 BOOST_AUTO_TEST_SUITE_END()
