@@ -104,6 +104,8 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
         starting_countdown_.onNextTrigger([this]() {
             minigame_session_.start(white_player_actor_->actorUid, black_player_actor_->actorUid);
 
+            // Notifies clients that Lobby is idling as game is running
+            emitEvent("PLAYING");
             // Resets state for preparation of next game after the current one
             ready_players_ = 0;
             white_player_actor_->isReady = false;
@@ -117,6 +119,13 @@ RpT::Utils::HandlingResult LobbyService::handleRequestCommand(
     }
 
     return {}; // If SR command contains READY command, there is no way it could fail, success should be guaranteed
+}
+
+void LobbyService::notifyWaiting() {
+    if (minigame_session_.isStarted()) // Checks for Lobby to not be currently playing
+        throw BadBoardGameState { "To notify Lobby is waiting, it must actually be waiting" };
+
+    emitEvent("WAITING");
 }
 
 
