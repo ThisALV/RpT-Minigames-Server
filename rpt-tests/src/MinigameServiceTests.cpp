@@ -140,8 +140,10 @@ BOOST_AUTO_TEST_CASE(GameStopped) {
     service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
 
     BOOST_CHECK(service.isStarted());
-    // Starting game should emit exactly one event to sync clients with new state
+    // Starting game should emit an event to sync clients with new state
     BOOST_CHECK_EQUAL(service.pollEvent(), "START 0 1");
+    // It should also emit an event to tell clients the white player begins
+    BOOST_CHECK_EQUAL(service.pollEvent(), "ROUND_FOR WHITE");
     BOOST_CHECK(!service.checkEvent().has_value());
 }
 
@@ -165,7 +167,9 @@ BOOST_AUTO_TEST_CASE(GameAlreadyStopped) {
 BOOST_AUTO_TEST_CASE(GameRunning) {
     // Starts game in the first place
     service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
-    service.pollEvent(); // Flushes event emitted by start()
+    // Flushes event emitted by start()
+    while (service.checkEvent().has_value())
+        service.pollEvent();
 
     // Stop should sync with clients for new state by sending exactly one event
     service.stop();
@@ -189,7 +193,9 @@ public:
     /// Applies parent fixture and starts game, then flush SE emitted by game start
     StartedBoardGameFixture() : BoardGameFixture {} {
         service.start(WHITE_PLAYER_ACTOR, BLACK_PLAYER_ACTOR);
-        service.pollEvent();
+        // Flushes event emitted by start()
+        while (service.checkEvent().has_value())
+            service.pollEvent();
     }
 };
 

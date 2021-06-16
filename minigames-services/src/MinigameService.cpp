@@ -85,6 +85,8 @@ void MinigameService::start(const std::uint64_t white_player_actor, const std::u
 
     // Sends to clients so they know minigame has begun, and which actor is which player
     emitEvent("START " + std::to_string(white_player_actor_) + ' ' + std::to_string(black_player_actor_));
+    // Every minigame starts with the white player
+    emitEvent("ROUND_FOR WHITE");
 }
 
 void MinigameService::terminateRound() {
