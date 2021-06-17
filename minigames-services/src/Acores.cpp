@@ -9,6 +9,9 @@ namespace MinigamesServices {
 Acores::Acores() : BoardGame { INITIAL_GRID_, 12, 12, 1 } {}
 
 void Acores::playNormal(GridUpdate& updates, AxisIterator move) {
+    if (last_move_ == Move::Jump) // Checks for a jumps chaining to not have begun
+        throw BadCoordinates { "Normal move isn't available after a jump" };
+
     Square& destination { move.moveForward() }; // Tries to go for 1 square toward movement direction
 
     if (destination != Square::Free) // Target pawn should be moved to an empty square
