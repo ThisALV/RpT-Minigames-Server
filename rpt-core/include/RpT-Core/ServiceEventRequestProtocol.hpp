@@ -39,7 +39,7 @@ public:
      * @param name Name used for trying to register service
      */
     explicit ServiceNameAlreadyRegistered(const std::string_view name) :
-        std::logic_error { "Service with name \"" + std::string { name } + "\" is already registered" } {}
+            std::logic_error { "Service with name \"" + std::string { name } + "\" is already registered" } {}
 };
 
 /**
@@ -114,8 +114,9 @@ public:
  *
  * RUID format is unsigned integer of 64 bits.
  *
- * Service Events (SR) commands are sent to actors by services in the same order they were emitted by them. SE
- * commands are used by services to notify state changes which could be caused by an actor request or not.
+ * Service Events (SE) commands are sent to selected actors by services in the same order they were emitted by them. SE
+ * commands are used by services to notify state changes which could be caused by an actor request or any internal
+ * state modification.
  *
  * SER Protocol:
  *
@@ -210,11 +211,11 @@ public:
     std::string handleServiceRequest(std::uint64_t actor, std::string_view service_request);
 
     /**
-     * @brief Poll next Service Event command in services queue, do nothing if queue is empty
+     * @brief Poll next Service Event in services queue, do nothing if queue is empty
      *
-     * @returns Optional value, initialized to next SE command if it exists, uninitialized otherwise
+     * @returns Optional value, initialized to next SE if it exists, uninitialized otherwise
      */
-    std::optional<std::string> pollServiceEvent();
+    std::optional<ServiceEvent> pollServiceEvent();
 };
 
 
