@@ -3,6 +3,7 @@
 
 #include <boost/variant.hpp>
 #include <RpT-Core/InputEvent.hpp>
+#include <RpT-Core/ServiceEvent.hpp>
 #include <RpT-Core/Timer.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 
@@ -27,8 +28,8 @@ using AnyInputEvent = boost::variant<NoneEvent, ServiceRequestEvent, TimerEvent,
  * Input events refers to any event that affects `Executor` runtime and state, and which are external to the main
  * loop. Example : timer trigger, received service request, stop request...
  *
- * Output events refers to any event initiated by `Executor` main loop that must dispatched to clients. It basically
- * is Service Events emitted by SER Protocol instance.
+ * Output events refers to any event initiated by `Executor` main loop that must dispatched to some clients or every
+ * client depending on that output event metadata. It basically is Service Events emitted by SER Protocol instance.
  *
  * An IO interface might have its own protocol over SER Protocol. This custom protocol usually manages server
  * relative features, like name for players associated with specific UID, or players who are (dis)connecting from/to
@@ -83,9 +84,10 @@ public:
     /**
      * @brief Dispatch an event emitted by a service to all actors
      *
-     * @param event Event string representation based on SER Protocol (see `ServiceEventRequestProtocol` doc)
+     * @param event Event command data based on SER Protocol (see `ServiceEventRequestProtocol` doc) and metadata
+     * representing every actor which must be synced with that Event
      */
-    virtual void outputEvent(const std::string& event) = 0;
+    virtual void outputEvent(ServiceEvent event) = 0;
 
     /**
      * @brief Does countdown for given timer. Implementation must emits `TimerEvent` for timer token with any actor
