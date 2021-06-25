@@ -26,8 +26,6 @@ public:
 /**
  * @brief Represents a Service Event (SE) command with a list of actors which must receive that Event.
  *
- * Can be represented as a simple string if every actor is must receive Event.
- *
  * @author ThisALV, https://github.com/ThisALV/
  */
 class ServiceEvent {
@@ -44,7 +42,7 @@ public:
      * @param command SE data representation
      * @param actor_uids List of actor UIDs which must receive that SE, uninitialized if all actors must receive it
      */
-    ServiceEvent(std::string command, std::optional<std::initializer_list<std::uint64_t>> actor_uids = {});
+    explicit ServiceEvent(std::string command, std::optional<std::initializer_list<std::uint64_t>> actor_uids = {});
 
     /**
      * @brief Retrieves a view on SE command
