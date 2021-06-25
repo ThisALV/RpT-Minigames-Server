@@ -94,7 +94,7 @@ public:
      *
      * @throws NoUidsList if every registered actor must receive that SE <=> if `targetEveryone() == true`
      */
-    const std::vector<std::uint64_t>& targets() const
+    const std::vector<std::uint64_t>& targets() const;
 };
 
 
