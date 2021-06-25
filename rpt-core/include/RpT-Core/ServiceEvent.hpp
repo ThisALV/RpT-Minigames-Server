@@ -26,8 +26,8 @@ public:
 /**
  * @brief Represents a Service Event (SE) command with a list of actors which must receive that Event.
  *
- * @note Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, new SE will be
- * constructed, prefixing the current SE data with a new protocol command.
+ * Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, same SE instance
+ * command will be prefixed, inserting the given command at the beginning of the Event data.
  *
  * For example, if polled with `ServiceEventRequestProtocol::pollServiceEvent()`, `command()` return will be prefixed
  * with `EVENT <service_name> <event_data>`.
@@ -36,10 +36,10 @@ public:
  */
 class ServiceEvent {
 private:
-    /// Command providing Event data
-    const std::string command_;
     /// Optional list of actors which must receive that Event
     const std::optional<std::vector<std::uint64_t>> targets_;
+    /// Command providing Event data
+    std::string command_;
 
 public:
     /**
@@ -49,6 +49,22 @@ public:
      * @param actor_uids List of actor UIDs which must receive that SE, uninitialized if all actors must receive it
      */
     explicit ServiceEvent(std::string command, std::optional<std::initializer_list<std::uint64_t>> actor_uids = {});
+
+    /*
+     * Entity class semantic
+     */
+
+    ServiceEvent(const ServiceEvent&) = delete;
+    ServiceEvent& operator=(const ServiceEvent&) = delete;
+
+    bool operator==(const ServiceEvent&) const = delete;
+
+    /**
+     * @brief Inserts given protocol command at the SE command data beginning
+     *
+     * @param higher_protocol_prefix Protocol command to insert
+     */
+    void prefixWith(const std::string& higher_protocol_prefix);
 
     /**
      * @brief Retrieves a view on SE command
@@ -71,7 +87,7 @@ public:
      *
      * @throws NoUidsList if every registered actor must receive that SE <=> if `targetEveryone() == true`
      */
-    const std::vector<std::uint64_t>& targets() const;
+    const std::vector<std::uint64_t>& targets() const
 };
 
 
