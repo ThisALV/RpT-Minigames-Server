@@ -7,7 +7,8 @@ set(RPT_CORE_HEADERS
         "${RPT_CORE_HEADERS_DIR}/InputEvent.hpp"
         "${RPT_CORE_HEADERS_DIR}/Service.hpp"
         "${RPT_CORE_HEADERS_DIR}/Timer.hpp"
-        "${RPT_CORE_HEADERS_DIR}/ServiceContext.hpp")
+        "${RPT_CORE_HEADERS_DIR}/ServiceContext.hpp"
+        "${RPT_CORE_HEADERS_DIR}/ServiceEvent.hpp")
 
 set(RPT_CORE_SOURCES
         "src/ServiceEventRequestProtocol.cpp"
@@ -16,7 +17,8 @@ set(RPT_CORE_SOURCES
         "src/InputOutputInterface.cpp"
         "src/Service.cpp"
         "src/Timer.cpp"
-        "src/ServiceContext.cpp")
+        "src/ServiceContext.cpp"
+        "src/ServiceEvent.cpp")
 
 find_package(Boost REQUIRED) # Variant requirement
 
