@@ -26,6 +26,12 @@ public:
 /**
  * @brief Represents a Service Event (SE) command with a list of actors which must receive that Event.
  *
+ * @note Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, new SE will be
+ * constructed, prefixing the current SE data with a new protocol command.
+ *
+ * For example, if polled with `ServiceEventRequestProtocol::pollServiceEvent()`, `command()` return will be prefixed
+ * with `EVENT <service_name> <event_data>`.
+ *
  * @author ThisALV, https://github.com/ThisALV/
  */
 class ServiceEvent {
