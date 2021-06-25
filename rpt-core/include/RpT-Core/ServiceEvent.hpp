@@ -37,7 +37,7 @@ public:
 class ServiceEvent {
 private:
     /// Optional list of actors which must receive that Event
-    const std::optional<std::vector<std::uint64_t>> targets_;
+    std::optional<std::vector<std::uint64_t>> targets_;
     /// Command providing Event data
     std::string command_;
 
@@ -58,6 +58,13 @@ public:
     ServiceEvent& operator=(const ServiceEvent&) = delete;
 
     bool operator==(const ServiceEvent&) const = delete;
+
+    /**
+     * Must be passed from an Events queue to another
+     */
+
+    ServiceEvent(ServiceEvent&&) = default;
+    ServiceEvent& operator=(ServiceEvent&&) = default;
 
     /**
      * @brief Inserts given protocol command at the SE command data beginning
