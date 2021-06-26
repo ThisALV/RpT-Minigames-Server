@@ -94,7 +94,8 @@ public:
     std::string_view name() const override;
 
     /**
-     * @brief Assigns given actor UID to an available player for the minigame
+     * @brief Assigns given actor UID to an available player for the minigame, then notifies that actor if other
+     * player inside Lobby is ready
      *
      * @param actor_uid UID of actor that will play for returned `Player`
      *

@@ -47,17 +47,29 @@ std::string_view LobbyService::name() const {
 }
 
 Player LobbyService::assignActor(const std::uint64_t actor_uid) {
+    std::optional<Entrant>* other_actor; // Pointer for the entrant assigned to the opposite color
+    Player current_actor_color; // Color selected for this new entrant
+
     if (!white_player_actor_.has_value()) {// Tries to assign white player first
         white_player_actor_ = { actor_uid, false };
 
-        return Player::White;
+        current_actor_color = Player::White;
+        other_actor = &black_player_actor_;
     } else if (!black_player_actor_.has_value()) { // If cannot, try to assign black player then
         black_player_actor_ = { actor_uid, false };
 
-        return Player::Black;
+        current_actor_color = Player::Black;
+        other_actor = &white_player_actor_;
     } else { // If neither white nor black player can be assigned, the operation fails
         throw BadPlayersState { "No player available" };
     }
+
+    // If it hasn't throw, then actor assignation to a player completed successfully and we can notify to the new
+    // actor of the other entrant inside Lobby is already ready
+    if (other_actor->has_value() && (*other_actor)->isReady)
+        emitEvent("READY_PLAYER " + std::to_string((*other_actor)->actorUid), { actor_uid });
+
+    return current_actor_color; // Retrieves which color has been finally selected for this actor
 }
 
 void LobbyService::removeActor(const std::uint64_t actor_uid) {

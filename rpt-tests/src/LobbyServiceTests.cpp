@@ -51,12 +51,16 @@ BOOST_AUTO_TEST_SUITE(AssignActor)
 BOOST_AUTO_TEST_CASE(NoPlayerAssigned) {
     // Try to assign white player will be performed first
     BOOST_CHECK_EQUAL(service.assignActor(WHITE_PLAYER_ACTOR), Player::White);
+    // No other actor is already ready
+    BOOST_CHECK(!service.checkEvent());
 }
 
 BOOST_AUTO_TEST_CASE(WhitePlayerAssigned) {
     service.assignActor(WHITE_PLAYER_ACTOR); // Assigned to white player
     // As white player is assigned, try to assign black player will be performed second
     BOOST_CHECK_EQUAL(service.assignActor(BLACK_PLAYER_ACTOR), Player::Black);
+    // No other actor is already ready
+    BOOST_CHECK(!service.checkEvent());
 }
 
 BOOST_AUTO_TEST_CASE(BlackPlayerAssigned) {
@@ -66,6 +70,8 @@ BOOST_AUTO_TEST_CASE(BlackPlayerAssigned) {
 
     // Try to assign white player will be performed first
     BOOST_CHECK_EQUAL(service.assignActor(WHITE_PLAYER_ACTOR), Player::White);
+    // No other actor is already ready
+    BOOST_CHECK(!service.checkEvent());
 }
 
 BOOST_AUTO_TEST_CASE(BothPlayersAssigned) {
@@ -74,6 +80,36 @@ BOOST_AUTO_TEST_CASE(BothPlayersAssigned) {
 
     // No more slot available
     BOOST_CHECK_THROW(service.assignActor(2), BadPlayersState);
+    // No other actor is already ready
+    BOOST_CHECK(!service.checkEvent());
+}
+
+BOOST_AUTO_TEST_CASE(WhitePlayerReady) {
+    service.assignActor(WHITE_PLAYER_ACTOR); // Assigned to white player
+
+    service.handleRequestCommand(WHITE_PLAYER_ACTOR, "READY"); // White player is ready
+    service.pollEvent(); // Clears event emitted by black player being ready
+
+    // As white player is assigned, try to assign black player will be performed second
+    BOOST_CHECK_EQUAL(service.assignActor(BLACK_PLAYER_ACTOR), Player::Black);
+    // White player was ready at assignation, new player must be notified about it
+    BOOST_CHECK_EQUAL(service.pollEvent(), (RpT::Core::ServiceEvent { "READY_PLAYER 0", { { BLACK_PLAYER_ACTOR } } }));
+    BOOST_CHECK(!service.checkEvent());
+}
+
+BOOST_AUTO_TEST_CASE(BlackPlayerReady) {
+    service.assignActor(WHITE_PLAYER_ACTOR); // Assigned to white player
+    service.assignActor(BLACK_PLAYER_ACTOR); // Assigned to black player
+    service.removeActor(WHITE_PLAYER_ACTOR); // Only black player remains
+
+    service.handleRequestCommand(BLACK_PLAYER_ACTOR, "READY"); // White player is ready
+    service.pollEvent(); // Clears event emitted by white player being ready
+
+    // As white player is assigned, try to assign black player will be performed second
+    BOOST_CHECK_EQUAL(service.assignActor(WHITE_PLAYER_ACTOR), Player::White);
+    // White player was ready at assignation, new player must be notified about it
+    BOOST_CHECK_EQUAL(service.pollEvent(), (RpT::Core::ServiceEvent { "READY_PLAYER 1", { { WHITE_PLAYER_ACTOR } } }));
+    BOOST_CHECK(!service.checkEvent());
 }
 
 
