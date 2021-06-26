@@ -87,7 +87,7 @@ public:
      * @param event Event command data based on SER Protocol (see `ServiceEventRequestProtocol` doc) and metadata
      * representing every actor which must be synced with that Event
      */
-    virtual void outputEvent(ServiceEvent event) = 0;
+    virtual void outputEvent(const ServiceEvent& event) = 0;
 
     /**
      * @brief Does countdown for given timer. Implementation must emits `TimerEvent` for timer token with any actor

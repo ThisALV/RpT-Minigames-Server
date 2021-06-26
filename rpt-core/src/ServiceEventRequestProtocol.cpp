@@ -119,8 +119,6 @@ std::string ServiceEventRequestProtocol::handleServiceRequest(const std::uint64_
 }
 
 std::optional<ServiceEvent> ServiceEventRequestProtocol::pollServiceEvent() {
-    std::optional<ServiceEvent> next_event; // Event to poll is first uninitialized
-
     // Will be set to Service which has the lowest ID if any of them emitted a an event
     Service* latest_event_emitter { nullptr };
 
@@ -147,16 +145,17 @@ std::optional<ServiceEvent> ServiceEventRequestProtocol::pollServiceEvent() {
     if (latest_event_emitter) { // If there is any emitted event, format it and move it into polled event
         const std::string service_name_copy { latest_event_emitter->name() }; // Required for concatenation
         // Latest event is popped from queue to be polled as next event
-        *next_event = latest_event_emitter->pollEvent();
-        // SE event data prefixed with SER command EVENT and Service name to format a full and valid SER command
-        next_event->prefixWith(std::string { EVENT_PREFIX } + ' ' + service_name_copy + ' ');
+        const ServiceEvent next_event { latest_event_emitter->pollEvent() };
 
-        logger_.trace("Polled event from service {}: {}", latest_event_emitter->name(), next_event->command());
+        logger_.trace("Polled event from service {}: {}", latest_event_emitter->name(), next_event.command());
+
+        // SE event data prefixed with SER command EVENT and Service name to format a full and valid SER command
+        return next_event.prefixWith(std::string { EVENT_PREFIX } + ' ' + service_name_copy + ' ');
     } else {
         logger_.trace("No event to retrieve");
-    }
 
-    return next_event;
+        return {};
+    }
 }
 
 }

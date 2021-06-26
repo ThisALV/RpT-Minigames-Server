@@ -440,16 +440,18 @@ void NetworkBackend::replyTo(const std::uint64_t sr_actor, const std::string& sr
     privateMessage(owner_client, std::string { SERVICE_COMMAND } + ' ' + sr_response);
 }
 
-void NetworkBackend::outputEvent(Core::ServiceEvent event) {
+void NetworkBackend::outputEvent(const Core::ServiceEvent& event) {
     // Formats message for RPTL protocol using SERVICE command
-    event.prefixWith(std::string { SERVICE_COMMAND } + ' ');
+    const Core::ServiceEvent rptl_encapsulated {
+        event.prefixWith(std::string { SERVICE_COMMAND } + ' ')
+    };
     // Sent command copied from object's command view
-    std::string command { event.command() };
+    std::string command { rptl_encapsulated.command() };
 
-    if (event.targetEveryone()) {
+    if (rptl_encapsulated.targetEveryone()) {
         broadcastMessage(std::move(command));
     } else {
-        targetMessage(event.targets(), std::move(command));
+        targetMessage(rptl_encapsulated.targets(), std::move(command));
     }
 }
 

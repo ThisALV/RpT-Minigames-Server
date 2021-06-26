@@ -4,12 +4,15 @@
 namespace RpT::Core {
 
 
-ServiceEvent::ServiceEvent(std::string command, std::optional<std::initializer_list<std::uint64_t>> actor_uids)
-: targets_ { actor_uids }, command_ { std::move(command) } {}
+ServiceEvent::ServiceEvent(std::string command, std::optional<std::vector<std::uint64_t>> actor_uids)
+: targets_ { std::move(actor_uids) }, command_ { std::move(command) } {}
 
-void ServiceEvent::prefixWith(const std::string& higher_protocol_prefix) {
-    // More efficient than insert() which would shift position for every already existing char inside command_
-    command_ = higher_protocol_prefix + command_;
+bool ServiceEvent::operator==(const ServiceEvent& rhs) const {
+    return command_ == rhs.command_ && targets_ == rhs.targets_;
+}
+
+ServiceEvent ServiceEvent::prefixWith(const std::string& higher_protocol_prefix) const {
+    return ServiceEvent { higher_protocol_prefix + command_, targets_ };
 }
 
 std::string_view ServiceEvent::command() const {
@@ -22,7 +25,7 @@ bool ServiceEvent::targetEveryone() const {
 
 const std::vector<std::uint64_t>& ServiceEvent::targets() const {
     if (targetEveryone()) // Checks for a UIDs list to be available
-        throw NoUidsList();
+        throw NoUidsList {};
 
     return *targets_;
 }

@@ -26,11 +26,11 @@ public:
 /**
  * @brief Represents a Service Event (SE) command with a list of actors which must receive that Event.
  *
- * Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, same SE instance
+ * Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, a new SE instance
  * command will be prefixed, inserting the given command at the beginning of the Event data.
  *
- * For example, if polled with `ServiceEventRequestProtocol::pollServiceEvent()`, `command()` return will be prefixed
- * with `EVENT <service_name> <event_data>`.
+ * For example, if polled with `ServiceEventRequestProtocol::pollServiceEvent()`, the new instance`command()` return
+ * will be prefixed with `EVENT <service_name> <event_data>`.
  *
  * @author ThisALV, https://github.com/ThisALV/
  */
@@ -48,32 +48,25 @@ public:
      * @param command SE data representation
      * @param actor_uids List of actor UIDs which must receive that SE, uninitialized if all actors must receive it
      */
-    explicit ServiceEvent(std::string command, std::optional<std::initializer_list<std::uint64_t>> actor_uids = {});
-
-    /*
-     * Entity class semantic
-     */
-
-    ServiceEvent(const ServiceEvent&) = delete;
-    ServiceEvent& operator=(const ServiceEvent&) = delete;
-
-    bool operator==(const ServiceEvent&) const = delete;
+    explicit ServiceEvent(std::string command, std::optional<std::vector<std::uint64_t>> actor_uids = {});
 
     /**
-     * Must be passed from an Events queue to another
+     * @brief Checks if two SE are the same event
+     *
+     * @param rhs Event to compare with this instance
+     *
+     * @returns `true` if both command and optional actor UIDs list are equal from `*this` to `rhs`, `false` otherwise
      */
-
-    /// Default move constructor
-    ServiceEvent(ServiceEvent&&) = default;
-    /// Default move assignment operator
-    ServiceEvent& operator=(ServiceEvent&&) = default;
+    bool operator==(const ServiceEvent& rhs) const;
 
     /**
-     * @brief Inserts given protocol command at the SE command data beginning
+     * @brief Inserts given protocol command at the SE command data beginning of a new instance
      *
      * @param higher_protocol_prefix Protocol command to insert
+     *
+     * @returns A new instance with SE event data prefixed using given higher protocol command
      */
-    void prefixWith(const std::string& higher_protocol_prefix);
+    ServiceEvent prefixWith(const std::string& higher_protocol_prefix) const;
 
     /**
      * @brief Retrieves a view on SE command

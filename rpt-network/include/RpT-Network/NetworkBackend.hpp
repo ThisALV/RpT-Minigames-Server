@@ -580,7 +580,7 @@ public:
      *
      * @param event Service Event command formatted as SER command (see `Core::ServiceEventRequestProtocol`)
      */
-    void outputEvent(Core::ServiceEvent event) final;
+    void outputEvent(const Core::ServiceEvent& event) final;
 };
 
 
