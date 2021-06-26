@@ -39,7 +39,9 @@ void Service::emitEvent(std::string event_command, const std::initializer_list<s
     // Else, uninitialized list will be passed so every actor will receive Event
 
     // Moves Event command inside queue, copies references for UIDs using initializer_list then pushes Service Event
-    events_queue_.push({ event_id, ServiceEvent {std::move(event_command), targets_list } });
+    events_queue_.push({
+        event_id, ServiceEvent { std::move(event_command), std::move(targets_list) }
+    });
 }
 
 std::optional<std::size_t> Service::checkEvent() const {
