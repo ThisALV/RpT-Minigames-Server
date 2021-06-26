@@ -99,12 +99,13 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
     for (std::uint64_t i { 0 }; i < 3; i++)
         service.handleRequestCommand(i, {});
 
-    // Checks for each event in queue
+    // Checks for each event in queue, checking its ID to control emission order and also checking its content
     for (std::uint64_t i { 0 }; i < 3; i++) {
-        // Checks for correct order with event ID
-        RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { i });
-        // Checks for correct event commands
+        // First event of the emitted pair is the event broadcast to every registered actor containing author UID
+        RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { 2 * i });
         BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { std::to_string(i) });
+        // Second event of pair is the event sent to author containing "FIRE"
+        RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { 2 * i + 1 });
         BOOST_CHECK_EQUAL(service.pollEvent(), (ServiceEvent { "FIRE", { { i } } }));
     }
 
