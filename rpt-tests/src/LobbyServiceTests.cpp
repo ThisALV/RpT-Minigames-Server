@@ -1,5 +1,6 @@
 #include <RpT-Testing/TestingUtils.hpp>
 #include <RpT-Testing/MinigamesServicesTestingUtils.hpp>
+#include <RpT-Testing/SerTestingUtils.hpp>
 
 #include <Minigames-Services/Acores.hpp>
 #include <Minigames-Services/LobbyService.hpp>
@@ -124,7 +125,7 @@ BOOST_AUTO_TEST_CASE(ActorWasReady) {
 
     service.removeActor(WHITE_PLAYER_ACTOR); // Countdown is cancelled, not enough players to start
     // Exactly one SE emitted to sync clients about countdown cancellation
-    BOOST_CHECK_EQUAL(service.pollEvent(), "END_COUNTDOWN");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "END_COUNTDOWN" });
     BOOST_CHECK(!service.checkEvent().has_value());
     // Checks for countdown timer cancellation to have been done
     BOOST_CHECK(countdown_before_cancellation.isFree());
@@ -150,7 +151,7 @@ BOOST_AUTO_TEST_CASE(NewReadyNotStarting) {
 
     service.handleRequestCommand(WHITE_PLAYER_ACTOR, "READY"); // White player is ready
     // Notifies that a player is ready using 1 SE
-    BOOST_CHECK_EQUAL(service.pollEvent(), "READY_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR));
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "READY_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR) });
     BOOST_CHECK(!service.checkEvent().has_value());
 
     // Countdown hasn't begun, only 1 player ready
@@ -165,9 +166,9 @@ BOOST_AUTO_TEST_CASE(NewReadyStarting) {
     service.handleRequestCommand(WHITE_PLAYER_ACTOR, "READY");
     service.handleRequestCommand(BLACK_PLAYER_ACTOR, "READY");
     // 3 SE emitted: both players are ready and the countdown has begun
-    BOOST_CHECK_EQUAL(service.pollEvent(), "READY_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR));
-    BOOST_CHECK_EQUAL(service.pollEvent(), "READY_PLAYER " + std::to_string(BLACK_PLAYER_ACTOR));
-    BOOST_CHECK_EQUAL(service.pollEvent(), "BEGIN_COUNTDOWN 42");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "READY_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR) });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "READY_PLAYER " + std::to_string(BLACK_PLAYER_ACTOR) });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "BEGIN_COUNTDOWN 42" });
     BOOST_CHECK(!service.checkEvent().has_value());
 
     // Countdown has begun because players are both ready
@@ -196,8 +197,8 @@ BOOST_AUTO_TEST_CASE(StartCancelledWere2Ready) {
     // No more enough players to start because one player is no longer ready
     service.handleRequestCommand(BLACK_PLAYER_ACTOR, "READY");
     // 2 SE emitted: player is no longer ready and countdown is cancelled
-    BOOST_CHECK_EQUAL(service.pollEvent(), "WAITING_FOR_PLAYER " + std::to_string(BLACK_PLAYER_ACTOR));
-    BOOST_CHECK_EQUAL(service.pollEvent(), "END_COUNTDOWN");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "WAITING_FOR_PLAYER " + std::to_string(BLACK_PLAYER_ACTOR) });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "END_COUNTDOWN" });
     BOOST_CHECK(!service.checkEvent().has_value());
     // Checks for countdown timer cancellation to have been done
     BOOST_CHECK(countdown_before_cancellation.isFree());
@@ -212,7 +213,7 @@ BOOST_AUTO_TEST_CASE(StartCancelledWas1Ready) {
 
     service.handleRequestCommand(WHITE_PLAYER_ACTOR, "READY");
     // Notifies that a player is ready using 1 SE
-    BOOST_CHECK_EQUAL(service.pollEvent(), "WAITING_FOR_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR));
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "WAITING_FOR_PLAYER " + std::to_string(WHITE_PLAYER_ACTOR) });
     BOOST_CHECK(!service.checkEvent().has_value());
 }
 
@@ -237,7 +238,7 @@ BOOST_AUTO_TEST_CASE(GameStopped) {
     service.notifyWaiting(); // Send WAITING Service Event
 
     // Checks it has been sent as expected, in only 1 Service Event command
-    BOOST_CHECK_EQUAL(service.pollEvent(), "WAITING");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "WAITING" });
     BOOST_CHECK(!service.checkEvent().has_value());
 }
 

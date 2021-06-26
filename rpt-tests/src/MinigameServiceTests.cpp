@@ -1,5 +1,6 @@
 #include <RpT-Testing/TestingUtils.hpp>
 #include <RpT-Testing/MinigamesServicesTestingUtils.hpp> // Required by BOOST_CHECK_EQUAL for operartor<<
+#include <RpT-Testing/SerTestingUtils.hpp> // Required by BOOST_CHECK_EQUAL for ServiceEvent operators
 
 #include <Minigames-Services/MinigameService.hpp>
 #include <RpT-Core/ServiceContext.hpp>
@@ -141,9 +142,9 @@ BOOST_AUTO_TEST_CASE(GameStopped) {
 
     BOOST_CHECK(service.isStarted());
     // Starting game should emit an event to sync clients with new state
-    BOOST_CHECK_EQUAL(service.pollEvent(), "START 0 1");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "START 0 1" });
     // It should also emit an event to tell clients the white player begins
-    BOOST_CHECK_EQUAL(service.pollEvent(), "ROUND_FOR WHITE");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "ROUND_FOR WHITE" });
     BOOST_CHECK(!service.checkEvent().has_value());
 }
 
@@ -174,7 +175,7 @@ BOOST_AUTO_TEST_CASE(GameRunning) {
     // Stop should sync with clients for new state by sending exactly one event
     service.stop();
     BOOST_CHECK(!service.isStarted());
-    BOOST_CHECK_EQUAL(service.pollEvent(), "STOP");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "STOP" });
     BOOST_CHECK(!service.checkEvent().has_value());
 }
 
@@ -231,7 +232,7 @@ BOOST_AUTO_TEST_CASE(End) {
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "END"));
 
     // Should have emit exactly one event to go for next round
-    BOOST_CHECK_EQUAL(service.pollEvent(), "ROUND_FOR BLACK");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "ROUND_FOR BLACK" });
     BOOST_CHECK(!service.checkEvent().has_value());
 
     // nextRound() should have been called for board game
@@ -275,12 +276,12 @@ BOOST_AUTO_TEST_CASE(MakeVictory) {
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "MOVE 1 2 3 4"));
 
     // Expect grid updates, pawn counts, victory and stop to be sync with clients with exactly 6 Service Events
-    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 2 3 FREE");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "SQUARE_STATE 5 5 WHITE");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 3 3 1 3");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 0");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "VICTORY_FOR WHITE");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "STOP");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "SQUARE_STATE 2 3 FREE" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "SQUARE_STATE 5 5 WHITE" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "MOVED 3 3 1 3" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "PAWN_COUNTS 12 0" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "VICTORY_FOR WHITE" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "STOP" });
     BOOST_CHECK(!service.checkEvent().has_value());
 
     // play() should have been called with parsed coordinates
@@ -307,9 +308,9 @@ BOOST_AUTO_TEST_CASE(TerminatedRound) {
     // Expect nextRound() to have been called
     BOOST_CHECK(boardGame->nextRoundCalled);
     // Expect grid update, pawn counts and nextRound() call to be sync with clients with exactly 3 Service Events
-    BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 5 5 1 1");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 12");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "ROUND_FOR BLACK");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "MOVED 5 5 1 1" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "PAWN_COUNTS 12 12" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "ROUND_FOR BLACK" });
     BOOST_CHECK(!service.checkEvent().has_value());
     // play() should have been called with parsed coordinates
     boostCheckPlayCall(*boardGame, { 1, 2 }, { 3, 4 });
@@ -332,8 +333,8 @@ BOOST_AUTO_TEST_CASE(StillInsideRound) {
     BOOST_CHECK(service.handleRequestCommand(WHITE_PLAYER_ACTOR, "MOVE 1 2 3 4"));
 
     // Just 2 usual SE emitted by play() call move
-    BOOST_CHECK_EQUAL(service.pollEvent(), "MOVED 5 5 1 1");
-    BOOST_CHECK_EQUAL(service.pollEvent(), "PAWN_COUNTS 12 12");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "MOVED 5 5 1 1" });
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "PAWN_COUNTS 12 12" });
     BOOST_CHECK(!service.checkEvent().has_value());
     // play() should have been called with parsed coordinates
     boostCheckPlayCall(*boardGame, { 1, 2 }, { 3, 4 });

@@ -40,7 +40,9 @@ register_test(core
         "src/ServiceTests.cpp"
         "src/ServiceContextTests.cpp"
         "src/SerProtocolTests.cpp"
-        "src/TimerTests.cpp")
+        "src/TimerTests.cpp"
+        "src/SerTestingUtils.cpp"
+        "${RPT_TESTING_HEADERS_DIR}/SerTestingUtils.hpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
 
 register_test(network
@@ -61,5 +63,7 @@ register_test(minigames-services
         "src/CanariesTests.cpp"
         "src/LobbyServiceTests.cpp"
         "src/MinigamesServicesTestingUtils.cpp"
-        "${RPT_TESTING_HEADERS_DIR}/MinigamesServicesTestingUtils.hpp")
+        "${RPT_TESTING_HEADERS_DIR}/MinigamesServicesTestingUtils.hpp"
+        "src/SerTestingUtils.cpp"
+        "${RPT_TESTING_HEADERS_DIR}/SerTestingUtils.hpp")
 target_link_libraries(${minigames-services_EXEC} PRIVATE minigames-services)

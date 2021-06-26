@@ -1,4 +1,5 @@
 #include <RpT-Testing/TestingUtils.hpp>
+#include <RpT-Testing/SerTestingUtils.hpp>
 
 #include <RpT-Core/Service.hpp>
 
@@ -84,7 +85,7 @@ BOOST_AUTO_TEST_CASE(OneQueuedEvent) {
     // Checks if event was triggered with correct ID
     RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { 0 });
     // Checks if event command is correctly retrieved
-    BOOST_CHECK_EQUAL(service.pollEvent(), "42");
+    BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { "42" });
     // There should not be any event still in queue
     BOOST_CHECK(!service.checkEvent().has_value());
 }
@@ -103,7 +104,7 @@ BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
         // Checks for correct order with event ID
         RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { i });
         // Checks for correct event command
-        BOOST_CHECK_EQUAL(service.pollEvent(), std::to_string(i));
+        BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { std::to_string(i) });
     }
 
     // Now, queue should be empty
