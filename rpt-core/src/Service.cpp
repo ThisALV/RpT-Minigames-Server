@@ -32,10 +32,10 @@ void Service::emitEvent(std::string event_command, const std::initializer_list<s
     // Event counter is growing, ID is given so trigger order is kept
     const std::size_t event_id { run_context_.newEventPushed() };
 
-    std::optional<std::initializer_list<std::uint64_t>> targets_list;
+    std::optional<std::unordered_set<std::uint64_t>> targets_list;
     // If and only if at least 1 actor UID is provided, select listed UIDs to receive that Event
     if (!std::empty(event_targets))
-        *targets_list = event_targets;
+        targets_list.emplace(event_targets);
     // Else, uninitialized list will be passed so every actor will receive Event
 
     // Moves Event command inside queue, copies references for UIDs using initializer_list then pushes Service Event
