@@ -59,6 +59,9 @@ public:
      */
     bool operator==(const ServiceEvent& rhs) const;
 
+    /// Returns the opposite of `operator==`
+    bool operator!=(const ServiceEvent& rhs) const;
+
     /**
      * @brief Inserts given protocol command at the SE command data beginning of a new instance
      *

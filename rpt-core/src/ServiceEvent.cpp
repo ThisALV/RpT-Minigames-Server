@@ -11,6 +11,10 @@ bool ServiceEvent::operator==(const ServiceEvent& rhs) const {
     return command_ == rhs.command_ && targets_ == rhs.targets_;
 }
 
+bool ServiceEvent::operator!=(const ServiceEvent& rhs) const {
+    return !(*this == rhs);
+}
+
 ServiceEvent ServiceEvent::prefixWith(const std::string& higher_protocol_prefix) const {
     return ServiceEvent { higher_protocol_prefix + command_, targets_ };
 }
