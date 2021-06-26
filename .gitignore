@@ -40,6 +40,7 @@
 # CMake built configs
 Debug/
 Release/
+Debug-GCC/
 build/
 install/
 download/
