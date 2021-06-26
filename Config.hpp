@@ -44,23 +44,16 @@ enum struct Platform : int {
 
 /**
  * @brief Major version number
- *
- * Patch number differences will not break existing games of the same minor version.
  */
 constexpr std::size_t VERSION_MAJOR { @PROJECT_VERSION_MAJOR@ };
 
 /**
  * @brief Minor version number
- *
- * Minor number, from 1.0, will not break existing games of the same major version.
- * However, under 1.0, this guarantee doesn't apply.
  */
 constexpr std::size_t VERSION_MINOR { @PROJECT_VERSION_MINOR@ };
 
 /**
  * @brief Patch version number
- *
- * Major number might break existing games.
  */
 constexpr std::size_t VERSION_PATCH { @PROJECT_VERSION_PATCH@ };
 

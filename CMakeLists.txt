@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}, C++ Compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Archiver: ${CMAKE_AR}, Ranlib: ${CMAKE_RANLIB}, Linker flags: $ENV{LDFLAGS}")
 
-project(RpT-Minigames-Server LANGUAGES CXX VERSION 0.0.1)
+project(RpT-Minigames-Server LANGUAGES CXX VERSION 0.1.0)
 
 ## Init project options
 
