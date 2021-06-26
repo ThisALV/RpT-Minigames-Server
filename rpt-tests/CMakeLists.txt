@@ -41,6 +41,7 @@ register_test(core
         "src/ServiceContextTests.cpp"
         "src/SerProtocolTests.cpp"
         "src/TimerTests.cpp"
+        "src/ServiceEventTests.cpp"
         "src/SerTestingUtils.cpp"
         "${RPT_TESTING_HEADERS_DIR}/SerTestingUtils.hpp")
 target_link_libraries(${core_EXEC} PRIVATE rpt-core)
