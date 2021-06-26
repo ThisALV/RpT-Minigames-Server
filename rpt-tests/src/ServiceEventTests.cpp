@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(TargetingEveryone) {
 
 BOOST_AUTO_TEST_CASE(TargetingNobody) {
     // Empty UIDs set provided, but still provided so doesn't target everyone
-    BOOST_CHECK(!(ServiceEvent { "", OptionalUidsSet { {} } }).targetEveryone());
+    BOOST_CHECK(!(ServiceEvent { "", OptionalUidsSet { std::initializer_list<std::uint64_t> {} } }).targetEveryone());
 }
 
 BOOST_AUTO_TEST_CASE(TargetingSpecifiedActors) {
