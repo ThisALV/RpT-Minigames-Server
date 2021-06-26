@@ -63,7 +63,9 @@ public:
      * Must be passed from an Events queue to another
      */
 
+    /// Default move constructor
     ServiceEvent(ServiceEvent&&) = default;
+    /// Default move assignment operator
     ServiceEvent& operator=(ServiceEvent&&) = default;
 
     /**
