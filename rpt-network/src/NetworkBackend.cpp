@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <RpT-Core/ServiceEvent.hpp>
 
 
 namespace RpT::Network {
@@ -274,17 +275,30 @@ void NetworkBackend::privateMessage(const std::uint64_t client_token, std::strin
     clients_remaining_messages_.at(client_token).push(new_message_owner);
 }
 
-void NetworkBackend::broadcastMessage(std::string new_message) {
+void NetworkBackend::targetMessage(const std::unordered_set<std::uint64_t>& target_uids, std::string new_message) {
     const auto new_message_owner { std::make_shared<std::string>(std::move(new_message)) };
 
-    // For each actor, owner is a registered client
-    for (const auto actor : actors_registry_) {
+    // For each actor this message is targeting for
+    for (const auto target_actor : target_uids) {
         // Retrieves registered client token for current actor UID
-        const std::uint64_t actor_owner { actor.second };
+        const std::uint64_t actor_owner { actors_registry_.at(target_actor) };
 
         // Actors queue will share the same data for a broadcast message
         clients_remaining_messages_.at(actor_owner).push(new_message_owner);
     }
+}
+
+void NetworkBackend::broadcastMessage(std::string new_message) {
+    std::unordered_set<std::uint64_t> registry_uids; // Set of every UID to get every registered client actor
+    registry_uids.reserve(actors_registry_.size()); // To avoid useless reallocations during actors registry mapping
+
+    // For each actor entry, insert its UID inside the UIDs set
+    std::transform(actors_registry_.cbegin(), actors_registry_.cend(),
+                   std::inserter(registry_uids, registry_uids.begin()),
+                   [](const std::pair<std::uint64_t, std::uint64_t> actor_entry) { return actor_entry.first; });
+
+    // With list of every actor UIDs, sends given message
+    targetMessage(registry_uids, std::move(new_message));
 }
 
 void NetworkBackend::unregisterActor(const std::uint64_t actor_uid) {
@@ -427,9 +441,19 @@ void NetworkBackend::replyTo(const std::uint64_t sr_actor, const std::string& sr
     privateMessage(owner_client, std::string { SERVICE_COMMAND } + ' ' + sr_response);
 }
 
-void NetworkBackend::outputEvent(const std::string& event) {
+void NetworkBackend::outputEvent(const Core::ServiceEvent& event) {
     // Formats message for RPTL protocol using SERVICE command
-    broadcastMessage(std::string { SERVICE_COMMAND } + ' ' + event);
+    const Core::ServiceEvent rptl_encapsulated {
+        event.prefixWith(std::string { SERVICE_COMMAND } + ' ')
+    };
+    // Sent command copied from object's command view
+    std::string command { rptl_encapsulated.command() };
+
+    if (rptl_encapsulated.targetEveryone()) {
+        broadcastMessage(std::move(command));
+    } else {
+        targetMessage(rptl_encapsulated.targets(), std::move(command));
+    }
 }
 
 NetworkBackend::NetworkBackend(std::size_t actors_limit)

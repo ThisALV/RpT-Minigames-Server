@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
+#include <RpT-Core/ServiceEvent.hpp>
 #include <RpT-Core/Timer.hpp>
 #include <RpT-Network/NetworkBackend.hpp>
 
@@ -288,7 +289,7 @@ BOOST_AUTO_TEST_SUITE(OutputEvent)
 BOOST_AUTO_TEST_CASE(AnyServiceEvent) {
     SimpleNetworkBackend io_interface;
 
-    io_interface.outputEvent("Some SE thing");
+    io_interface.outputEvent(RpT::Core::ServiceEvent { "Some SE thing" });
     // Flushes messages queue for each client
     io_interface.sync();
 

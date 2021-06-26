@@ -197,8 +197,11 @@ public:
  * is no longer alive. Implementation can checks for each client if it's alive or not. If not, connection can be
  * closed. An alive connection can only be closed in case of server being stopped, or if an error occurred.
  *
- * Messages from server to clients can take two forms : private message or broadcast message. Private messages are
- * sent to a specific registered or not client token while broadcast messages are sent to all registered clients.
+ * Messages from server to clients can take 2 forms : private message and target. Private message is a message sent
+ * to a specific registered or not client while target message is a message sent to many selected registered client
+ * actors.
+ *
+ * Broadcast message is an alias for a target message which is every client actor.
  *
  * Commands summary:
  *
@@ -214,10 +217,10 @@ public:
  * - Connection closed: `INTERRUPT [ERR_MSG]`, must BE registered
  * - Service Request Response: `SERVICE <SRR>`, must BE registered, see `Core::ServiceEventRequestProtocol` for SRR doc
  *
- * Server to clients, broadcast, must BE registered:
- * - Logged in actor: `LOGGED_IN <uid> <name>`
- * - Logged out actor: `LOGGED_OUT <uid>`
- * - Service Event command: `SERVICE <SE_command>`
+ * Server to clients, target, must BE registered:
+ * - Logged in actor: `LOGGED_IN <uid> <name>`, broadcast
+ * - Logged out actor: `LOGGED_OUT <uid>`, broadcast
+ * - Service Event command: `SERVICE <SE_command>`, might be broadcast
  *
  * @author ThisALV, https://github.com/ThisALV
  */
@@ -345,10 +348,18 @@ private:
     /**
      * @brief Pushes given message into queue for given client
      *
-     * @param client_token Clients queue to be pushed
+     * @param client_token Client queue to be pushed
      * @param new_message Message to push into queue
      */
     void privateMessage(std::uint64_t client_token, std::string new_message);
+
+    /**
+     * @brief Pushes given message into queue for each listed client inside UIDs set
+     *
+     * @param target_uids Actors owning client queues to be pushed
+     * @param new_message Message to push into queues
+     */
+    void targetMessage(const std::unordered_set<std::uint64_t>& target_uids, std::string new_message);
 
     /**
      * @brief Pushes given message into queue for each registered client
@@ -569,7 +580,7 @@ public:
      *
      * @param event Service Event command formatted as SER command (see `Core::ServiceEventRequestProtocol`)
      */
-    void outputEvent(const std::string &event) final;
+    void outputEvent(const Core::ServiceEvent& event) final;
 };
 
 

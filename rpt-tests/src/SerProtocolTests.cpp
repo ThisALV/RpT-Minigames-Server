@@ -1,4 +1,5 @@
 #include <RpT-Testing/TestingUtils.hpp>
+#include <RpT-Testing/SerTestingUtils.hpp>
 
 #include <optional>
 #include <RpT-Core/ServiceEventRequestProtocol.hpp>
@@ -210,7 +211,7 @@ BOOST_FIXTURE_TEST_SUITE(PollServiceEvent, SerProtocolWithMinimalServiceFixture)
 
 BOOST_AUTO_TEST_CASE(NoEvents) {
     // All events queues should be empty as no request command were handled
-    RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(), std::optional<std::string> {});
+    RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(), std::optional<ServiceEvent> {});
 }
 
 BOOST_AUTO_TEST_CASE(ManyEventsInSomeQueues) {
@@ -222,13 +223,13 @@ BOOST_AUTO_TEST_CASE(ManyEventsInSomeQueues) {
 
     // Checks for events polling order, FIFO queue, so should be the same than insertion (or events emission) order
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA 1" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceA 1" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 2" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceB 2" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA 3" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceA 3" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 4" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceB 4" });
 }
 
 BOOST_AUTO_TEST_CASE(ManyEventsInEveryQueues) {
@@ -243,19 +244,19 @@ BOOST_AUTO_TEST_CASE(ManyEventsInEveryQueues) {
 
     // Checks for events polling order, FIFO queue, so should be the same than insertion (or events emission) order
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA 1" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceA 1" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceA 2" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceA 2" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceC 3" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceC 3" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 4" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceB 4" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 5" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceB 5" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceB 6" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceB 6" });
     RpT::Testing::boostCheckOptionalsEqual(ser_protocol.pollServiceEvent(),
-                                           std::optional<std::string> { "EVENT ServiceC 7" });
+                                           std::optional<ServiceEvent> { "EVENT ServiceC 7" });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

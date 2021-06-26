@@ -10,6 +10,7 @@
 #include <string_view>
 #include <utility>
 #include <RpT-Core/ServiceContext.hpp>
+#include <RpT-Core/ServiceEvent.hpp>
 #include <RpT-Core/Timer.hpp>
 #include <RpT-Utils/HandlingResult.hpp>
 
@@ -71,7 +72,7 @@ public:
 class Service {
 private:
     ServiceContext& run_context_;
-    std::queue<std::pair<std::size_t, std::string>> events_queue_;
+    std::queue<std::pair<std::size_t, ServiceEvent>> events_queue_;
     std::set<Timer*> watched_timers_; // Using pointers because reference_wrapper doesn't offer == operator
 
 protected:
@@ -79,8 +80,9 @@ protected:
      * @brief Emits event command into service
      *
      * @param event_command Event command to emit (words coming after `EVENT` prefix and service name in SE command)
+     * @param event_targets List of UIDs for actor which must receive that event. *If empty, every must receive it.*
      */
-    void emitEvent(std::string event_command);
+    void emitEvent(std::string event_command, std::initializer_list<std::uint64_t> event_targets = {});
 
 public:
     /*
@@ -136,15 +138,15 @@ public:
     std::optional<std::size_t> checkEvent() const;
 
     /**
-     * @brief Get next event command
+     * @brief Get next Service Event
      *
      * @note Called by `ServiceEventRequestProtocol` instance to dispatch across actors, shouldn't be called by user.
      *
-     * @returns Command for next queued event
+     * @returns `ServiceEvent` with command and targets list for next queued event
      *
      * @throws EmptyEventsQueue if queue is empty so event cannot be polled
      */
-    std::string pollEvent();
+    ServiceEvent pollEvent();
 
     /**
      * @brief Checks for every timers owned and watched by %Service which are waiting for their countdown to begin

@@ -28,23 +28,33 @@ void Service::forgetTimer(Timer& watched_timer) {
         throw BadWatchedToken { watched_timer, "Not watched" };
 }
 
-void Service::emitEvent(std::string event_command) {
-    const std::size_t event_id { run_context_.newEventPushed() }; // Event counter is growing, ID is given so trigger order is kept
+void Service::emitEvent(std::string event_command, const std::initializer_list<std::uint64_t> event_targets) {
+    // Event counter is growing, ID is given so trigger order is kept
+    const std::size_t event_id { run_context_.newEventPushed() };
 
-    events_queue_.push({ event_id, std::move(event_command) }); // Event command moved in queue with appropriate ID
+    std::optional<std::unordered_set<std::uint64_t>> targets_list;
+    // If and only if at least 1 actor UID is provided, select listed UIDs to receive that Event
+    if (!std::empty(event_targets))
+        targets_list.emplace(event_targets);
+    // Else, uninitialized list will be passed so every actor will receive Event
+
+    // Moves Event command inside queue, copies references for UIDs using initializer_list then pushes Service Event
+    events_queue_.push({
+        event_id, ServiceEvent { std::move(event_command), std::move(targets_list) }
+    });
 }
 
 std::optional<std::size_t> Service::checkEvent() const {
     return events_queue_.empty() ? EMPTY_QUEUE : events_queue_.front().first;
 }
 
-std::string Service::pollEvent() {
+ServiceEvent Service::pollEvent() {
     if (events_queue_.empty()) // There must be at least one event to poll, checked with checkEvent() call
         throw EmptyEventsQueue { name() };
 
-    // Command is moved from queue to local, and will be returned by copy-elision later
-    std::string event_command { std::move(events_queue_.front().second) };
-    // Event with moved command can now be destroyed
+    // Event is moved from queue to local, and will be returned by copy-elision later
+    ServiceEvent event_command { std::move(events_queue_.front().second) };
+    // Moved event can now be destroyed inside queue
     events_queue_.pop();
 
     return event_command;

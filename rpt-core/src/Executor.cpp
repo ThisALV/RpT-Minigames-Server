@@ -133,10 +133,10 @@ bool Executor::run(std::initializer_list<std::reference_wrapper<Service>> servic
 
             logger_.debug("Polling service events...");
 
-            std::optional<std::string> next_svc_event { ser_protocol.pollServiceEvent() }; // Read first event
+            std::optional<ServiceEvent> next_svc_event { ser_protocol.pollServiceEvent() }; // Read first event
             while (next_svc_event) { // Then while next event actually exists, handles it
-                logger_.debug("Output event: {}", *next_svc_event);
-                io_interface_.outputEvent(*next_svc_event); // Sent across actors
+                logger_.debug("Output event: {}", next_svc_event->command());
+                io_interface_.outputEvent(std::move(*next_svc_event)); // Sent across actors
 
                 next_svc_event = ser_protocol.pollServiceEvent(); // Read next event
             }

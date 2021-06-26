@@ -1,4 +1,6 @@
 #include <RpT-Testing/TestingUtils.hpp>
+#include <RpT-Testing/SerTestingUtils.hpp>
+
 #include <Minigames-Services/ChatService.hpp>
 
 
@@ -101,7 +103,8 @@ BOOST_AUTO_TEST_CASE(RawNonTrimmedMessage) {
 
     // Checks for message sending to be done
     BOOST_CHECK(was_sent);
-    BOOST_CHECK_EQUAL(service.pollEvent(), "MESSAGE_FROM 0 Hello world!"); // Trimmed message should have been sent
+    // Trimmed message should have been sent
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "MESSAGE_FROM 0 Hello world!" });
 
     // Checks for cooldown to have been started has message is sent
     const std::vector<std::reference_wrapper<RpT::Core::Timer>> waiting_timers { service.getWaitingTimers() };
@@ -120,7 +123,7 @@ BOOST_AUTO_TEST_CASE(NormalMessageWithCooldownNotFree) {
     BOOST_CHECK(!second_was_sent);
     BOOST_CHECK_EQUAL(second_was_sent.errorMessage(), "Last message when sent less than 2000 ms ago");
     // Only first message should have been sent
-    BOOST_CHECK_EQUAL(service.pollEvent(), "MESSAGE_FROM 0 Hello world!");
+    BOOST_CHECK_EQUAL(service.pollEvent(), RpT::Core::ServiceEvent { "MESSAGE_FROM 0 Hello world!" });
     BOOST_CHECK(!service.checkEvent().has_value()); // No second message
 }
 
