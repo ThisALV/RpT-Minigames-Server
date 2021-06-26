@@ -4,7 +4,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <vector>
+#include <unordered_set>
 
 /**
  * @file ServiceEvent.hpp
@@ -24,7 +24,7 @@ public:
 
 
 /**
- * @brief Represents a Service Event (SE) command with a list of actors which must receive that Event.
+ * @brief Represents a Service Event (SE) command with a set of actors which must receive that Event.
  *
  * Passing through `ServiceEventRequestProtocol` instance and other higher level protocols, a new SE instance
  * command will be prefixed, inserting the given command at the beginning of the Event data.
@@ -36,8 +36,8 @@ public:
  */
 class ServiceEvent {
 private:
-    /// Optional list of actors which must receive that Event
-    std::optional<std::vector<std::uint64_t>> targets_;
+    /// Optional set of actors which must receive that Event
+    std::optional<std::unordered_set<std::uint64_t>> targets_;
     /// Command providing Event data
     std::string command_;
 
@@ -46,9 +46,9 @@ public:
      * @brief Constructs a Service Event represented with given command
      *
      * @param command SE data representation
-     * @param actor_uids List of actor UIDs which must receive that SE, uninitialized if all actors must receive it
+     * @param actor_uids Set of actor UIDs which must receive that SE, uninitialized if all actors must receive it
      */
-    explicit ServiceEvent(std::string command, std::optional<std::vector<std::uint64_t>> actor_uids = {});
+    explicit ServiceEvent(std::string command, std::optional<std::unordered_set<std::uint64_t>> actor_uids = {});
 
     /**
      * @brief Checks if two SE are the same event
@@ -92,7 +92,7 @@ public:
      *
      * @throws NoUidsList if every registered actor must receive that SE <=> if `targetEveryone() == true`
      */
-    const std::vector<std::uint64_t>& targets() const;
+    const std::unordered_set<std::uint64_t>& targets() const;
 };
 
 

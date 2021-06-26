@@ -354,12 +354,12 @@ private:
     void privateMessage(std::uint64_t client_token, std::string new_message);
 
     /**
-     * @brief Pushes given message into queue for each listed client
+     * @brief Pushes given message into queue for each listed client inside UIDs set
      *
      * @param target_uids Actors owning client queues to be pushed
      * @param new_message Message to push into queues
      */
-    void targetMessage(const std::vector<std::uint64_t>& target_uids, std::string new_message);
+    void targetMessage(const std::unordered_set<std::uint64_t>& target_uids, std::string new_message);
 
     /**
      * @brief Pushes given message into queue for each registered client

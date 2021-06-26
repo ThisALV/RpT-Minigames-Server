@@ -275,7 +275,7 @@ void NetworkBackend::privateMessage(const std::uint64_t client_token, std::strin
     clients_remaining_messages_.at(client_token).push(new_message_owner);
 }
 
-void NetworkBackend::targetMessage(const std::vector<uint64_t>& target_uids, std::string new_message) {
+void NetworkBackend::targetMessage(const std::unordered_set<std::uint64_t>& target_uids, std::string new_message) {
     const auto new_message_owner { std::make_shared<std::string>(std::move(new_message)) };
 
     // For each actor this message is targeting for
@@ -289,11 +289,12 @@ void NetworkBackend::targetMessage(const std::vector<uint64_t>& target_uids, std
 }
 
 void NetworkBackend::broadcastMessage(std::string new_message) {
-    std::vector<std::uint64_t> registry_uids; // List of every UID to get every registered client actor
-    registry_uids.resize(actors_registry_.size()); // must have an array element to assign each registered UID
+    std::unordered_set<std::uint64_t> registry_uids; // Set of every UID to get every registered client actor
+    registry_uids.reserve(actors_registry_.size()); // To avoid useless reallocations during actors registry mapping
 
-    // For each actor entry, assign its UID to an element inside the UIDs list
-    std::transform(actors_registry_.cbegin(), actors_registry_.cend(), registry_uids.begin(),
+    // For each actor entry, insert its UID inside the UIDs set
+    std::transform(actors_registry_.cbegin(), actors_registry_.cend(),
+                   std::inserter(registry_uids, registry_uids.begin()),
                    [](const std::pair<std::uint64_t, std::uint64_t> actor_entry) { return actor_entry.first; });
 
     // With list of every actor UIDs, sends given message
