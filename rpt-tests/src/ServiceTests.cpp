@@ -10,8 +10,8 @@ using namespace RpT::Core;
 /**
  * @brief Basic implementation to build Service class and test its defined methods
  *
- * `name()` returns empty string and `handleRequestCommand()` fires event with actor as event command, then returns
- * successfully.
+ * `name()` returns empty string and `handleRequestCommand()` fires event with actor as event command to every actor,
+ * then send "FIRE" event to SR author, then returns successfully.
  */
 class TestingService : public Service {
 public:
@@ -23,10 +23,9 @@ public:
         return "";
     }
 
-    RpT::Utils::HandlingResult handleRequestCommand(uint64_t actor,
-                                                    std::string_view) override {
-
+    RpT::Utils::HandlingResult handleRequestCommand(const std::uint64_t actor, const std::string_view) override {
         emitEvent(std::to_string(actor));
+        emitEvent("FIRE", { actor });
 
         return {};
     }
@@ -84,8 +83,9 @@ BOOST_AUTO_TEST_CASE(OneQueuedEvent) {
     service.handleRequestCommand(42, {});
     // Checks if event was triggered with correct ID
     RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { 0 });
-    // Checks if event command is correctly retrieved
-    BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { "42" });
+    // Checks if event commands are correctly retrieved
+    BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { "42" }); // A first event is broadcast with author UID
+    BOOST_CHECK_EQUAL(service.pollEvent(), (ServiceEvent { "FIRE", { { 42 } } })); // Then author receives FIRE
     // There should not be any event still in queue
     BOOST_CHECK(!service.checkEvent().has_value());
 }
@@ -95,16 +95,17 @@ BOOST_AUTO_TEST_CASE(OneQueuedEvent) {
  */
 
 BOOST_AUTO_TEST_CASE(ManyQueuedEvents) {
-    // Push 3 events
-    for (int i { 0 }; i < 3; i++)
+    // Push 3 events for 3 different actor UIDs
+    for (std::uint64_t i { 0 }; i < 3; i++)
         service.handleRequestCommand(i, {});
 
     // Checks for each event in queue
-    for (int i { 0 }; i < 3; i++) {
+    for (std::uint64_t i { 0 }; i < 3; i++) {
         // Checks for correct order with event ID
         RpT::Testing::boostCheckOptionalsEqual(service.checkEvent(), std::optional<std::size_t> { i });
-        // Checks for correct event command
+        // Checks for correct event commands
         BOOST_CHECK_EQUAL(service.pollEvent(), ServiceEvent { std::to_string(i) });
+        BOOST_CHECK_EQUAL(service.pollEvent(), (ServiceEvent { "FIRE", { { i } } }));
     }
 
     // Now, queue should be empty
